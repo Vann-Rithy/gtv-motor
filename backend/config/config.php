@@ -23,7 +23,10 @@ $allowed_origins = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://localhost:3001',
-    'http://127.0.0.1:3001'
+    'http://127.0.0.1:3001',
+    'https://gtvmotor.dev',
+    'https://www.gtvmotor.dev',
+    'https://vercel.app' // For Vercel deployments
 ];
 
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';

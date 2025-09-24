@@ -31,7 +31,7 @@ class ApiClient {
   private baseUrl: string
   private defaultTimeoutMs = 20000
 
-  constructor(baseUrl = "http://localhost/backend") {
+  constructor(baseUrl = "https://api.gtvmotor.dev") {
     this.baseUrl = baseUrl
   }
 
@@ -48,7 +48,7 @@ class ApiClient {
     // Handle body properly
     let body = options.body as any
     const isFormData = typeof FormData !== "undefined" && body instanceof FormData
-    
+
     // If body is a plain object, JSON-encode it
     if (body && !isFormData && typeof body !== "string") {
       try {
@@ -234,13 +234,13 @@ class ApiClient {
   }
 
   // ---------- Inventory ----------
-  async getInventory(params?: { 
-    page?: number; 
-    limit?: number; 
-    search?: string; 
-    low_stock?: boolean; 
-    out_of_stock?: boolean; 
-    category_id?: string | number 
+  async getInventory(params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    low_stock?: boolean;
+    out_of_stock?: boolean;
+    category_id?: string | number
   }) {
     return this.request(`/api/inventory${buildQuery(params)}`, { method: "GET" })
   }
@@ -288,11 +288,11 @@ class ApiClient {
   }
 
   // ---------- Warranties ----------
-  async getWarranties(params?: { 
-    page?: number; 
-    limit?: number; 
-    search?: string; 
-    status?: string; 
+  async getWarranties(params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
     vehicle_id?: number;
     expiring_soon?: boolean;
   }) {
@@ -312,11 +312,11 @@ class ApiClient {
   }
 
   // ---------- Alerts ----------
-  async getAlerts(params?: { 
-    page?: number; 
-    limit?: number; 
-    search?: string; 
-    status?: string; 
+  async getAlerts(params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
     alert_type?: string;
     customer_id?: number;
     vehicle_id?: number;
