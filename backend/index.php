@@ -49,17 +49,17 @@ try {
             ]
         ], 'API is running');
     }
-    
+
     // Health check endpoint
     if ($uri === 'health' && $requestMethod === 'GET') {
         require_once __DIR__ . '/api/health.php';
         exit;
     }
-    
+
     // API endpoints
     if (strpos($uri, 'api/') === 0) {
         $apiPath = substr($uri, 4); // Remove 'api/' prefix
-        
+
         // Route to appropriate API file
         switch ($apiPath) {
             case 'auth/login':
@@ -69,7 +69,7 @@ try {
                     Response::error('Method not allowed', 405);
                 }
                 break;
-                
+
             case 'auth/logout':
                 if ($requestMethod === 'POST') {
                     require_once __DIR__ . '/api/auth/logout.php';
@@ -77,7 +77,7 @@ try {
                     Response::error('Method not allowed', 405);
                 }
                 break;
-                
+
             case 'auth/register':
                 if ($requestMethod === 'POST') {
                     require_once __DIR__ . '/api/auth/register.php';
@@ -85,55 +85,98 @@ try {
                     Response::error('Method not allowed', 405);
                 }
                 break;
-                
+
             case 'auth/me':
-                if ($requestMethod === 'GET') {
-                    require_once __DIR__ . '/api/auth/me.php';
+                // Support URL parameter authentication
+                if (isset($_GET['token'])) {
+                    // Handle URL parameter authentication
+                    try {
+                        $token = $_GET['token'];
+
+                        // Validate token
+                        $payload = json_decode(base64_decode($token), true);
+
+                        if (!$payload || !isset($payload['user_id']) || !isset($payload['exp'])) {
+                            Response::unauthorized('Invalid token format');
+                        }
+
+                        if ($payload['exp'] < time()) {
+                            Response::unauthorized('Token expired');
+                        }
+
+                        // Get user from database
+                        require_once __DIR__ . '/config/database.php';
+                        $database = new Database();
+                        $conn = $database->getConnection();
+
+                        $stmt = $conn->prepare("
+                            SELECT u.*, s.name as staff_name, s.role as staff_role
+                            FROM users u
+                            LEFT JOIN staff s ON u.staff_id = s.id
+                            WHERE u.id = ? AND u.is_active = 1
+                        ");
+                        $stmt->execute([$payload['user_id']]);
+                        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                        if (!$user) {
+                            Response::unauthorized('User not found or inactive');
+                        }
+
+                        unset($user['password_hash']);
+                        unset($user['password_reset_token']);
+                        unset($user['password_reset_expires']);
+
+                        Response::success($user, 'User data retrieved successfully');
+
+                    } catch (Exception $e) {
+                        Response::unauthorized('Invalid token');
+                    }
                 } else {
-                    Response::error('Method not allowed', 405);
+                    // Use original me.php for other authentication methods
+                    require_once __DIR__ . '/api/auth/me.php';
                 }
                 break;
-                
+
             case 'customers':
                 require_once __DIR__ . '/api/customers.php';
                 break;
-                
+
             case 'vehicles':
                 require_once __DIR__ . '/api/vehicles.php';
                 break;
-                
+
             case 'services':
                 require_once __DIR__ . '/api/services.php';
                 break;
-                
+
             case 'service-types':
                 require_once __DIR__ . '/api/service-types.php';
                 break;
-                
+
             case 'bookings':
                 require_once __DIR__ . '/api/bookings.php';
                 break;
-                
+
             case 'inventory':
                 require_once __DIR__ . '/api/inventory.php';
                 break;
-                
+
             case 'staff':
                 require_once __DIR__ . '/api/staff.php';
                 break;
-                
+
             case 'warranties':
                 require_once __DIR__ . '/api/warranties.php';
                 break;
-                
+
             case 'alerts':
                 require_once __DIR__ . '/api/alerts.php';
                 break;
-                
+
             case 'notifications':
                 require_once __DIR__ . '/api/notifications.php';
                 break;
-                
+
             case 'dashboard/stats':
                 if ($requestMethod === 'GET') {
                     require_once __DIR__ . '/api/dashboard/stats.php';
@@ -141,7 +184,7 @@ try {
                     Response::error('Method not allowed', 405);
                 }
                 break;
-                
+
             case 'dashboard/analytics':
                 if ($requestMethod === 'GET') {
                     require_once __DIR__ . '/api/dashboard/analytics.php';
@@ -149,7 +192,7 @@ try {
                     Response::error('Method not allowed', 405);
                 }
                 break;
-                
+
             case 'reports/summary':
                 if ($requestMethod === 'GET') {
                     require_once __DIR__ . '/api/reports/summary.php';
@@ -157,7 +200,7 @@ try {
                     Response::error('Method not allowed', 405);
                 }
                 break;
-                
+
             case 'reports/customer':
                 if ($requestMethod === 'GET') {
                     require_once __DIR__ . '/api/reports/customer.php';
@@ -165,7 +208,7 @@ try {
                     Response::error('Method not allowed', 405);
                 }
                 break;
-                
+
             case 'reports/warranty':
                 if ($requestMethod === 'GET') {
                     require_once __DIR__ . '/api/reports/warranty.php';
@@ -173,11 +216,11 @@ try {
                     Response::error('Method not allowed', 405);
                 }
                 break;
-                
+
             case 'settings':
                 require_once __DIR__ . '/api/settings.php';
                 break;
-                
+
             default:
                 Response::error('Endpoint not found', 404);
                 break;
@@ -185,7 +228,7 @@ try {
     } else {
         Response::error('Invalid API path', 404);
     }
-    
+
 } catch (Exception $e) {
     error_log("API Error: " . $e->getMessage());
     Response::error('Internal server error', 500);
