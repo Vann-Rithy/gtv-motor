@@ -54,10 +54,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true)
 
+      // Only make request if we have a token
+      if (!token) {
+        console.log("[auth-provider] No token available, skipping user fetch")
+        setUser(null)
+        setIsAuthenticated(false)
+        return
+      }
+
       // Use URL parameter method instead of Authorization header
-      const url = token
-        ? `${API_ENDPOINTS.AUTH.ME}?token=${token}`
-        : API_ENDPOINTS.AUTH.ME
+      const url = `${API_ENDPOINTS.AUTH.ME}?token=${token}`
 
       const res = await fetch(url, {
         cache: "no-store",
@@ -68,9 +74,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       })
 
-      // Handle 401 (Unauthorized) gracefully - this is expected when not logged in
+      // Handle 401 (Unauthorized) gracefully - token might be expired
       if (res.status === 401) {
-        console.log("[auth-provider] 401 Unauthorized - no valid session")
+        console.log("[auth-provider] 401 Unauthorized - token expired or invalid")
+        localStorage.removeItem('auth_token')
+        setToken(null)
         setUser(null)
         setIsAuthenticated(false)
         return
@@ -101,10 +109,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (didInit.current) return
     didInit.current = true
 
-    // Check authentication status on app start
-    void fetchUser()
+    // Only check authentication if we have a token
+    if (token) {
+      console.log("[auth-provider] Token found, checking authentication status")
+      void fetchUser()
+    } else {
+      console.log("[auth-provider] No token found, skipping authentication check")
+      setLoading(false)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [token])
 
   // Watch for pathname changes and handle authentication
   useEffect(() => {
@@ -168,7 +182,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const refreshUser = async () => {
-    await fetchUser()
+    if (token) {
+      await fetchUser()
+    } else {
+      console.log("[auth-provider] No token available for refresh")
+      setUser(null)
+      setIsAuthenticated(false)
+    }
   }
 
   return (
