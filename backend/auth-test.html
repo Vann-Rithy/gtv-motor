@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GTV Motor Auth Fix Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .form-group { margin: 10px 0; }
+        input { padding: 8px; width: 200px; margin: 5px; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    </style>
+</head>
+<body>
+    <h1>GTV Motor Authentication Fix Test</h1>
+
+    <div class="form-group">
+        <h3>1. Login Test</h3>
+        <input type="email" id="email" placeholder="Email" value="admin@rhtower.com">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="testLogin()">Test Login</button>
+        <div id="loginResult"></div>
+    </div>
+
+    <div class="form-group">
+        <h3>2. Get Current User Test</h3>
+        <button onclick="testGetUser()">Get Current User</button>
+        <div id="userResult"></div>
+    </div>
+
+    <div class="form-group">
+        <h3>3. Session Info</h3>
+        <button onclick="showSessionInfo()">Show Session Info</button>
+        <div id="sessionInfo"></div>
+    </div>
+
+    <div class="form-group">
+        <h3>4. Logout</h3>
+        <button onclick="testLogout()">Logout</button>
+    </div>
+
+    <script src="gtv-auth-fix.js"></script>
+    <script>
+        function testLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            GTVAuth.login(email, password).then(result => {
+                const resultDiv = document.getElementById('loginResult');
+                if (result.success) {
+                    resultDiv.innerHTML = `<div class="success">✅ Login successful!<br>User: ${result.user.email}<br>Role: ${result.user.role}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Login failed: ${result.error}</div>`;
+                }
+            });
+        }
+
+        function testGetUser() {
+            GTVAuth.getCurrentUser().then(result => {
+                const resultDiv = document.getElementById('userResult');
+                if (result.success) {
+                    resultDiv.innerHTML = `<div class="success">✅ User data retrieved!<br>User: ${result.user.email}<br>Role: ${result.user.role}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Failed to get user: ${result.error}</div>`;
+                }
+            });
+        }
+
+        function showSessionInfo() {
+            const sessionId = GTVAuth.getSessionId();
+            const resultDiv = document.getElementById('sessionInfo');
+
+            if (sessionId) {
+                resultDiv.innerHTML = `<div class="info">Session ID: ${sessionId.substring(0, 20)}...</div>`;
+            } else {
+                resultDiv.innerHTML = `<div class="error">No session ID found</div>`;
+            }
+        }
+
+        function testLogout() {
+            GTVAuth.logout();
+        }
+
+        // Auto-test on page load
+        window.onload = function() {
+            console.log('Page loaded, testing authentication...');
+            testGetUser();
+        };
+    </script>
+</body>
+</html>

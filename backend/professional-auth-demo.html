@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GTV Motor - Professional Authentication Integration</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border-color: #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border-color: #bee5eb; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        input { padding: 8px; width: 200px; margin: 5px; }
+        .code { background: #f8f9fa; padding: 10px; border-radius: 3px; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>🔐 GTV Motor - Professional Authentication Integration</h1>
+
+    <div class="section info">
+        <h2>Professional Authentication System</h2>
+        <p>This system provides enterprise-grade authentication with JWT tokens, rate limiting, and comprehensive security features.</p>
+    </div>
+
+    <div class="section">
+        <h2>1. Login Test</h2>
+        <input type="email" id="email" placeholder="Email" value="admin@rhtower.com">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="testLogin()">Test Login</button>
+        <div id="loginResult"></div>
+    </div>
+
+    <div class="section">
+        <h2>2. Token Validation Test</h2>
+        <button onclick="testTokenValidation()">Test Token Validation</button>
+        <div id="tokenResult"></div>
+    </div>
+
+    <div class="section">
+        <h2>3. Complete Flow Test</h2>
+        <button onclick="testCompleteFlow()">Test Complete Authentication Flow</button>
+        <div id="flowResult"></div>
+    </div>
+
+    <div class="section info">
+        <h2>4. Frontend Integration Code</h2>
+        <p>Use this code in your React/Next.js application:</p>
+        <div class="code">
+// Install the professional auth client
+import { authClient } from './lib/professional-auth'
+
+// Login function
+const login = async (email: string, password: string) => {
+  const result = await authClient.login(email, password)
+  if (result.success) {
+    console.log('Logged in as:', result.user.email)
+    return true
+  } else {
+    console.error('Login failed:', result.error)
+    return false
+  }
+}
+
+// Get current user
+const getCurrentUser = async () => {
+  const result = await authClient.getCurrentUser()
+  if (result.success) {
+    return result.user
+  } else {
+    console.log('Not authenticated:', result.error)
+    return null
+  }
+}
+
+// Make authenticated API calls
+const apiCall = async (endpoint: string) => {
+  try {
+    const data = await authClient.apiCall(endpoint)
+    return data
+  } catch (error) {
+    console.error('API call failed:', error)
+    throw error
+  }
+}
+        </div>
+    </div>
+
+    <div class="section success">
+        <h2>✅ Professional Features</h2>
+        <ul>
+            <li><strong>JWT Tokens:</strong> Secure, stateless authentication</li>
+            <li><strong>Rate Limiting:</strong> Prevents brute force attacks</li>
+            <li><strong>Account Locking:</strong> Temporary lockout after failed attempts</li>
+            <li><strong>Session Management:</strong> Proper token expiration and refresh</li>
+            <li><strong>Cross-Domain Support:</strong> Works across different domains</li>
+            <li><strong>Comprehensive Logging:</strong> Track all authentication attempts</li>
+            <li><strong>Security Headers:</strong> Proper CORS and security configuration</li>
+        </ul>
+    </div>
+
+    <script>
+        let currentToken = null;
+
+        async function testLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('loginResult');
+
+            resultDiv.innerHTML = '<p>Testing login...</p>';
+
+            try {
+                const response = await fetch('https://api.gtvmotor.dev/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.data.access_token) {
+                    currentToken = data.data.access_token;
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ Login successful!<br>
+                            User: ${data.data.user.email}<br>
+                            Role: ${data.data.user.role}<br>
+                            Token Type: ${data.data.token_type}<br>
+                            Expires In: ${data.data.expires_in} seconds
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Login failed: ${data.error || 'Unknown error'}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Network error: ${error.message}</div>`;
+            }
+        }
+
+        async function testTokenValidation() {
+            const resultDiv = document.getElementById('tokenResult');
+
+            if (!currentToken) {
+                resultDiv.innerHTML = '<div class="error">❌ Please login first to get a token</div>';
+                return;
+            }
+
+            resultDiv.innerHTML = '<p>Testing token validation...</p>';
+
+            try {
+                const response = await fetch('https://api.gtvmotor.dev/api/auth/me', {
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`,
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.data) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ Token validation successful!<br>
+                            User: ${data.data.email}<br>
+                            Role: ${data.data.role}<br>
+                            Full Name: ${data.data.full_name}
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Token validation failed: ${data.error || 'Unknown error'}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Network error: ${error.message}</div>`;
+            }
+        }
+
+        async function testCompleteFlow() {
+            const resultDiv = document.getElementById('flowResult');
+            resultDiv.innerHTML = '<p>Testing complete authentication flow...</p>';
+
+            try {
+                // Step 1: Login
+                const loginResponse = await fetch('https://api.gtvmotor.dev/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@rhtower.com',
+                        password: 'test123'
+                    })
+                });
+
+                const loginData = await loginResponse.json();
+
+                if (!loginData.success) {
+                    resultDiv.innerHTML = `<div class="error">❌ Step 1 (Login): FAILED - ${loginData.error}</div>`;
+                    return;
+                }
+
+                const token = loginData.data.access_token;
+
+                // Step 2: Validate token
+                const meResponse = await fetch('https://api.gtvmotor.dev/api/auth/me', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
+
+                const meData = await meResponse.json();
+
+                if (!meData.success) {
+                    resultDiv.innerHTML = `<div class="error">❌ Step 2 (Token Validation): FAILED - ${meData.error}</div>`;
+                    return;
+                }
+
+                // Step 3: Test API call
+                const apiResponse = await fetch('https://api.gtvmotor.dev/api/dashboard/stats', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
+
+                const apiData = await apiResponse.json();
+
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        ✅ Complete authentication flow successful!<br><br>
+                        <strong>Step 1 (Login):</strong> ✅ SUCCESS<br>
+                        <strong>Step 2 (Token Validation):</strong> ✅ SUCCESS<br>
+                        <strong>Step 3 (API Call):</strong> ${apiData.success ? '✅ SUCCESS' : '❌ FAILED'}<br><br>
+                        <strong>User:</strong> ${meData.data.email}<br>
+                        <strong>Role:</strong> ${meData.data.role}<br>
+                        <strong>Token:</strong> ${token.substring(0, 50)}...
+                    </div>
+                `;
+
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Complete flow test failed: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

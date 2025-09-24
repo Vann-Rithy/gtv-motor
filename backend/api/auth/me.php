@@ -1,17 +1,30 @@
 <?php
 /**
- * Get Current User API
+ * Professional Get Current User API
  * GTV Motor PHP Backend
  */
 
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../includes/Request.php';
 require_once __DIR__ . '/../../includes/Response.php';
-require_once __DIR__ . '/../../includes/Auth.php';
+require_once __DIR__ . '/../../includes/ProfessionalAuth.php';
 
 try {
-    $auth = new Auth();
-    $user = $auth->requireAuth();
+    $auth = new ProfessionalAuth();
+
+    // Get token from Authorization header
+    $token = Request::authorization();
+
+    if (!$token) {
+        Response::unauthorized('No authorization token provided');
+    }
+
+    // Validate token and get user
+    $user = $auth->validateToken($token);
+
+    if (!$user) {
+        Response::unauthorized('Invalid or expired token');
+    }
 
     Response::success($user, 'User data retrieved successfully');
 
