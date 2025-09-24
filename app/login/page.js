@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../components/AuthProvider';
+import { useAuth } from '../../components/auth-provider';
 
 const LoginPage = () => {
   const { login } = useAuth();

@@ -54,20 +54,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true)
 
-      const headers: HeadersInit = {
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-      }
+      // Use URL parameter method instead of Authorization header
+      const url = token
+        ? `${API_ENDPOINTS.AUTH.ME}?token=${token}`
+        : API_ENDPOINTS.AUTH.ME
 
-      // Add Authorization header if token exists
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-
-      const res = await fetch(API_ENDPOINTS.AUTH.ME, {
+      const res = await fetch(url, {
         cache: "no-store",
         credentials: "include",
-        headers
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
       })
 
       // Handle 401 (Unauthorized) gracefully - this is expected when not logged in
@@ -81,9 +79,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const ct = res.headers.get("content-type") || ""
       const json = ct.includes("application/json") ? await res.json() : { success: false }
 
-      if (res.ok && json?.success && json.user) {
+      if (res.ok && json?.success && json.data) {
         console.log("[auth-provider] User authenticated successfully")
-        setUser(json.user as User)
+        setUser(json.data as User)
         setIsAuthenticated(true)
       } else {
         console.log("[auth-provider] Authentication failed:", json.error || "Unknown error")
@@ -133,11 +131,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const json = await res.json()
 
-      if (res.ok && json.success && json.token) {
+      if (res.ok && json.success && json.data && json.data.token) {
         // Store token in localStorage
-        localStorage.setItem('auth_token', json.token)
-        setToken(json.token)
-        setUser(json.user)
+        localStorage.setItem('auth_token', json.data.token)
+        setToken(json.data.token)
+        setUser(json.data.user)
         setIsAuthenticated(true)
         return true
       } else {
