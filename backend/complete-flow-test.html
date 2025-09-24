@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GTV Motor - Complete Authentication Flow Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border-color: #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border-color: #bee5eb; }
+        .warning { background: #fff3cd; color: #856404; border-color: #ffeaa7; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .code { background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace; white-space: pre-wrap; }
+        .test-step { margin: 10px 0; padding: 10px; border-left: 4px solid #007bff; background: #f8f9fa; }
+        .test-result { margin: 5px 0; padding: 5px; border-radius: 3px; }
+        .pass { background: #d4edda; color: #155724; }
+        .fail { background: #f8d7da; color: #721c24; }
+        .pending { background: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body>
+    <h1>🔧 GTV Motor - Complete Authentication Flow Test</h1>
+
+    <div class="section info">
+        <h2>📋 Comprehensive Authentication System Test</h2>
+        <p><strong>Purpose:</strong> Test the complete authentication flow from login to API access</p>
+        <p><strong>Scope:</strong> Frontend + Backend + Persistence + API Integration</p>
+    </div>
+
+    <div class="section">
+        <h2>🧪 Test Steps</h2>
+        <button onclick="runCompleteTest()">Run Complete Test</button>
+        <button onclick="testLogin()">1. Test Login</button>
+        <button onclick="testMeEndpoint()">2. Test /api/auth/me</button>
+        <button onclick="testServicesAPI()">3. Test Services API</button>
+        <button onclick="testPersistence()">4. Test Persistence</button>
+        <button onclick="clearResults()">Clear Results</button>
+        <div id="testResults"></div>
+    </div>
+
+    <div class="section">
+        <h2>🔍 System Components Check</h2>
+        <div id="componentCheck"></div>
+    </div>
+
+    <div class="section">
+        <h2>📊 Test Results Summary</h2>
+        <div id="testSummary"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://api.gtvmotor.dev';
+        const LOGIN_CREDENTIALS = {
+            email: 'admin@rhtower.com',
+            password: '}dSNZYD@@b40'
+        };
+
+        let testResults = {
+            login: null,
+            me: null,
+            services: null,
+            persistence: null
+        };
+
+        function addResult(step, result, details = '') {
+            testResults[step] = { result, details };
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            const resultsDiv = document.getElementById('testResults');
+            const summaryDiv = document.getElementById('testSummary');
+
+            let html = '<h3>Test Results:</h3>';
+            let summary = '<h3>Summary:</h3>';
+
+            Object.entries(testResults).forEach(([step, data]) => {
+                if (data) {
+                    const status = data.result ? 'pass' : 'fail';
+                    const icon = data.result ? '✅' : '❌';
+                    html += `<div class="test-result ${status}">${icon} ${step.toUpperCase()}: ${data.details}</div>`;
+                } else {
+                    html += `<div class="test-result pending">⏳ ${step.toUpperCase()}: Pending</div>`;
+                }
+            });
+
+            const passed = Object.values(testResults).filter(r => r && r.result).length;
+            const total = Object.keys(testResults).length;
+            const allPassed = passed === total;
+
+            summary += `<div class="test-result ${allPassed ? 'pass' : 'fail'}">
+                ${allPassed ? '✅' : '❌'} ${passed}/${total} tests passed
+            </div>`;
+
+            resultsDiv.innerHTML = html;
+            summaryDiv.innerHTML = summary;
+        }
+
+        async function runCompleteTest() {
+            clearResults();
+            updateDisplay();
+
+            try {
+                await testLogin();
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                await testMeEndpoint();
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                await testServicesAPI();
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                await testPersistence();
+
+            } catch (error) {
+                console.error('Complete test failed:', error);
+                addResult('complete', false, `Test failed: ${error.message}`);
+            }
+        }
+
+        async function testLogin() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(LOGIN_CREDENTIALS)
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success && data.data && data.data.token) {
+                    localStorage.setItem('auth_token', data.data.token);
+                    addResult('login', true, `Login successful - User: ${data.data.user.email}, Token: ${data.data.token.substring(0, 50)}...`);
+                } else {
+                    addResult('login', false, `Login failed: ${data.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                addResult('login', false, `Login error: ${error.message}`);
+            }
+        }
+
+        async function testMeEndpoint() {
+            try {
+                const token = localStorage.getItem('auth_token');
+                if (!token) {
+                    addResult('me', false, 'No token available - login first');
+                    return;
+                }
+
+                const response = await fetch(`${API_BASE_URL}/api/auth/me?token=${token}`, {
+                    cache: "no-store"
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success && data.data) {
+                    addResult('me', true, `User data retrieved - Email: ${data.data.email}, Role: ${data.data.role}`);
+                } else {
+                    addResult('me', false, `Failed: ${data.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                addResult('me', false, `Error: ${error.message}`);
+            }
+        }
+
+        async function testServicesAPI() {
+            try {
+                const token = localStorage.getItem('auth_token');
+                if (!token) {
+                    addResult('services', false, 'No token available - login first');
+                    return;
+                }
+
+                const response = await fetch(`${API_BASE_URL}/api/services?token=${token}`);
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    const count = data.data ? data.data.length : 0;
+                    addResult('services', true, `Services API works - Found ${count} services`);
+                } else {
+                    addResult('services', false, `Failed: ${data.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                addResult('services', false, `Error: ${error.message}`);
+            }
+        }
+
+        async function testPersistence() {
+            try {
+                const token = localStorage.getItem('auth_token');
+                if (!token) {
+                    addResult('persistence', false, 'No token available - login first');
+                    return;
+                }
+
+                // Simulate page reload by checking stored token
+                const response = await fetch(`${API_BASE_URL}/api/auth/me?token=${token}`, {
+                    cache: "no-store"
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success && data.data) {
+                    addResult('persistence', true, `Persistence works - User stays authenticated after reload simulation`);
+                } else {
+                    addResult('persistence', false, `Persistence failed - Token not valid after reload simulation`);
+                }
+            } catch (error) {
+                addResult('persistence', false, `Error: ${error.message}`);
+            }
+        }
+
+        function clearResults() {
+            testResults = {
+                login: null,
+                me: null,
+                services: null,
+                persistence: null
+            };
+            updateDisplay();
+        }
+
+        // Check system components on load
+        function checkComponents() {
+            const checkDiv = document.getElementById('componentCheck');
+            let html = '<h3>System Components:</h3>';
+
+            // Check localStorage
+            const hasLocalStorage = typeof Storage !== 'undefined';
+            html += `<div class="test-result ${hasLocalStorage ? 'pass' : 'fail'}">
+                ${hasLocalStorage ? '✅' : '❌'} localStorage: ${hasLocalStorage ? 'Available' : 'Not available'}
+            </div>`;
+
+            // Check fetch API
+            const hasFetch = typeof fetch !== 'undefined';
+            html += `<div class="test-result ${hasFetch ? 'pass' : 'fail'}">
+                ${hasFetch ? '✅' : '❌'} Fetch API: ${hasFetch ? 'Available' : 'Not available'}
+            </div>`;
+
+            // Check if we can reach the API
+            fetch(`${API_BASE_URL}/health`)
+                .then(response => {
+                    html += `<div class="test-result pass">✅ API Connection: Available</div>`;
+                    checkDiv.innerHTML = html;
+                })
+                .catch(error => {
+                    html += `<div class="test-result fail">❌ API Connection: Failed - ${error.message}</div>`;
+                    checkDiv.innerHTML = html;
+                });
+        }
+
+        // Initialize on page load
+        window.onload = function() {
+            checkComponents();
+            updateDisplay();
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GTV Motor - API Endpoints Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border-color: #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border-color: #bee5eb; }
+        .warning { background: #fff3cd; color: #856404; border-color: #ffeaa7; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .endpoint { margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        .endpoint-result { margin: 5px 0; padding: 5px; border-radius: 3px; }
+        .pass { background: #d4edda; color: #155724; }
+        .fail { background: #f8d7da; color: #721c24; }
+        .pending { background: #fff3cd; color: #856404; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+    </style>
+</head>
+<body>
+    <h1>🔧 GTV Motor - API Endpoints Test</h1>
+
+    <div class="section info">
+        <h2>📋 API Endpoints Test</h2>
+        <p><strong>Purpose:</strong> Test all available API endpoints for functionality</p>
+        <p><strong>Scope:</strong> Authentication, Services, Customers, Vehicles, Dashboard, etc.</p>
+    </div>
+
+    <div class="section">
+        <h2>🧪 Test Controls</h2>
+        <button onclick="runAllTests()">Run All Tests</button>
+        <button onclick="testAuthEndpoints()">Test Auth Endpoints</button>
+        <button onclick="testDataEndpoints()">Test Data Endpoints</button>
+        <button onclick="testDashboardEndpoints()">Test Dashboard Endpoints</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+
+    <div class="section">
+        <h2>📊 Test Results</h2>
+        <div id="testResults" class="grid"></div>
+    </div>
+
+    <div class="section">
+        <h2>📈 Summary</h2>
+        <div id="testSummary"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://api.gtvmotor.dev';
+        const LOGIN_CREDENTIALS = {
+            email: 'admin@rhtower.com',
+            password: '}dSNZYD@@b40'
+        };
+
+        let testResults = {};
+        let authToken = null;
+
+        const API_ENDPOINTS = {
+            // Auth endpoints
+            auth: {
+                login: { method: 'POST', url: '/api/auth/login', auth: false },
+                me: { method: 'GET', url: '/api/auth/me', auth: true },
+                logout: { method: 'POST', url: '/api/auth/logout', auth: true },
+                register: { method: 'POST', url: '/api/auth/register', auth: false }
+            },
+
+            // Data endpoints
+            data: {
+                services: { method: 'GET', url: '/api/services', auth: true },
+                customers: { method: 'GET', url: '/api/customers', auth: true },
+                vehicles: { method: 'GET', url: '/api/vehicles', auth: true },
+                bookings: { method: 'GET', url: '/api/bookings', auth: true },
+                warranties: { method: 'GET', url: '/api/warranties', auth: true },
+                inventory: { method: 'GET', url: '/api/inventory', auth: true },
+                staff: { method: 'GET', url: '/api/staff', auth: true },
+                serviceTypes: { method: 'GET', url: '/api/service-types', auth: true }
+            },
+
+            // Dashboard endpoints
+            dashboard: {
+                stats: { method: 'GET', url: '/api/dashboard/stats', auth: true },
+                analytics: { method: 'GET', url: '/api/dashboard/analytics', auth: true }
+            },
+
+            // System endpoints
+            system: {
+                health: { method: 'GET', url: '/health', auth: false },
+                settings: { method: 'GET', url: '/api/settings', auth: true },
+                notifications: { method: 'GET', url: '/api/notifications', auth: true },
+                alerts: { method: 'GET', url: '/api/alerts', auth: true }
+            }
+        };
+
+        function addTestResult(category, endpoint, result, details = '') {
+            if (!testResults[category]) {
+                testResults[category] = {};
+            }
+            testResults[category][endpoint] = { result, details };
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            const resultsDiv = document.getElementById('testResults');
+            const summaryDiv = document.getElementById('testSummary');
+
+            let html = '';
+            let totalTests = 0;
+            let passedTests = 0;
+
+            Object.entries(testResults).forEach(([category, endpoints]) => {
+                html += `<div class="section">
+                    <h3>${category.toUpperCase()}</h3>
+                `;
+
+                Object.entries(endpoints).forEach(([endpoint, data]) => {
+                    totalTests++;
+                    if (data.result) passedTests++;
+
+                    const status = data.result ? 'pass' : 'fail';
+                    const icon = data.result ? '✅' : '❌';
+                    html += `<div class="endpoint">
+                        <div class="endpoint-result ${status}">
+                            ${icon} ${endpoint}: ${data.details}
+                        </div>
+                    </div>`;
+                });
+
+                html += '</div>';
+            });
+
+            const successRate = totalTests > 0 ? Math.round((passedTests / totalTests) * 100) : 0;
+            summaryDiv.innerHTML = `
+                <div class="endpoint-result ${successRate === 100 ? 'pass' : successRate >= 80 ? 'warning' : 'fail'}">
+                    📊 ${passedTests}/${totalTests} tests passed (${successRate}%)
+                </div>
+            `;
+
+            resultsDiv.innerHTML = html;
+        }
+
+        async function runAllTests() {
+            clearResults();
+
+            try {
+                await testAuthEndpoints();
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                await testDataEndpoints();
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                await testDashboardEndpoints();
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                await testSystemEndpoints();
+
+            } catch (error) {
+                console.error('All tests failed:', error);
+            }
+        }
+
+        async function testAuthEndpoints() {
+            // Test login first
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(LOGIN_CREDENTIALS)
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success && data.data && data.data.token) {
+                    authToken = data.data.token;
+                    localStorage.setItem('auth_token', authToken);
+                    addTestResult('auth', 'login', true, `Login successful - User: ${data.data.user.email}`);
+                } else {
+                    addTestResult('auth', 'login', false, `Login failed: ${data.error || 'Unknown error'}`);
+                    return; // Can't test other auth endpoints without login
+                }
+            } catch (error) {
+                addTestResult('auth', 'login', false, `Login error: ${error.message}`);
+                return;
+            }
+
+            // Test /api/auth/me
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/auth/me?token=${authToken}`);
+                const data = await response.json();
+
+                if (response.ok && data.success && data.data) {
+                    addTestResult('auth', 'me', true, `User data retrieved - Email: ${data.data.email}`);
+                } else {
+                    addTestResult('auth', 'me', false, `Failed: ${data.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                addTestResult('auth', 'me', false, `Error: ${error.message}`);
+            }
+
+            // Test logout
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/auth/logout?token=${authToken}`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    addTestResult('auth', 'logout', true, 'Logout successful');
+                } else {
+                    addTestResult('auth', 'logout', false, `Failed: ${response.status}`);
+                }
+            } catch (error) {
+                addTestResult('auth', 'logout', false, `Error: ${error.message}`);
+            }
+        }
+
+        async function testDataEndpoints() {
+            if (!authToken) {
+                addTestResult('data', 'all', false, 'No auth token - login first');
+                return;
+            }
+
+            const endpoints = Object.entries(API_ENDPOINTS.data);
+
+            for (const [endpoint, config] of endpoints) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}${config.url}?token=${authToken}`);
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        const count = data.data ? (Array.isArray(data.data) ? data.data.length : 1) : 0;
+                        addTestResult('data', endpoint, true, `Found ${count} records`);
+                    } else {
+                        addTestResult('data', endpoint, false, `Failed: ${data.error || 'Unknown error'}`);
+                    }
+                } catch (error) {
+                    addTestResult('data', endpoint, false, `Error: ${error.message}`);
+                }
+
+                // Small delay between requests
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+        }
+
+        async function testDashboardEndpoints() {
+            if (!authToken) {
+                addTestResult('dashboard', 'all', false, 'No auth token - login first');
+                return;
+            }
+
+            const endpoints = Object.entries(API_ENDPOINTS.dashboard);
+
+            for (const [endpoint, config] of endpoints) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}${config.url}?token=${authToken}`);
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        addTestResult('dashboard', endpoint, true, `Dashboard data retrieved`);
+                    } else {
+                        addTestResult('dashboard', endpoint, false, `Failed: ${data.error || 'Unknown error'}`);
+                    }
+                } catch (error) {
+                    addTestResult('dashboard', endpoint, false, `Error: ${error.message}`);
+                }
+
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+        }
+
+        async function testSystemEndpoints() {
+            const endpoints = Object.entries(API_ENDPOINTS.system);
+
+            for (const [endpoint, config] of endpoints) {
+                try {
+                    let url = `${API_BASE_URL}${config.url}`;
+
+                    // Add token for authenticated endpoints
+                    if (config.auth && authToken) {
+                        url += `?token=${authToken}`;
+                    }
+
+                    const response = await fetch(url);
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        addTestResult('system', endpoint, true, `System endpoint working`);
+                    } else {
+                        addTestResult('system', endpoint, false, `Failed: ${data.error || 'Unknown error'}`);
+                    }
+                } catch (error) {
+                    addTestResult('system', endpoint, false, `Error: ${error.message}`);
+                }
+
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+        }
+
+        function clearResults() {
+            testResults = {};
+            updateDisplay();
+        }
+
+        // Initialize on page load
+        window.onload = function() {
+            updateDisplay();
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GTV Motor - Page Reload Persistence Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border-color: #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border-color: #bee5eb; }
+        .warning { background: #fff3cd; color: #856404; border-color: #ffeaa7; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .code { background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace; white-space: pre-wrap; }
+        .test-step { margin: 10px 0; padding: 10px; border-left: 4px solid #007bff; background: #f8f9fa; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .authenticated { background: #d4edda; color: #155724; }
+        .not-authenticated { background: #f8d7da; color: #721c24; }
+        .loading { background: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body>
+    <h1>🔄 GTV Motor - Page Reload Persistence Test</h1>
+
+    <div class="section info">
+        <h2>📋 Persistence Test Instructions</h2>
+        <p><strong>Purpose:</strong> Verify that authentication persists across page reloads</p>
+        <p><strong>Test:</strong> Login → Reload page → Check if still authenticated</p>
+    </div>
+
+    <div class="section">
+        <h2>🔐 Authentication Status</h2>
+        <div id="authStatus" class="status loading">Checking authentication status...</div>
+        <div id="userInfo"></div>
+    </div>
+
+    <div class="section">
+        <h2>🧪 Test Actions</h2>
+        <button onclick="login()">1. Login</button>
+        <button onclick="checkAuth()">2. Check Auth Status</button>
+        <button onclick="simulateReload()">3. Simulate Page Reload</button>
+        <button onclick="testServices()">4. Test Services API</button>
+        <button onclick="logout()">5. Logout</button>
+        <div id="testResults"></div>
+    </div>
+
+    <div class="section">
+        <h2>📊 Persistence Test Results</h2>
+        <div id="persistenceResults"></div>
+    </div>
+
+    <div class="section success">
+        <h2>✅ Expected Behavior</h2>
+        <ul>
+            <li><strong>After Login:</strong> User should be authenticated</li>
+            <li><strong>After Reload:</strong> User should still be authenticated</li>
+            <li><strong>Services API:</strong> Should work with persisted auth</li>
+            <li><strong>No 401 Errors:</strong> Should not see unauthorized errors</li>
+        </ul>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://api.gtvmotor.dev';
+        const LOGIN_CREDENTIALS = {
+            email: 'admin@rhtower.com',
+            password: '}dSNZYD@@b40'
+        };
+
+        let testHistory = [];
+
+        function addTestResult(action, result, details = '') {
+            testHistory.push({
+                timestamp: new Date().toLocaleTimeString(),
+                action,
+                result,
+                details
+            });
+            updatePersistenceResults();
+        }
+
+        function updatePersistenceResults() {
+            const resultsDiv = document.getElementById('persistenceResults');
+            let html = '<h3>Test History:</h3>';
+
+            testHistory.forEach(test => {
+                const status = test.result ? 'success' : 'error';
+                const icon = test.result ? '✅' : '❌';
+                html += `<div class="test-step ${status}">
+                    <strong>${test.timestamp}</strong> - ${icon} ${test.action}: ${test.details}
+                </div>`;
+            });
+
+            resultsDiv.innerHTML = html;
+        }
+
+        async function checkAuth() {
+            const statusDiv = document.getElementById('authStatus');
+            const userDiv = document.getElementById('userInfo');
+
+            try {
+                statusDiv.className = 'status loading';
+                statusDiv.textContent = 'Checking authentication status...';
+
+                const token = localStorage.getItem('auth_token');
+
+                if (!token) {
+                    statusDiv.className = 'status not-authenticated';
+                    statusDiv.textContent = '❌ Not authenticated - No token found';
+                    userDiv.innerHTML = '';
+                    addTestResult('Check Auth', false, 'No token in localStorage');
+                    return;
+                }
+
+                // Check token with backend
+                const response = await fetch(`${API_BASE_URL}/api/auth/me?token=${token}`, {
+                    cache: "no-store"
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success && data.data) {
+                    statusDiv.className = 'status authenticated';
+                    statusDiv.textContent = '✅ Authenticated';
+                    userDiv.innerHTML = `
+                        <div class="test-step success">
+                            <strong>User:</strong> ${data.data.email}<br>
+                            <strong>Role:</strong> ${data.data.role}<br>
+                            <strong>Name:</strong> ${data.data.full_name}<br>
+                            <strong>Token:</strong> ${token.substring(0, 50)}...
+                        </div>
+                    `;
+                    addTestResult('Check Auth', true, `User: ${data.data.email}`);
+                } else {
+                    statusDiv.className = 'status not-authenticated';
+                    statusDiv.textContent = '❌ Not authenticated - Token invalid or expired';
+                    userDiv.innerHTML = '';
+                    addTestResult('Check Auth', false, `Token invalid: ${data.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                statusDiv.className = 'status not-authenticated';
+                statusDiv.textContent = '❌ Error checking authentication';
+                userDiv.innerHTML = '';
+                addTestResult('Check Auth', false, `Error: ${error.message}`);
+            }
+        }
+
+        async function login() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(LOGIN_CREDENTIALS)
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success && data.data && data.data.token) {
+                    localStorage.setItem('auth_token', data.data.token);
+                    addTestResult('Login', true, `User: ${data.data.user.email}`);
+                    await checkAuth(); // Update status
+                } else {
+                    addTestResult('Login', false, `Failed: ${data.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                addTestResult('Login', false, `Error: ${error.message}`);
+            }
+        }
+
+        async function simulateReload() {
+            addTestResult('Simulate Reload', true, 'Clearing page state and checking persistence...');
+
+            // Clear any in-memory state (simulate page reload)
+            // The token should still be in localStorage
+
+            setTimeout(async () => {
+                await checkAuth();
+            }, 500);
+        }
+
+        async function testServices() {
+            try {
+                const token = localStorage.getItem('auth_token');
+
+                if (!token) {
+                    addTestResult('Services API', false, 'No token available');
+                    return;
+                }
+
+                const response = await fetch(`${API_BASE_URL}/api/services?token=${token}`);
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    const count = data.data ? data.data.length : 0;
+                    addTestResult('Services API', true, `Found ${count} services`);
+                } else {
+                    addTestResult('Services API', false, `Failed: ${data.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                addTestResult('Services API', false, `Error: ${error.message}`);
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('auth_token');
+            addTestResult('Logout', true, 'Token removed from localStorage');
+            checkAuth();
+        }
+
+        // Check authentication status on page load
+        window.onload = function() {
+            checkAuth();
+        };
+    </script>
+</body>
+</html>

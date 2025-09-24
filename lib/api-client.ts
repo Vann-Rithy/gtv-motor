@@ -112,12 +112,6 @@ class ApiClient {
   // ---------- Auth (optional helpers) ----------
   async me() {
     // Use URL parameter method for consistency
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('auth_token')
-      if (token) {
-        return this.request("/api/auth/me", { method: "GET" })
-      }
-    }
     return this.request("/api/auth/me", { method: "GET" })
   }
   async login(body: { email: string; password: string }) {

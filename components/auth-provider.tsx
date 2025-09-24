@@ -40,89 +40,74 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const didInit = useRef(false)
 
-  // Get token from localStorage on init
+  // Get token from localStorage on init and check authentication
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedToken = localStorage.getItem('auth_token')
-      if (storedToken) {
-        setToken(storedToken)
-      }
-    }
-  }, [])
+    const initializeAuth = async () => {
+      if (typeof window !== 'undefined') {
+        const storedToken = localStorage.getItem('auth_token')
+        if (storedToken) {
+          console.log("[auth-provider] Token found in localStorage, checking authentication")
+          setToken(storedToken)
 
-  const fetchUser = async () => {
-    try {
-      setLoading(true)
+          // Immediately check authentication with the stored token
+          try {
+            setLoading(true)
+            const url = `${API_ENDPOINTS.AUTH.ME}?token=${storedToken}`
 
-      // Only make request if we have a token
-      if (!token) {
-        console.log("[auth-provider] No token available, skipping user fetch")
-        setUser(null)
-        setIsAuthenticated(false)
-        return
-      }
+            const res = await fetch(url, {
+              cache: "no-store",
+              headers: {
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
+              }
+            })
 
-      // Use URL parameter method instead of Authorization header
-      const url = `${API_ENDPOINTS.AUTH.ME}?token=${token}`
+            if (res.status === 401) {
+              console.log("[auth-provider] Stored token is expired, clearing it")
+              localStorage.removeItem('auth_token')
+              setToken(null)
+              setUser(null)
+              setIsAuthenticated(false)
+            } else if (res.ok) {
+              const ct = res.headers.get("content-type") || ""
+              const json = ct.includes("application/json") ? await res.json() : { success: false }
 
-      const res = await fetch(url, {
-        cache: "no-store",
-        credentials: "include",
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
+              if (json?.success && json.data) {
+                console.log("[auth-provider] User authenticated successfully with stored token")
+                setUser(json.data as User)
+                setIsAuthenticated(true)
+              } else {
+                console.log("[auth-provider] Authentication failed with stored token")
+                localStorage.removeItem('auth_token')
+                setToken(null)
+                setUser(null)
+                setIsAuthenticated(false)
+              }
+            }
+          } catch (e) {
+            console.error("[auth-provider] Error checking stored token:", e)
+            localStorage.removeItem('auth_token')
+            setToken(null)
+            setUser(null)
+            setIsAuthenticated(false)
+          } finally {
+            setLoading(false)
+          }
+        } else {
+          console.log("[auth-provider] No token found in localStorage")
+          setLoading(false)
         }
-      })
-
-      // Handle 401 (Unauthorized) gracefully - token might be expired
-      if (res.status === 401) {
-        console.log("[auth-provider] 401 Unauthorized - token expired or invalid")
-        localStorage.removeItem('auth_token')
-        setToken(null)
-        setUser(null)
-        setIsAuthenticated(false)
-        return
       }
-
-      const ct = res.headers.get("content-type") || ""
-      const json = ct.includes("application/json") ? await res.json() : { success: false }
-
-      if (res.ok && json?.success && json.data) {
-        console.log("[auth-provider] User authenticated successfully")
-        setUser(json.data as User)
-        setIsAuthenticated(true)
-      } else {
-        console.log("[auth-provider] Authentication failed:", json.error || "Unknown error")
-        setUser(null)
-        setIsAuthenticated(false)
-      }
-    } catch (e) {
-      console.error("[auth-provider] /api/auth/me failed:", e)
-      setUser(null)
-      setIsAuthenticated(false)
-    } finally {
-      setLoading(false)
     }
-  }
 
-  useEffect(() => {
-    if (didInit.current) return
-    didInit.current = true
-
-    // Only check authentication if we have a token
-    if (token) {
-      console.log("[auth-provider] Token found, checking authentication status")
-      void fetchUser()
-    } else {
-      console.log("[auth-provider] No token found, skipping authentication check")
-      setLoading(false)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token])
+    initializeAuth()
+  }, [])
 
   // Watch for pathname changes and handle authentication
   useEffect(() => {
-    if (didInit.current && !loading) {
+    if (!loading) {
+      didInit.current = true
+
       // If user is authenticated and on login/register page, redirect to dashboard
       if (isAuthenticated && isPublicPath(pathname)) {
         console.log("[auth-provider] Authenticated user on public route, redirecting to dashboard")
@@ -178,6 +163,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null)
       setIsAuthenticated(false)
       router.replace("/login")
+    }
+  }
+
+  const fetchUser = async () => {
+    if (!token) {
+      console.log("[auth-provider] No token available for fetchUser")
+      return
+    }
+
+    try {
+      setLoading(true)
+      const url = `${API_ENDPOINTS.AUTH.ME}?token=${token}`
+
+      const res = await fetch(url, {
+        cache: "no-store",
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      })
+
+      if (res.status === 401) {
+        console.log("[auth-provider] Token expired during refresh")
+        localStorage.removeItem('auth_token')
+        setToken(null)
+        setUser(null)
+        setIsAuthenticated(false)
+      } else if (res.ok) {
+        const ct = res.headers.get("content-type") || ""
+        const json = ct.includes("application/json") ? await res.json() : { success: false }
+
+        if (json?.success && json.data) {
+          console.log("[auth-provider] User refreshed successfully")
+          setUser(json.data as User)
+          setIsAuthenticated(true)
+        } else {
+          console.log("[auth-provider] Refresh failed")
+          setUser(null)
+          setIsAuthenticated(false)
+        }
+      }
+    } catch (e) {
+      console.error("[auth-provider] Error refreshing user:", e)
+      setUser(null)
+      setIsAuthenticated(false)
+    } finally {
+      setLoading(false)
     }
   }
 

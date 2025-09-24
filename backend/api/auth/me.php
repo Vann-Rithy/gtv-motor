@@ -9,8 +9,8 @@ require_once __DIR__ . '/../../includes/Request.php';
 require_once __DIR__ . '/../../includes/Response.php';
 
 try {
-    // Get token from Authorization header
-    $token = Request::authorization();
+    // Get token from URL parameter first, then Authorization header
+    $token = $_GET['token'] ?? Request::authorization();
 
     if (!$token) {
         Response::unauthorized('No authorization token provided');
