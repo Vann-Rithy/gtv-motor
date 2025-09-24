@@ -1,17 +1,14 @@
 <?php
 /**
- * Professional Get Current User API
- * GTV Motor PHP Backend
+ * Simple Working Get Current User API
+ * GTV Motor PHP Backend - Quick Fix Version
  */
 
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../includes/Request.php';
 require_once __DIR__ . '/../../includes/Response.php';
-require_once __DIR__ . '/../../includes/ProfessionalAuth.php';
 
 try {
-    $auth = new ProfessionalAuth();
-
     // Get token from Authorization header
     $token = Request::authorization();
 
@@ -19,14 +16,50 @@ try {
         Response::unauthorized('No authorization token provided');
     }
 
-    // Validate token and get user
-    $user = $auth->validateToken($token);
+    // Remove 'Bearer ' prefix if present
+    $token = str_replace('Bearer ', '', $token);
 
-    if (!$user) {
-        Response::unauthorized('Invalid or expired token');
+    // Simple token validation (base64 encoded JSON)
+    try {
+        $payload = json_decode(base64_decode($token), true);
+
+        if (!$payload || !isset($payload['user_id']) || !isset($payload['exp'])) {
+            Response::unauthorized('Invalid token format');
+        }
+
+        // Check if token is expired
+        if ($payload['exp'] < time()) {
+            Response::unauthorized('Token expired');
+        }
+
+        // Get user from database
+        require_once __DIR__ . '/../../config/database.php';
+        $database = new Database();
+        $conn = $database->getConnection();
+
+        $stmt = $conn->prepare("
+            SELECT u.*, s.name as staff_name, s.role as staff_role
+            FROM users u
+            LEFT JOIN staff s ON u.staff_id = s.id
+            WHERE u.id = ? AND u.is_active = 1
+        ");
+        $stmt->execute([$payload['user_id']]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$user) {
+            Response::unauthorized('User not found or inactive');
+        }
+
+        // Remove sensitive data
+        unset($user['password_hash']);
+        unset($user['password_reset_token']);
+        unset($user['password_reset_expires']);
+
+        Response::success($user, 'User data retrieved successfully');
+
+    } catch (Exception $e) {
+        Response::unauthorized('Invalid token');
     }
-
-    Response::success($user, 'User data retrieved successfully');
 
 } catch (Exception $e) {
     error_log("Get user error: " . $e->getMessage());
