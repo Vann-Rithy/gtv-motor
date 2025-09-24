@@ -5,13 +5,21 @@
  */
 
 // Load environment variables
-if (file_exists(__DIR__ . '/../.env')) {
-    $lines = file(__DIR__ . '/../.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    foreach ($lines as $line) {
-        if (strpos($line, '=') !== false && strpos($line, '#') !== 0) {
-            list($key, $value) = explode('=', $line, 2);
-            $_ENV[trim($key)] = trim($value);
+$envFiles = [
+    __DIR__ . '/../.env',
+    __DIR__ . '/../env.production'
+];
+
+foreach ($envFiles as $envFile) {
+    if (file_exists($envFile)) {
+        $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        foreach ($lines as $line) {
+            if (strpos($line, '=') !== false && strpos($line, '#') !== 0) {
+                list($key, $value) = explode('=', $line, 2);
+                $_ENV[trim($key)] = trim($value);
+            }
         }
+        break; // Use the first found env file
     }
 }
 
@@ -26,18 +34,25 @@ $allowed_origins = [
     'http://127.0.0.1:3001',
     'https://gtvmotor.dev',
     'https://www.gtvmotor.dev',
-    'https://vercel.app' // For Vercel deployments
+    'https://gtv-motor.vercel.app',
+    'https://gtv-motor-git-main.vercel.app',
+    'https://gtv-motor-git-develop.vercel.app'
 ];
 
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 if (in_array($origin, $allowed_origins)) {
     header("Access-Control-Allow-Origin: $origin");
 } else {
-    header('Access-Control-Allow-Origin: http://localhost:3000');
+    // For development, allow localhost
+    if (strpos($origin, 'localhost') !== false || strpos($origin, '127.0.0.1') !== false) {
+        header("Access-Control-Allow-Origin: $origin");
+    } else {
+        header('Access-Control-Allow-Origin: https://gtv-motor.vercel.app');
+    }
 }
 
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, PATCH');
-header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept, Origin');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, Pragma');
 header('Access-Control-Allow-Credentials: true');
 header('Access-Control-Max-Age: 86400'); // 24 hours
 header('Content-Type: application/json; charset=utf-8');

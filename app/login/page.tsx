@@ -24,8 +24,8 @@ export default function LoginPage() {
   const [success, setSuccess] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { isAuthenticated } = useAuth()
-  
+  const { isAuthenticated, login } = useAuth()
+
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
@@ -41,32 +41,21 @@ export default function LoginPage() {
     setSuccess(false)
 
     try {
-      const response = await fetch(API_ENDPOINTS.AUTH.LOGIN, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: credentials.email,
-          password: credentials.password,
-        }),
-      })
+      const success = await login(credentials.email, credentials.password)
 
-      const result = await response.json()
-
-      if (result.success) {
+      if (success) {
         setSuccess(true)
         setError("")
-        
+
         // Get redirect URL from query params or default to dashboard
         const redirectTo = searchParams.get("redirect") || "/"
-        
+
         // Show success message briefly before redirecting
         setTimeout(() => {
-          window.location.href = redirectTo
+          router.replace(redirectTo)
         }, 1000)
       } else {
-        setError(result.error || "Login failed. Please check your credentials.")
+        setError("Login failed. Please check your credentials.")
         setSuccess(false)
       }
     } catch (err) {
@@ -95,12 +84,12 @@ export default function LoginPage() {
         <CardHeader className="text-center border-0 bg-transparent pb-2">
           <div className="flex justify-center mb-2">
             <div className="relative w-24 h-24">
-              <Image 
-                src="/Logo GTV.png" 
-                alt="GTV Logo" 
+              <Image
+                src="/Logo GTV.png"
+                alt="GTV Logo"
                 fill
                 style={{ objectFit: 'contain' }}
-                priority 
+                priority
               />
             </div>
           </div>
@@ -158,14 +147,14 @@ export default function LoginPage() {
                   </Button>
                 </div>
               </div>
-              
+
               {error && (
                 <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-md">
                   <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
                   <p className="text-sm text-red-600">{error}</p>
                 </div>
               )}
-              
+
               <Button
                 type="submit"
                 className="w-full rounded-full bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
@@ -182,7 +171,7 @@ export default function LoginPage() {
               </Button>
             </form>
           )}
-          
+
           {!success && (
             <div className="mt-4 text-center">
               <Link href="/register" className="text-sm text-blue-600 hover:text-blue-700">
