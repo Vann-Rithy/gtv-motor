@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GTV Motor - API Client Fix Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border-color: #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border-color: #bee5eb; }
+        .warning { background: #fff3cd; color: #856404; border-color: #ffeaa7; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .code { background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>🔧 GTV Motor - API Client Fix Test</h1>
+
+    <div class="section warning">
+        <h2>❌ Services Page Issue Fixed</h2>
+        <p><strong>Problem:</strong> Services page showing "Authentication required"</p>
+        <p><strong>Cause:</strong> API client was using cookies instead of URL parameter authentication</p>
+        <p><strong>Solution:</strong> Updated API client to use URL parameter method</p>
+    </div>
+
+    <div class="section">
+        <h2>Test API Client Authentication</h2>
+        <button onclick="testLogin()">Test Login</button>
+        <button onclick="testServices()">Test Services API</button>
+        <button onclick="testDashboard()">Test Dashboard API</button>
+        <div id="testResults"></div>
+    </div>
+
+    <div class="section">
+        <h2>API Client Fix Applied</h2>
+        <div class="code">// lib/api-client.ts - Fixed
+private async request<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  let url = `${this.baseUrl}${endpoint}`
+
+  // Add token to URL parameter for authenticated endpoints
+  if (typeof window !== 'undefined' && !endpoint.startsWith('/api/auth/')) {
+    const token = localStorage.getItem('auth_token')
+    if (token) {
+      const separator = url.includes('?') ? '&' : '?'
+      url = `${url}${separator}token=${token}`
+    }
+  }
+
+  // Removed credentials: "include" - no more cookie-based auth
+  const config: RequestInit = {
+    method,
+    body: method === "GET" ? undefined : body,
+    headers: baseHeaders,
+    cache: method === "GET" ? "no-store" : options.cache,
+    signal: controller.signal,
+    ...options,
+  }
+}</div>
+    </div>
+
+    <div class="section">
+        <h2>Key Changes Made</h2>
+        <ul>
+            <li>✅ <strong>URL Parameter Authentication:</strong> All API calls now use ?token=${token}</li>
+            <li>✅ <strong>Removed Cookie Auth:</strong> No more credentials: "include"</li>
+            <li>✅ <strong>Consistent Method:</strong> Same authentication method across all components</li>
+            <li>✅ <strong>Automatic Token Injection:</strong> API client automatically adds token to requests</li>
+            <li>✅ <strong>Exclude Auth Endpoints:</strong> Login/logout don't get token parameter</li>
+        </ul>
+    </div>
+
+    <div class="section success">
+        <h2>✅ Expected Results</h2>
+        <p><strong>Services Page:</strong> Should now load services data instead of "Authentication required"</p>
+        <p><strong>Dashboard:</strong> Should load dashboard stats</p>
+        <p><strong>All Pages:</strong> Should work with proper authentication</p>
+        <p><strong>Console:</strong> No more 401 Unauthorized errors</p>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://api.gtvmotor.dev';
+        const LOGIN_CREDENTIALS = {
+            email: 'admin@rhtower.com',
+            password: '}dSNZYD@@b40'
+        };
+
+        async function testLogin() {
+            const resultDiv = document.getElementById('testResults');
+            resultDiv.innerHTML = '<p>Testing login...</p>';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(LOGIN_CREDENTIALS)
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    localStorage.setItem('auth_token', data.data.token);
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ Login successful!<br>
+                            User: ${data.data.user.email}<br>
+                            Token stored: ${data.data.token.substring(0, 50)}...
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Login failed: ${data.error}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testServices() {
+            const resultDiv = document.getElementById('testResults');
+            resultDiv.innerHTML = '<p>Testing services API...</p>';
+
+            try {
+                const token = localStorage.getItem('auth_token');
+
+                if (!token) {
+                    resultDiv.innerHTML = '<div class="error">❌ No token found. Please login first.</div>';
+                    return;
+                }
+
+                // Test services API with URL parameter (like the fixed API client)
+                const response = await fetch(`${API_BASE_URL}/api/services?token=${token}`);
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ Services API works!<br>
+                            Services found: ${data.data ? data.data.length : 0}<br>
+                            <strong>No more "Authentication required"!</strong>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Services API failed: ${data.error}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testDashboard() {
+            const resultDiv = document.getElementById('testResults');
+            resultDiv.innerHTML = '<p>Testing dashboard API...</p>';
+
+            try {
+                const token = localStorage.getItem('auth_token');
+
+                if (!token) {
+                    resultDiv.innerHTML = '<div class="error">❌ No token found. Please login first.</div>';
+                    return;
+                }
+
+                // Test dashboard API with URL parameter
+                const response = await fetch(`${API_BASE_URL}/api/dashboard/stats?token=${token}`);
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ Dashboard API works!<br>
+                            Stats loaded successfully<br>
+                            <strong>All APIs now working!</strong>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Dashboard API failed: ${data.error}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

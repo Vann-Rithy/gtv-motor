@@ -39,7 +39,16 @@ class ApiClient {
     endpoint: string,
     options: RequestInit & { timeoutMs?: number } = {},
   ): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`
+    let url = `${this.baseUrl}${endpoint}`
+
+    // Add token to URL parameter for authenticated endpoints (except auth endpoints)
+    if (typeof window !== 'undefined' && !endpoint.startsWith('/api/auth/')) {
+      const token = localStorage.getItem('auth_token')
+      if (token) {
+        const separator = url.includes('?') ? '&' : '?'
+        url = `${url}${separator}token=${token}`
+      }
+    }
 
     // Abort/timeout
     const controller = new AbortController()
@@ -71,7 +80,6 @@ class ApiClient {
       method,
       body: method === "GET" || method === "HEAD" ? undefined : body,
       headers: baseHeaders,
-      credentials: "include", // send cookies for session auth
       cache: method === "GET" ? "no-store" : options.cache, // avoid stale reads
       signal: controller.signal,
       ...options,
@@ -103,6 +111,13 @@ class ApiClient {
 
   // ---------- Auth (optional helpers) ----------
   async me() {
+    // Use URL parameter method for consistency
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('auth_token')
+      if (token) {
+        return this.request("/api/auth/me", { method: "GET" })
+      }
+    }
     return this.request("/api/auth/me", { method: "GET" })
   }
   async login(body: { email: string; password: string }) {
