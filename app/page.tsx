@@ -22,6 +22,7 @@ export default function Dashboard() {
     refreshDashboard
   } = useDashboard()
 
+
   if (isLoading && !stats) {
     return (
       <div className="p-4 lg:p-8 space-y-6">
@@ -51,7 +52,7 @@ export default function Dashboard() {
             <div className="text-center">
               <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">Error Loading Dashboard</h3>
-              <p className="text-gray-600 mb-4">{error}</p>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
               <Button onClick={refreshDashboard}>Try Again</Button>
             </div>
           </CardContent>
@@ -66,7 +67,7 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
-            Welcome back, {user?.full_name || 'User'}! 👋
+            Welcome back, {user?.full_name || user?.username || 'User'}! 👋
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             Here's what's happening with your business today.
@@ -165,7 +166,7 @@ export default function Dashboard() {
                       </div>
                       <div>
                         <p className="font-medium text-sm">{service.customer_name}</p>
-                        <p className="text-xs text-gray-500">{service.service_type_name}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{service.service_type_name}</p>
                       </div>
                     </div>
                     <div className="text-right">
@@ -178,8 +179,8 @@ export default function Dashboard() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">
-                <Wrench className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <Wrench className="h-12 w-12 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
                 <p>No recent services</p>
               </div>
             )}
@@ -223,7 +224,7 @@ export default function Dashboard() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                 <CheckCircle className="h-12 w-12 mx-auto mb-2 text-green-300" />
                 <p>No active alerts</p>
               </div>

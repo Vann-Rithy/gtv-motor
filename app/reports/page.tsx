@@ -8,14 +8,14 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { 
-  ArrowLeft, 
-  Download, 
-  DollarSign, 
-  TrendingUp, 
-  Users, 
-  Shield, 
-  Package, 
+import {
+  ArrowLeft,
+  Download,
+  DollarSign,
+  TrendingUp,
+  Users,
+  Shield,
+  Package,
   Calendar,
   RefreshCw,
   FileText,
@@ -183,7 +183,17 @@ export default function Reports() {
       const summaryResponse = await fetch(`/api/reports/summary?from=${dateRange.from}&to=${dateRange.to}`)
       if (summaryResponse.ok) {
         const summary = await summaryResponse.json()
-        setSummaryData(summary)
+        // Ensure all required properties exist with default values
+        const safeSummary = {
+          totalRevenue: summary.totalRevenue || 0,
+          totalServices: summary.totalServices || 0,
+          averageServiceValue: summary.averageServiceValue || 0,
+          topService: summary.topService || 'N/A',
+          customerGrowth: summary.customerGrowth || 0,
+          servicesByType: summary.servicesByType || [],
+          monthlyTrend: summary.monthlyTrend || []
+        }
+        setSummaryData(safeSummary)
         setErrors(prev => prev.filter(e => !e.includes('Summary')))
       } else {
         console.error("Summary report failed:", summaryResponse.status, summaryResponse.statusText)
@@ -194,7 +204,18 @@ export default function Reports() {
       const warrantyResponse = await fetch(`/api/reports/warranty?from=${dateRange.from}&to=${dateRange.to}`)
       if (warrantyResponse.ok) {
         const warranty = await warrantyResponse.json()
-        setWarrantyData(warranty)
+        // Ensure all required properties exist with default values
+        const safeWarranty = {
+          summary: {
+            totalWarranties: warranty.summary?.totalWarranties || 0,
+            activeWarranties: warranty.summary?.activeWarranties || 0,
+            expiredWarranties: warranty.summary?.expiredWarranties || 0,
+            expiringSoon: warranty.summary?.expiringSoon || 0,
+            totalCostCovered: warranty.summary?.totalCostCovered || 0
+          },
+          claims: warranty.claims || []
+        }
+        setWarrantyData(safeWarranty)
       } else {
         console.error("Warranty report failed:", warrantyResponse.status, warrantyResponse.statusText)
       }
@@ -203,7 +224,19 @@ export default function Reports() {
       const customerResponse = await fetch(`/api/reports/customer?from=${dateRange.from}&to=${dateRange.to}`)
       if (customerResponse.ok) {
         const customer = await customerResponse.json()
-        setCustomerData(customer)
+        // Ensure all required properties exist with default values
+        const safeCustomer = {
+          summary: {
+            totalCustomers: customer.summary?.totalCustomers || 0,
+            activeCustomers: customer.summary?.activeCustomers || 0,
+            averageServiceValue: customer.summary?.averageServiceValue || 0
+          },
+          retention: {
+            repeatCustomers: customer.retention?.repeatCustomers || 0
+          },
+          topCustomers: customer.topCustomers || []
+        }
+        setCustomerData(safeCustomer)
       } else {
         console.error("Customer report failed:", customerResponse.status, customerResponse.statusText)
       }
@@ -212,7 +245,16 @@ export default function Reports() {
       const inventoryResponse = await fetch(`/api/reports/inventory?from=${dateRange.from}&to=${dateRange.to}`)
       if (inventoryResponse.ok) {
         const inventory = await inventoryResponse.json()
-        setInventoryData(inventory)
+        // Ensure all required properties exist with default values
+        const safeInventory = {
+          summary: {
+            totalItems: inventory.summary?.totalItems || 0,
+            lowStockItems: inventory.summary?.lowStockItems || 0,
+            totalValue: inventory.summary?.totalValue || 0
+          },
+          lowStock: inventory.lowStock || []
+        }
+        setInventoryData(safeInventory)
       } else {
         console.error("Inventory report failed:", inventoryResponse.status, inventoryResponse.statusText)
       }
@@ -230,7 +272,7 @@ export default function Reports() {
   const handleExportReport = async (format: string) => {
     try {
       let data: any
-      
+
       // Get the appropriate data based on active tab
       switch (activeTab) {
         case 'summary':
@@ -249,15 +291,15 @@ export default function Reports() {
           alert('No data available for export')
           return
       }
-      
+
       if (!data) {
         alert('Please generate a report first before exporting')
         return
       }
-      
+
       // Format data for export
       const exportData = formatDataForExport(activeTab, data, dateRange)
-      
+
       // Export based on format
       switch (format) {
         case 'CSV':
@@ -278,7 +320,10 @@ export default function Reports() {
     }
   }
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number | undefined | null) => {
+    if (amount === undefined || amount === null || isNaN(amount)) {
+      return '$0.00'
+    }
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD'
@@ -291,7 +336,7 @@ export default function Reports() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-white dark:bg-gray-800 shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-4">
             <div className="flex items-center">
@@ -301,7 +346,7 @@ export default function Reports() {
                   Back
                 </Button>
               </Link>
-              <h1 className="text-2xl font-bold text-gray-900">Reports & Analytics</h1>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Reports & Analytics</h1>
             </div>
             <Button onClick={fetchReportData} disabled={loading}>
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
@@ -345,13 +390,13 @@ export default function Reports() {
                 </Button>
               </div>
             </div>
-            
+
             {/* Error Display */}
             {errors.length > 0 && (
               <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                 <h4 className="font-medium text-red-800 mb-2">Report Generation Errors:</h4>
                 <ul className="text-sm text-red-700 space-y-1">
-                  {errors.map((error, index) => (
+                  {(errors || []).map((error, index) => (
                     <li key={index}>• {error}</li>
                   ))}
                 </ul>
@@ -392,32 +437,32 @@ export default function Reports() {
                 <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
                 <p>Loading summary report...</p>
               </div>
-            ) : summaryData ? (
+            ) : summaryData && summaryData.servicesByType ? (
               <>
                 {/* Export Button */}
                 <div className="flex justify-end mb-4">
                   <div className="flex space-x-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleExportReport("CSV")}
                       className="flex items-center gap-2"
                     >
                       <Download className="h-4 w-4" />
                       CSV
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleExportReport("Excel")}
                       className="flex items-center gap-2"
                     >
                       <Download className="h-4 w-4" />
                       Excel
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleExportReport("PDF")}
                       className="flex items-center gap-2"
                     >
@@ -426,7 +471,7 @@ export default function Reports() {
                     </Button>
                   </div>
                 </div>
-                
+
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   <Card>
@@ -437,7 +482,7 @@ export default function Reports() {
                     <CardContent>
                       <div className="text-2xl font-bold">{formatCurrency(summaryData.totalRevenue)}</div>
                       <p className="text-xs text-muted-foreground">
-                        {summaryData.customerGrowth > 0 ? '+' : ''}{summaryData.customerGrowth.toFixed(1)}% from last period
+                        {summaryData.customerGrowth > 0 ? '+' : ''}{(summaryData.customerGrowth || 0).toFixed(1)}% from last period
                       </p>
                     </CardContent>
                   </Card>
@@ -448,7 +493,7 @@ export default function Reports() {
                       <TrendingUp className="h-4 w-4 text-blue-500" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">{summaryData.totalServices}</div>
+                      <div className="text-2xl font-bold">{summaryData.totalServices || 0}</div>
                       <p className="text-xs text-muted-foreground">Services completed</p>
                     </CardContent>
                   </Card>
@@ -470,7 +515,7 @@ export default function Reports() {
                       <Users className="h-4 w-4 text-orange-500" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">{summaryData.topService}</div>
+                      <div className="text-2xl font-bold">{summaryData.topService || 'N/A'}</div>
                       <p className="text-xs text-muted-foreground">Most requested</p>
                     </CardContent>
                   </Card>
@@ -484,22 +529,22 @@ export default function Reports() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {summaryData.servicesByType.map((service, index) => (
+                      {(summaryData.servicesByType || []).map((service, index) => (
                         <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
                           <div className="flex-1">
                             <h3 className="font-medium">{service.type}</h3>
-                            <p className="text-sm text-gray-500">{service.count} services</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{service.count || 0} services</p>
                           </div>
                           <div className="text-right">
                             <p className="font-bold text-lg">{formatCurrency(service.revenue)}</p>
                             <p className="text-sm text-gray-500">
-                              {formatCurrency(service.revenue / service.count)} avg
+                              {formatCurrency((service.revenue || 0) / (service.count || 1))} avg
                             </p>
                           </div>
                           <div className="ml-4 w-24 bg-gray-200 rounded-full h-2">
                             <div
                               className="bg-blue-600 h-2 rounded-full"
-                              style={{ width: `${(service.count / summaryData.totalServices) * 100}%` }}
+                              style={{ width: `${((service.count || 0) / (summaryData.totalServices || 1)) * 100}%` }}
                             ></div>
                           </div>
                         </div>
@@ -516,7 +561,7 @@ export default function Reports() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {summaryData.monthlyTrend.map((month, index) => (
+                      {(summaryData.monthlyTrend || []).map((month, index) => (
                         <div key={index} className="flex items-center justify-between p-3 border-b">
                           <div className="font-medium w-16">{month.month}</div>
                           <div className="flex-1 mx-4">
@@ -527,7 +572,7 @@ export default function Reports() {
                             <div className="w-full bg-gray-200 rounded-full h-2">
                               <div
                                 className="bg-green-600 h-2 rounded-full"
-                                style={{ width: `${(month.revenue / Math.max(...summaryData.monthlyTrend.map(m => m.revenue))) * 100}%` }}
+                                style={{ width: `${((month.revenue || 0) / Math.max(...(summaryData.monthlyTrend || []).map(m => m.revenue || 0), 1)) * 100}%` }}
                               ></div>
                             </div>
                           </div>
@@ -539,8 +584,8 @@ export default function Reports() {
               </>
             ) : (
               <div className="text-center py-8">
-                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">No summary data available</p>
+                <FileText className="h-12 w-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+                <p className="text-gray-500 dark:text-gray-400">No summary data available</p>
               </div>
             )}
           </TabsContent>
@@ -552,32 +597,32 @@ export default function Reports() {
                 <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
                 <p>Loading warranty report...</p>
               </div>
-            ) : warrantyData ? (
+            ) : warrantyData && warrantyData.claims ? (
               <>
                 {/* Export Button */}
                 <div className="flex justify-end mb-4">
                   <div className="flex space-x-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleExportReport("CSV")}
                       className="flex items-center gap-2"
                     >
                       <Download className="h-4 w-4" />
                       CSV
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleExportReport("Excel")}
                       className="flex items-center gap-2"
                     >
                       <Download className="h-4 w-4" />
                       Excel
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleExportReport("PDF")}
                       className="flex items-center gap-2"
                     >
@@ -586,7 +631,7 @@ export default function Reports() {
                     </Button>
                   </div>
                 </div>
-                
+
                 {/* Warranty Summary Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                   <Card>
@@ -595,7 +640,7 @@ export default function Reports() {
                       <Shield className="h-4 w-4 text-blue-500" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">{warrantyData.summary.totalWarranties}</div>
+                      <div className="text-2xl font-bold">{warrantyData.summary.totalWarranties || 0}</div>
                       <p className="text-xs text-muted-foreground">All time</p>
                     </CardContent>
                   </Card>
@@ -606,7 +651,7 @@ export default function Reports() {
                       <Shield className="h-4 w-4 text-green-500" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">{warrantyData.summary.activeWarranties}</div>
+                      <div className="text-2xl font-bold">{warrantyData.summary.activeWarranties || 0}</div>
                       <p className="text-xs text-muted-foreground">Currently valid</p>
                     </CardContent>
                   </Card>
@@ -617,7 +662,7 @@ export default function Reports() {
                       <Shield className="h-4 w-4 text-red-500" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">{warrantyData.summary.expiredWarranties}</div>
+                      <div className="text-2xl font-bold">{warrantyData.summary.expiredWarranties || 0}</div>
                       <p className="text-xs text-muted-foreground">No longer valid</p>
                     </CardContent>
                   </Card>
@@ -628,7 +673,7 @@ export default function Reports() {
                       <Shield className="h-4 w-4 text-yellow-500" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">{warrantyData.summary.expiringSoon}</div>
+                      <div className="text-2xl font-bold">{warrantyData.summary.expiringSoon || 0}</div>
                       <p className="text-xs text-muted-foreground">Next 30 days</p>
                     </CardContent>
                   </Card>
@@ -653,7 +698,7 @@ export default function Reports() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {warrantyData.claims.slice(0, 10).map((claim, index) => (
+                      {(warrantyData.claims || []).slice(0, 10).map((claim, index) => (
                         <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
                           <div className="flex-1">
                             <h3 className="font-medium">{claim.customerName}</h3>
@@ -688,32 +733,32 @@ export default function Reports() {
                 <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
                 <p>Loading customer report...</p>
               </div>
-            ) : customerData ? (
+            ) : customerData && customerData.topCustomers ? (
               <>
                 {/* Export Button */}
                 <div className="flex justify-end mb-4">
                   <div className="flex space-x-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleExportReport("CSV")}
                       className="flex items-center gap-2"
                     >
                       <Download className="h-4 w-4" />
                       CSV
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleExportReport("Excel")}
                       className="flex items-center gap-2"
                     >
                       <Download className="h-4 w-4" />
                       Excel
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleExportReport("PDF")}
                       className="flex items-center gap-2"
                     >
@@ -722,7 +767,7 @@ export default function Reports() {
                     </Button>
                   </div>
                 </div>
-                
+
                 {/* Customer Summary Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   <Card>
@@ -731,7 +776,7 @@ export default function Reports() {
                       <Users className="h-4 w-4 text-blue-500" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">{customerData.summary.totalCustomers}</div>
+                      <div className="text-2xl font-bold">{customerData.summary.totalCustomers || 0}</div>
                       <p className="text-xs text-muted-foreground">All customers</p>
                     </CardContent>
                   </Card>
@@ -742,7 +787,7 @@ export default function Reports() {
                       <Users className="h-4 w-4 text-green-500" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">{customerData.summary.activeCustomers}</div>
+                      <div className="text-2xl font-bold">{customerData.summary.activeCustomers || 0}</div>
                       <p className="text-xs text-muted-foreground">With recent services</p>
                     </CardContent>
                   </Card>
@@ -753,7 +798,7 @@ export default function Reports() {
                       <Users className="h-4 w-4 text-purple-500" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">{customerData.retention.repeatCustomers}</div>
+                      <div className="text-2xl font-bold">{customerData.retention.repeatCustomers || 0}</div>
                       <p className="text-xs text-muted-foreground">Multiple services</p>
                     </CardContent>
                   </Card>
@@ -778,7 +823,7 @@ export default function Reports() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {customerData.topCustomers.map((customer, index) => (
+                      {(customerData.topCustomers || []).map((customer, index) => (
                         <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
                           <div className="flex-1">
                             <h3 className="font-medium">{customer.name}</h3>
@@ -811,32 +856,32 @@ export default function Reports() {
                 <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
                 <p>Loading inventory report...</p>
               </div>
-            ) : inventoryData ? (
+            ) : inventoryData && inventoryData.lowStock ? (
               <>
                 {/* Export Button */}
                 <div className="flex justify-end mb-4">
                   <div className="flex space-x-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleExportReport("CSV")}
                       className="flex items-center gap-2"
                     >
                       <Download className="h-4 w-4" />
                       CSV
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleExportReport("Excel")}
                       className="flex items-center gap-2"
                     >
                       <Download className="h-4 w-4" />
                       Excel
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleExportReport("PDF")}
                       className="flex items-center gap-2"
                     >
@@ -845,7 +890,7 @@ export default function Reports() {
                     </Button>
                   </div>
                 </div>
-                
+
                 {/* Inventory Summary Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   <Card>
@@ -901,7 +946,7 @@ export default function Reports() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {inventoryData.lowStock.map((item, index) => (
+                      {(inventoryData.lowStock || []).map((item, index) => (
                         <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
                           <div className="flex-1">
                             <h3 className="font-medium">{item.itemName}</h3>
@@ -936,27 +981,27 @@ export default function Reports() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => handleExportReport("PDF")} 
+                  <Button
+                    variant="outline"
+                    onClick={() => handleExportReport("PDF")}
                     className="h-24 flex-col"
                     disabled={!summaryData && !warrantyData && !customerData && !inventoryData}
                   >
                     <Download className="h-8 w-8 mb-2" />
                     Export as PDF
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => handleExportReport("Excel")} 
+                  <Button
+                    variant="outline"
+                    onClick={() => handleExportReport("Excel")}
                     className="h-24 flex-col"
                     disabled={!summaryData && !warrantyData && !customerData && !inventoryData}
                   >
                     <Download className="h-8 w-8 mb-2" />
                     Export as Excel
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => handleExportReport("CSV")} 
+                  <Button
+                    variant="outline"
+                    onClick={() => handleExportReport("CSV")}
                     className="h-24 flex-col"
                     disabled={!summaryData && !warrantyData && !customerData && !inventoryData}
                   >
@@ -964,7 +1009,7 @@ export default function Reports() {
                     Export as CSV
                   </Button>
                 </div>
-                
+
                 <div className="mt-6 p-4 bg-gray-50 rounded-lg">
                   <h3 className="font-medium mb-2">Export Options:</h3>
                   <ul className="text-sm text-gray-600 space-y-1">
@@ -972,11 +1017,11 @@ export default function Reports() {
                     <li>• <strong>Excel:</strong> Spreadsheet format for data analysis and manipulation</li>
                     <li>• <strong>CSV:</strong> Simple text format for importing into other systems</li>
                   </ul>
-                  
+
                   <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                     <h4 className="font-medium text-blue-800 mb-2">Export Current Report:</h4>
                     <p className="text-sm text-blue-700">
-                      The export will include data from the currently active report tab. 
+                      The export will include data from the currently active report tab.
                       Make sure to generate the report first and select the desired tab.
                     </p>
                     {activeTab !== 'export' && (

@@ -81,7 +81,7 @@ export default function ServicesPage() {
       })
       setRows((res?.data || []) as ServiceRow[])
       setError(null)
-      
+
       // Update pagination info
       if (res.pagination) {
         setTotalPages(res.pagination.totalPages || 1)
@@ -147,7 +147,7 @@ export default function ServicesPage() {
       const response = await apiClient.updateService(selectedServiceId, {
         payment_status: selectedPaymentStatus
       })
-      
+
       // Show success message with automatic status change info
       if (selectedPaymentStatus === 'paid') {
         toast.success("Payment status updated to Paid. Service automatically marked as Completed.")
@@ -156,7 +156,7 @@ export default function ServicesPage() {
       } else {
         toast.success("Payment status updated successfully.")
       }
-      
+
       // Refresh the data
       await fetchData(currentPage)
       setShowPaymentModal(false)
@@ -173,7 +173,7 @@ export default function ServicesPage() {
   const headerRight = useMemo(
     () => (
       <Link href="/services/new">
-        <Button className="bg-blue-600 hover:bg-blue-700">
+        <Button className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700">
           <Plus className="h-4 w-4 mr-2" />
           New Service
         </Button>
@@ -187,7 +187,7 @@ export default function ServicesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between gap-3">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold">Service Management</h1>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">Service Management</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Page {currentPage} of {totalPages} • {totalServices} total services
           </p>
@@ -198,7 +198,7 @@ export default function ServicesPage() {
       {/* Search + Status */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -342,7 +342,7 @@ export default function ServicesPage() {
                 </TableRow>
               ) : error ? (
                 <TableRow>
-                  <TableCell colSpan={13} className="text-center py-12 text-red-600">
+                  <TableCell colSpan={13} className="text-center py-12 text-red-600 dark:text-red-400">
                     {error}
                   </TableCell>
                 </TableRow>
@@ -359,7 +359,11 @@ export default function ServicesPage() {
                   const payTone = s.payment_status === "paid" ? "green" : s.payment_status === "cancelled" ? "red" : "yellow"
 
                   return (
-                    <TableRow key={s.id} className="hover:bg-muted/50">
+                    <TableRow
+                      key={s.id}
+                      className="hover:bg-muted/50 cursor-pointer"
+                      onClick={() => router.push(`/services/${s.id}`)}
+                    >
                       <TableCell>
                         <div className="font-medium">{s.invoice_number}</div>
                       </TableCell>
@@ -399,7 +403,7 @@ export default function ServicesPage() {
                         <div className="text-sm">{s.service_type_name || "—"}</div>
                       </TableCell>
                       <TableCell>
-                        <div className="text-sm text-gray-700 max-w-[200px] truncate" title={s.service_detail || ""}>
+                        <div className="text-sm text-gray-700 dark:text-gray-300 max-w-[200px] truncate" title={s.service_detail || ""}>
                           {s.service_detail || "—"}
                         </div>
                       </TableCell>
@@ -417,10 +421,10 @@ export default function ServicesPage() {
                           }
                           className={
                             s.service_status === "completed"
-                              ? "bg-green-100 text-green-800 hover:bg-green-200"
+                              ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-900/50"
                               : s.service_status === "in_progress"
-                                ? "bg-blue-100 text-blue-800 hover:bg-blue-200"
-                                : "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+                                ? "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-900/50"
+                                : "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 hover:bg-yellow-200 dark:hover:bg-yellow-900/50"
                           }
                         >
                           {STATUS_LABELS[s.service_status] || s.service_status}
@@ -437,10 +441,10 @@ export default function ServicesPage() {
                           }
                           className={
                             s.payment_status === "paid"
-                              ? "bg-green-100 text-green-800 hover:bg-green-200"
+                              ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-900/50"
                               : s.payment_status === "cancelled"
-                                ? "bg-red-100 text-red-800 hover:bg-red-200"
-                                : "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+                                ? "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 hover:bg-red-200 dark:hover:bg-red-900/50"
+                                : "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 hover:bg-yellow-200 dark:hover:bg-yellow-900/50"
                           }
                         >
                           {PAYMENT_LABELS[s.payment_status] || s.payment_status}
@@ -459,17 +463,17 @@ export default function ServicesPage() {
                               View
                             </Button>
                           </Link>
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             onClick={() => handleChangePayment(s.id, s.payment_status)}
-                            className="bg-yellow-50 hover:bg-yellow-100 border-yellow-200"
+                            className="bg-yellow-50 hover:bg-yellow-100 dark:bg-yellow-900/20 dark:hover:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200"
                           >
                             <CreditCard className="h-4 w-4 mr-1" />
                             Change Payment
                           </Button>
                           <Link href={`/services/${s.id}/invoice`}>
-                            <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700">
                               <DollarSign className="h-4 w-4 mr-1" />
                               Invoice
                             </Button>
@@ -530,8 +534,8 @@ export default function ServicesPage() {
             <CardContent className="p-6">
               <h3 className="text-lg font-semibold mb-4">Change Payment Status</h3>
               <div className="space-y-4">
-                <div className="text-sm text-muted-foreground bg-blue-50 p-3 rounded-md">
-                  <strong>Note:</strong> Setting payment to "Paid" will automatically mark the service as "Completed". 
+                <div className="text-sm text-muted-foreground bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md">
+                  <strong>Note:</strong> Setting payment to "Paid" will automatically mark the service as "Completed".
                   Setting payment to "Cancelled" will automatically mark the service as "Cancelled".
                 </div>
                 <div>
@@ -561,7 +565,7 @@ export default function ServicesPage() {
                   <Button
                     onClick={handleUpdatePayment}
                     disabled={isUpdatingPayment}
-                    className="bg-blue-600 hover:bg-blue-700"
+                    className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700"
                   >
                     {isUpdatingPayment ? (
                       <>

@@ -111,7 +111,7 @@ class Request {
     public static function validateRequired($data, $requiredFields) {
         $missing = [];
         foreach ($requiredFields as $field) {
-            if (!isset($data[$field]) || empty($data[$field])) {
+            if (!isset($data[$field]) || ($data[$field] !== 0 && $data[$field] !== '0' && empty($data[$field]))) {
                 $missing[] = $field;
             }
         }

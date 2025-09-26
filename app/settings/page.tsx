@@ -94,11 +94,11 @@ export default function SettingsPage() {
       <div className="p-4 lg:p-8 space-y-6">
         <div className="flex items-center space-x-4">
           <Settings className="h-8 w-8 text-blue-600" />
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">System Settings</h1>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">System Settings</h1>
         </div>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          <span className="ml-2 text-gray-600">Loading settings...</span>
+          <span className="ml-2 text-gray-600 dark:text-gray-400">Loading settings...</span>
         </div>
       </div>
     )
@@ -206,7 +206,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Email Notifications</Label>
-                    <p className="text-sm text-gray-500">Receive notifications via email</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Receive notifications via email</p>
                   </div>
                   <Switch
                     checked={notificationSettings?.email_notifications || false}
@@ -216,7 +216,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>SMS Notifications</Label>
-                    <p className="text-sm text-gray-500">Receive notifications via SMS</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Receive notifications via SMS</p>
                   </div>
                   <Switch
                     checked={notificationSettings?.sms_notifications || false}
@@ -226,7 +226,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Service Reminders</Label>
-                    <p className="text-sm text-gray-500">Automatic service reminder notifications</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Automatic service reminder notifications</p>
                   </div>
                   <Switch
                     checked={notificationSettings?.service_reminders || false}
@@ -236,7 +236,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Low Stock Alerts</Label>
-                    <p className="text-sm text-gray-500">Get notified when inventory is low</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Get notified when inventory is low</p>
                   </div>
                   <Switch
                     checked={notificationSettings?.low_stock_alerts || false}
@@ -246,7 +246,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Warranty Expiry Alerts</Label>
-                    <p className="text-sm text-gray-500">Notifications for expiring warranties</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Notifications for expiring warranties</p>
                   </div>
                   <Switch
                     checked={notificationSettings?.warranty_expiry || false}
@@ -256,7 +256,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Daily Reports</Label>
-                    <p className="text-sm text-gray-500">Receive daily summary reports</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Receive daily summary reports</p>
                   </div>
                   <Switch
                     checked={notificationSettings?.daily_reports || false}

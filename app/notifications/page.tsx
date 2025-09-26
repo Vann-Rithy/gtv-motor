@@ -172,7 +172,7 @@ export default function NotificationsPage() {
       case "pending":
         return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>
       case "contacted":
-        return <Badge className="bg-blue-100 text-blue-800">Contacted</Badge>
+        return <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">Contacted</Badge>
       case "resolved":
         return <Badge className="bg-green-100 text-green-800">Resolved</Badge>
       case "failed":
@@ -220,7 +220,7 @@ export default function NotificationsPage() {
     <div className="p-4 lg:p-8 space-y-6">
       <div className="flex items-center space-x-4">
         <Bell className="h-8 w-8 text-blue-600" />
-        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Customer Follow-up System</h1>
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">Customer Follow-up System</h1>
       </div>
 
       {/* Summary Cards */}
@@ -501,9 +501,9 @@ export default function NotificationsPage() {
                   </div>
 
                   <h3 className="font-semibold mb-1">{notification.subject}</h3>
-                  <p className="text-sm text-gray-600 mb-2">{notification.message}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{notification.message}</p>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm text-gray-500">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm text-gray-500 dark:text-gray-400">
                     <div>
                       <span className="font-medium">Customer:</span> {notification.customerName}
                     </div>
@@ -536,7 +536,7 @@ export default function NotificationsPage() {
           {notifications.length === 0 && (
             <div className="text-center py-12">
               <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No notifications found.</p>
+              <p className="text-gray-500 dark:text-gray-400">No notifications found.</p>
             </div>
           )}
         </CardContent>
@@ -562,27 +562,27 @@ export default function NotificationsPage() {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                    <div className="flex items-center text-sm text-gray-600">
+                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                       <Phone className="h-4 w-4 mr-2" />
                       {followUp.phone}
                     </div>
-                    <div className="flex items-center text-sm text-gray-600">
+                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                       <span className="font-medium">Vehicle:</span>
                       <span className="ml-2">{followUp.vehicleInfo}</span>
                     </div>
-                    <div className="flex items-center text-sm text-gray-600">
+                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                       <Calendar className="h-4 w-4 mr-2" />
                       Service: {followUp.serviceDate}
                     </div>
-                    <div className="flex items-center text-sm text-gray-600">
+                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                       <Calendar className="h-4 w-4 mr-2" />
                       Follow-up: {followUp.followUpDate}
                     </div>
-                    <div className="flex items-center text-sm text-gray-600">
+                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                       {getContactMethodIcon(followUp.contactMethod)}
                       <span className="ml-2 capitalize">{followUp.contactMethod}</span>
                     </div>
-                    <div className="flex items-center text-sm text-gray-600">
+                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                       <User className="h-4 w-4 mr-2" />
                       {followUp.staffName}
                     </div>

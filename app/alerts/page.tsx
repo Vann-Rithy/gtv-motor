@@ -139,7 +139,7 @@ export default function AlertsPage() {
       case "due_soon":
         return "bg-yellow-100 text-yellow-800"
       default:
-        return "bg-blue-100 text-blue-800"
+        return "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200"
     }
   }
 
@@ -148,11 +148,11 @@ export default function AlertsPage() {
       case "pending":
         return "bg-yellow-100 text-yellow-800"
       case "sent":
-        return "bg-blue-100 text-blue-800"
+        return "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200"
       case "completed":
         return "bg-green-100 text-green-800"
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200"
     }
   }
 
@@ -163,9 +163,9 @@ export default function AlertsPage() {
       case "warranty_expiring":
         return "bg-orange-100 text-orange-800"
       case "follow_up":
-        return "bg-blue-100 text-blue-800"
+        return "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200"
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200"
     }
   }
 
@@ -174,11 +174,11 @@ export default function AlertsPage() {
       <div className="p-4 lg:p-8 space-y-6">
         <div className="flex items-center space-x-4">
           <Bell className="h-8 w-8 text-blue-600" />
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Alert Management</h1>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">Alert Management</h1>
         </div>
         <div className="flex items-center justify-center py-12">
           <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
-          <span className="ml-2 text-gray-600">Loading alerts...</span>
+          <span className="ml-2 text-gray-600 dark:text-gray-400">Loading alerts...</span>
         </div>
       </div>
     )
@@ -191,14 +191,14 @@ export default function AlertsPage() {
           <div>
             <div className="flex items-center space-x-4">
               <Bell className="h-8 w-8 text-blue-600" />
-              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Alert Management</h1>
+              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">Alert Management</h1>
               {notificationCounts && notificationCounts.notificationCount > 0 && (
                 <Badge className="bg-red-500 text-white">
                   {notificationCounts.notificationCount}
                 </Badge>
               )}
             </div>
-            <p className="text-sm text-gray-600 mt-1">Alerts are automatically generated from your service, vehicle, and warranty data</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Alerts are automatically generated from your service, vehicle, and warranty data</p>
           </div>
         </div>
                  <div className="flex space-x-2">
@@ -365,10 +365,10 @@ export default function AlertsPage() {
                       <p className="text-sm text-gray-500">Days Until Due</p>
                       <p className="font-medium">
                         {alert.days_until_due !== undefined ? (
-                          alert.days_until_due < 0 ? 
+                          alert.days_until_due < 0 ?
                             `${Math.abs(alert.days_until_due)} days overdue` :
-                            alert.days_until_due === 0 ? 
-                              "Due today" : 
+                            alert.days_until_due === 0 ?
+                              "Due today" :
                               `${alert.days_until_due} days`
                         ) : "N/A"}
                       </p>
@@ -389,8 +389,8 @@ export default function AlertsPage() {
                 </div>
 
                 <div className="flex flex-row lg:flex-col space-x-2 lg:space-x-0 lg:space-y-2">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => updateAlertStatus(alert.id, "sent")}
                     disabled={alert.status === "sent" || alert.status === "completed"}
@@ -398,15 +398,15 @@ export default function AlertsPage() {
                     <MessageSquare className="h-4 w-4 mr-2" />
                     Mark Sent
                   </Button>
-                  <FollowUpModal 
-                    alert={alert} 
+                  <FollowUpModal
+                    alert={alert}
                     onFollowUpComplete={() => {
                       fetchAlerts()
                       fetchNotificationCounts()
                     }}
                   />
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => updateAlertStatus(alert.id, "completed")}
                     disabled={alert.status === "completed"}
@@ -414,8 +414,8 @@ export default function AlertsPage() {
                     <Check className="h-4 w-4 mr-2" />
                     Complete
                   </Button>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => deleteAlert(alert.id)}
                   >

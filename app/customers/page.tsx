@@ -149,12 +149,12 @@ export default function Customers() {
           completed_services: Number(customer.completed_services) || 0,
           pending_alerts: Number(customer.pending_alerts) || 0,
         }))
-        
+
         // Ensure we only display exactly 10 customers per page
         const limitedCustomers = transformed.slice(0, customersPerPage)
         setCustomers(limitedCustomers)
         setError(null)
-        
+
         // Update pagination info
         if (response.pagination) {
           setTotalPages(response.pagination.totalPages || 1)
@@ -176,39 +176,23 @@ export default function Customers() {
   }
 
   const fetchCustomerDetails = async (customerId: string) => {
-  setDetailsLoading(true)
-  try {
-    const res = await fetch(`/api/customers/${customerId}`, {
-      credentials: "include", // send cookies if your API uses session
-      cache: "no-store",
-    })
+    setDetailsLoading(true)
+    try {
+      const response = await apiClient.getCustomer(customerId)
 
-    const ct = res.headers.get("content-type") || ""
-    const payload = ct.includes("application/json") ? await res.json() : await res.text()
-
-    if (!res.ok) {
-      // Make the error clear in console with status + server message
-      const serverMsg =
-        typeof payload === "string"
-          ? payload.slice(0, 500)
-          : payload?.error || JSON.stringify(payload).slice(0, 500)
-      throw new Error(`HTTP ${res.status} ${res.statusText} — ${serverMsg}`)
+      if (response.data) {
+        const data = response.data
+        setSelectedCustomer({ ...data, id: data.id.toString() })
+      } else {
+        throw new Error("API returned no customer data")
+      }
+    } catch (e) {
+      console.error("[v0] details error:", e)
+      setError("Failed to fetch customer details")
+    } finally {
+      setDetailsLoading(false)
     }
-
-    // Support both shapes: { success, data } OR direct object
-    const data = (payload && (payload.data ?? payload)) as any
-    if (!data || !data.id) {
-      throw new Error("API returned no customer data")
-    }
-
-    setSelectedCustomer({ ...data, id: data.id.toString() })
-  } catch (e) {
-    console.error("[v0] details error:", e)
-    // (Optional) show a toast or inline error state if you want
-  } finally {
-    setDetailsLoading(false)
   }
-}
 
 
   // Initial & search
@@ -281,14 +265,14 @@ export default function Customers() {
       }
 
       const result = await response.json()
-      
+
       // Update the selected customer with new data
       setSelectedCustomer({ ...selectedCustomer, ...editForm })
-      
+
       // Update the customers list
-      setCustomers(prev => 
-        prev.map(customer => 
-          customer.id === selectedCustomer.id 
+      setCustomers(prev =>
+        prev.map(customer =>
+          customer.id === selectedCustomer.id
             ? { ...customer, ...editForm }
             : customer
         )
@@ -384,13 +368,13 @@ export default function Customers() {
     <div className="p-4 lg:p-8 space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Customer Management</h1>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">Customer Management</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Page {currentPage} of {totalPages} • {totalCustomers} total customers
           </p>
         </div>
         <Link href="/customers/new">
-          <Button className="bg-blue-600 hover:bg-blue-700">
+          <Button className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700">
             <Plus className="h-4 w-4 mr-2" />
             Add Customer
           </Button>
@@ -399,9 +383,9 @@ export default function Customers() {
 
       <div className="flex space-x-2">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
           {searchLoading && (
-            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 animate-spin" />
+            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4 animate-spin" />
           )}
           <Input
             placeholder="Search customers by name, phone, or plate number..."
@@ -441,7 +425,11 @@ export default function Customers() {
             </TableHeader>
             <TableBody>
               {filteredCustomers.map((customer) => (
-                <TableRow key={customer.id} className="hover:bg-muted/50">
+                <TableRow
+                  key={customer.id}
+                  className="hover:bg-muted/50 cursor-pointer"
+                  onClick={() => router.push(`/customers/${customer.id}`)}
+                >
                   <TableCell>
                     <div>
                       <div className="font-medium">{customer.name}</div>
@@ -504,7 +492,8 @@ export default function Customers() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={async () => {
+                        onClick={async (e) => {
+                          e.stopPropagation()
                           await fetchCustomerDetails(customer.id)
                           setIsDetailsOpen(true)
                           const url = new URL(window.location.href)
@@ -516,7 +505,11 @@ export default function Customers() {
                         View
                       </Button>
                       <Link href={`/services/new?customer=${customer.id}`}>
-                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                        <Button
+                          size="sm"
+                          className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <Plus className="h-4 w-4 mr-1" />
                           Service
                         </Button>
@@ -533,7 +526,7 @@ export default function Customers() {
       {filteredCustomers.length === 0 && !loading && (
         <Card>
           <CardContent className="text-center py-12">
-            <p className="text-gray-500">
+            <p className="text-gray-500 dark:text-gray-400">
               {searchTerm ? "No customers found matching your search." : "No customers found. Add your first customer!"}
             </p>
           </CardContent>
@@ -626,8 +619,8 @@ export default function Customers() {
                     </>
                   ) : (
                     <>
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         onClick={handleUpdateCustomer}
                         disabled={isUpdating}
                         className="bg-green-600 hover:bg-green-700"
@@ -761,11 +754,11 @@ export default function Customers() {
                       <div className="flex items-center justify-between mb-2">
                         <div className="font-medium text-sm">{vehicle.plate_number}</div>
                         <div className="flex space-x-2">
-                          <Badge 
+                          <Badge
                             variant={vehicle.warranty_status === 'active' ? 'default' : vehicle.warranty_status === 'expired' ? 'destructive' : 'secondary'}
                             className="text-xs"
                           >
-                            {vehicle.warranty_status === 'active' ? `Warranty Active (${vehicle.warranty_days_remaining} days)` : 
+                            {vehicle.warranty_status === 'active' ? `Warranty Active (${vehicle.warranty_days_remaining} days)` :
                              vehicle.warranty_status === 'expired' ? 'Warranty Expired' : 'Warranty Unknown'}
                           </Badge>
                         </div>
@@ -941,7 +934,7 @@ export default function Customers() {
                   <h3 className="mb-3 text-sm font-semibold tracking-tight">Quick Actions</h3>
                   <div className="grid grid-cols-2 gap-3">
                     <Link href={`/services/new?customer=${selectedCustomer.id}`}>
-                      <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                      <Button className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700">
                         <Plus className="h-4 w-4 mr-2" />
                         New Service
                       </Button>

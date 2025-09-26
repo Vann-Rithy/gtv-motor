@@ -137,72 +137,28 @@ try {
                 }
                 break;
 
-            case 'customers':
-                // Check if there's a customer ID in the URL
-                $customerId = Request::segment(3);
-                if ($customerId && is_numeric($customerId)) {
-                    // Handle individual customer requests (GET /api/customers/1)
-                    if ($requestMethod === 'GET') {
-                        require_once __DIR__ . '/api/customers.php';
-                    } else {
-                        Response::error('Method not allowed', 405);
-                    }
-                } else {
-                    // Handle general customers requests (GET /api/customers)
-                    require_once __DIR__ . '/api/customers.php';
-                }
+            case (strpos($apiPath, 'customers') === 0):
+                // Handle customers requests (both /api/customers and /api/customers/1)
+                require_once __DIR__ . '/api/customers.php';
                 break;
 
-            case 'vehicles':
-                // Check if there's a vehicle ID in the URL
-                $vehicleId = Request::segment(3);
-                if ($vehicleId && is_numeric($vehicleId)) {
-                    // Handle individual vehicle requests (GET /api/vehicles/1)
-                    if ($requestMethod === 'GET') {
-                        require_once __DIR__ . '/api/vehicles.php';
-                    } else {
-                        Response::error('Method not allowed', 405);
-                    }
-                } else {
-                    // Handle general vehicles requests (GET /api/vehicles)
-                    require_once __DIR__ . '/api/vehicles.php';
-                }
+            case (strpos($apiPath, 'vehicles') === 0):
+                // Handle vehicles requests (both /api/vehicles and /api/vehicles/1)
+                require_once __DIR__ . '/api/vehicles.php';
                 break;
 
-            case 'services':
-                // Check if there's a service ID in the URL
-                $serviceId = Request::segment(3);
-                if ($serviceId && is_numeric($serviceId)) {
-                    // Handle individual service requests (GET /api/services/1)
-                    if ($requestMethod === 'GET') {
-                        require_once __DIR__ . '/api/services.php';
-                    } else {
-                        Response::error('Method not allowed', 405);
-                    }
-                } else {
-                    // Handle general services requests (GET /api/services)
-                    require_once __DIR__ . '/api/services.php';
-                }
+            case (strpos($apiPath, 'services') === 0):
+                // Handle services requests (both /api/services and /api/services/1)
+                require_once __DIR__ . '/api/services.php';
                 break;
 
             case 'service-types':
                 require_once __DIR__ . '/api/service-types.php';
                 break;
 
-            case 'bookings':
-                // Check if there's a booking ID in the URL
-                $bookingId = Request::segment(3);
-                if ($bookingId && is_numeric($bookingId)) {
-                    // Handle individual booking requests (GET /api/bookings/1)
-                    if ($requestMethod === 'GET') {
-                        require_once __DIR__ . '/api/bookings.php';
-                    } else {
-                        Response::error('Method not allowed', 405);
-                    }
-                } else {
-                    // Handle general bookings requests (GET /api/bookings)
-                    require_once __DIR__ . '/api/bookings.php';
-                }
+            case (strpos($apiPath, 'bookings') === 0):
+                // Handle bookings requests (both /api/bookings and /api/bookings/1)
+                require_once __DIR__ . '/api/bookings.php';
                 break;
 
             case 'inventory':
@@ -213,24 +169,21 @@ try {
                 require_once __DIR__ . '/api/staff.php';
                 break;
 
-            case 'warranties':
-                // Check if there's a warranty ID in the URL
-                $warrantyId = Request::segment(3);
-                if ($warrantyId && is_numeric($warrantyId)) {
-                    // Handle individual warranty requests (GET /api/warranties/1)
-                    if ($requestMethod === 'GET') {
-                        require_once __DIR__ . '/api/warranties.php';
-                    } else {
-                        Response::error('Method not allowed', 405);
-                    }
-                } else {
-                    // Handle general warranties requests (GET /api/warranties)
-                    require_once __DIR__ . '/api/warranties.php';
-                }
+            case (strpos($apiPath, 'warranties') === 0):
+                // Handle warranties requests (both /api/warranties and /api/warranties/1)
+                require_once __DIR__ . '/api/warranties.php';
                 break;
 
             case 'alerts':
                 require_once __DIR__ . '/api/alerts.php';
+                break;
+
+            case 'alerts/notifications':
+                if ($requestMethod === 'GET') {
+                    require_once __DIR__ . '/api/alerts/notifications.php';
+                } else {
+                    Response::error('Method not allowed', 405);
+                }
                 break;
 
             case 'notifications':
@@ -264,6 +217,22 @@ try {
             case 'dashboard/analytics':
                 if ($requestMethod === 'GET') {
                     require_once __DIR__ . '/api/dashboard/analytics.php';
+                } else {
+                    Response::error('Method not allowed', 405);
+                }
+                break;
+
+            case 'dashboard/recent-services':
+                if ($requestMethod === 'GET') {
+                    require_once __DIR__ . '/api/dashboard/recent-services.php';
+                } else {
+                    Response::error('Method not allowed', 405);
+                }
+                break;
+
+            case 'dashboard/revenue':
+                if ($requestMethod === 'GET') {
+                    require_once __DIR__ . '/api/dashboard/revenue.php';
                 } else {
                     Response::error('Method not allowed', 405);
                 }

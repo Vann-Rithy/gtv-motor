@@ -131,7 +131,7 @@ try {
 
     } elseif ($method === 'PUT') {
         // Update customer
-        $customerId = Request::segment(3);
+        $customerId = Request::segment(2);
         if (!$customerId) {
             Response::error('Customer ID is required', 400);
         }
@@ -156,7 +156,7 @@ try {
 
     } elseif ($method === 'DELETE') {
         // Delete customer
-        $customerId = Request::segment(3);
+        $customerId = Request::segment(2);
         if (!$customerId) {
             Response::error('Customer ID is required', 400);
         }

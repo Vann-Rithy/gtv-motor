@@ -16,11 +16,14 @@ import { useAuth } from "@/components/auth-provider"
 import SidebarNotificationBadge from "@/components/sidebar-notification-badge"
 
 interface HeaderProps {
-  onToggleSidebar: () => void
+  onToggleSidebar?: () => void
+  onMenuClick?: () => void
+  user?: any
 }
 
-export default function Header({ onToggleSidebar }: HeaderProps) {
-  const { user, logout } = useAuth()
+export default function Header({ onToggleSidebar, onMenuClick, user: propUser }: HeaderProps) {
+  const { user: authUser, logout } = useAuth()
+  const user = propUser || authUser
 
   const handleLogout = async () => {
     await logout()
@@ -36,46 +39,58 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
   }
 
   return (
-    <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 lg:hidden transition-colors duration-200">
+    <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 transition-colors duration-200">
       <div className="flex items-center justify-between px-4 py-3">
+        {/* Mobile Menu Button */}
         <Button
           variant="ghost"
           size="sm"
-          onClick={onToggleSidebar}
-          className="hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+          onClick={onMenuClick || onToggleSidebar}
+          className="lg:hidden hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
         >
           <Menu className="h-6 w-6" />
         </Button>
 
-        <div className="flex items-center space-x-2">
-          {/* Notification Badge for Mobile */}
+        {/* Desktop Logo/Brand */}
+        <div className="hidden lg:flex items-center">
+          <img src="/Logo GTV Motor eng&kh.png" alt="GTV Motor" className="h-8 w-auto" />
+        </div>
+
+        <div className="flex items-center space-x-1">
+          {/* Notification Badge */}
           <Button
             variant="ghost"
             size="sm"
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
             asChild
           >
-                         <a href="/alerts">
-               <SidebarNotificationBadge />
-             </a>
+            <a href="/alerts">
+              <SidebarNotificationBadge />
+            </a>
           </Button>
-          
+
+          {/* Theme Toggle */}
           <ThemeToggle />
+
           {/* Language Flags */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
-          >
-            <img src="/flag.png" alt="Cambodia" className="w-6 h-4 rounded-sm" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
-          >
-            <img src="/united-kingdom.png" alt="English" className="w-6 h-4 rounded-sm" />
-          </Button>
+          <div className="flex items-center space-x-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+              title="ភាសាខ្មែរ"
+            >
+              <img src="/flag.png" alt="Cambodia" className="w-6 h-4 rounded-sm border border-gray-200" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+              title="English"
+            >
+              <img src="/united-kingdom.png" alt="English" className="w-6 h-4 rounded-sm border border-gray-200" />
+            </Button>
+          </div>
 
           {user && (
             <DropdownMenu>

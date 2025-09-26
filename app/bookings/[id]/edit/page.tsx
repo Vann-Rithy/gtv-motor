@@ -43,7 +43,7 @@ interface Vehicle {
 
 interface ServiceType {
   id: number
-  name: string
+  service_type_name: string
 }
 
 export default function EditBooking() {
@@ -59,6 +59,26 @@ export default function EditBooking() {
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([])
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
   const [customerVehicles, setCustomerVehicles] = useState<Vehicle[]>([])
+
+  // Function to filter vehicles for the selected customer
+  const filterVehiclesForCustomer = (customerId: number) => {
+    if (customerId && vehicles.length > 0) {
+      const filtered = vehicles.filter(v => Number(v.customer_id) === Number(customerId))
+      console.log(`Filtering vehicles for customer ${customerId}:`, {
+        totalVehicles: vehicles.length,
+        filteredVehicles: filtered.length,
+        customerId,
+        vehicles: vehicles.map(v => ({ id: v.id, customer_id: v.customer_id, plate: v.plate_number }))
+      })
+      setCustomerVehicles(filtered)
+    } else {
+      console.log(`No vehicles to filter for customer ${customerId}`, {
+        customerId,
+        vehiclesLength: vehicles.length
+      })
+      setCustomerVehicles([])
+    }
+  }
 
   const [formData, setFormData] = useState({
     customer_id: "",
@@ -90,10 +110,10 @@ export default function EditBooking() {
       const response = await apiClient.getBooking(Number(bookingId))
       const bookingData = response.data
       setBooking(bookingData)
-      
+
       setFormData({
-        customer_id: bookingData.customer_id.toString(),
-        vehicle_id: bookingData.vehicle_id.toString(),
+        customer_id: bookingData.customer_id ? bookingData.customer_id.toString() : "",
+        vehicle_id: bookingData.vehicle_id ? bookingData.vehicle_id.toString() : "",
         service_type_id: bookingData.service_type_id.toString(),
         booking_date: bookingData.booking_date,
         booking_time: bookingData.booking_time,
@@ -102,11 +122,18 @@ export default function EditBooking() {
       })
 
       // Set selected customer for vehicle filtering
-      setSelectedCustomer({
-        id: bookingData.customer_id,
-        name: bookingData.customer_name,
-        phone: bookingData.customer_phone
-      })
+      if (bookingData.customer_id) {
+        const customer = {
+          id: bookingData.customer_id,
+          name: bookingData.customer_name,
+          phone: bookingData.customer_phone
+        }
+        setSelectedCustomer(customer)
+        console.log("Booking loaded, customer set:", customer)
+        console.log("Available vehicles:", vehicles.length)
+        // Filter vehicles for this customer
+        filterVehiclesForCustomer(bookingData.customer_id)
+      }
     } catch (error) {
       console.error("Failed to load booking:", error)
       toast.error("Failed to load booking data")
@@ -120,14 +147,19 @@ export default function EditBooking() {
   const loadFormData = async () => {
     try {
       const [customersRes, vehiclesRes, serviceTypesRes] = await Promise.all([
-        apiClient.getCustomers(),
-        apiClient.getVehicles(),
+        apiClient.getCustomers({ limit: 100 }), // Load more customers to ensure we get all
+        apiClient.getVehicles({ limit: 100 }), // Load more vehicles to ensure we get all
         apiClient.getServiceTypes()
       ])
 
       setCustomers(customersRes.data || [])
       setVehicles(vehiclesRes.data || [])
       setServiceTypes(serviceTypesRes.data || [])
+      console.log("Form data loaded:", {
+        customers: customersRes.data?.length || 0,
+        vehicles: vehiclesRes.data?.length || 0,
+        serviceTypes: serviceTypesRes.data?.length || 0
+      })
     } catch (error) {
       console.error("Failed to load form data:", error)
       toast.error("Failed to load form data")
@@ -135,19 +167,28 @@ export default function EditBooking() {
   }
 
   useEffect(() => {
-    loadBooking()
-    loadFormData()
+    const loadData = async () => {
+      // First load the form data (customers, vehicles, service types)
+      await loadFormData()
+      // Then load the booking data (which depends on vehicles being loaded)
+      await loadBooking()
+    }
+    loadData()
   }, [bookingId])
 
-  // Filter vehicles when customer changes
+  // Filter vehicles when customer changes or vehicles are loaded
   useEffect(() => {
-    if (selectedCustomer) {
-      const filtered = vehicles.filter(v => v.customer_id === selectedCustomer.id)
-      setCustomerVehicles(filtered)
+    if (selectedCustomer && vehicles.length > 0) {
+      filterVehiclesForCustomer(selectedCustomer.id)
     } else {
       setCustomerVehicles([])
     }
   }, [selectedCustomer, vehicles])
+
+  // Debug customerVehicles changes
+  useEffect(() => {
+    console.log("customerVehicles updated:", customerVehicles)
+  }, [customerVehicles])
 
   const handleCustomerChange = (customerId: string) => {
     const customer = customers.find(c => c.id.toString() === customerId)
@@ -157,16 +198,22 @@ export default function EditBooking() {
       customer_id: customerId,
       vehicle_id: "" // Reset vehicle when customer changes
     }))
+    // Filter vehicles for the selected customer
+    if (customer) {
+      filterVehiclesForCustomer(customer.id)
+    } else {
+      setCustomerVehicles([])
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!booking) return
 
     try {
       setSaving(true)
-      
+
       const updateData = {
         customer_id: Number(formData.customer_id),
         vehicle_id: Number(formData.vehicle_id),
@@ -178,7 +225,7 @@ export default function EditBooking() {
       }
 
       await apiClient.updateBooking(booking.id, updateData)
-      
+
       toast.success("Booking updated successfully")
       router.push("/bookings")
     } catch (error) {
@@ -204,7 +251,7 @@ export default function EditBooking() {
     return (
       <div className="p-4 lg:p-8 max-w-4xl mx-auto">
         <div className="text-center py-12">
-          <p className="text-gray-500">Booking not found.</p>
+          <p className="text-gray-500 dark:text-gray-400">Booking not found.</p>
         </div>
       </div>
     )
@@ -217,7 +264,7 @@ export default function EditBooking() {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
-        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Edit Booking</h1>
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">Edit Booking</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -255,7 +302,13 @@ export default function EditBooking() {
                   disabled={!selectedCustomer}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={selectedCustomer ? "Select vehicle" : "Select customer first"} />
+                    <SelectValue placeholder={
+                      !selectedCustomer
+                        ? "Select customer first"
+                        : customerVehicles.length === 0
+                          ? "No vehicles found for this customer"
+                          : "Select vehicle"
+                    } />
                   </SelectTrigger>
                   <SelectContent>
                     {customerVehicles.map((vehicle) => (
@@ -290,7 +343,7 @@ export default function EditBooking() {
                   <SelectContent>
                     {serviceTypes.map((service) => (
                       <SelectItem key={service.id} value={service.id.toString()}>
-                        {service.name}
+                        {service.service_type_name}
                       </SelectItem>
                     ))}
                   </SelectContent>

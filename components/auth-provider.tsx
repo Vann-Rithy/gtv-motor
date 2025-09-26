@@ -40,34 +40,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const didInit = useRef(false)
 
-  // Initialize authentication - Developer Mode (restore only if stored)
+  // Initialize authentication - Check for stored session
   useEffect(() => {
-    const initializeAuth = async () => {
+    const initializeAuth = () => {
       if (typeof window !== 'undefined') {
         try {
           setLoading(true)
-          const storedToken = localStorage.getItem('auth_token')
-          const storedUser = localStorage.getItem('auth_user')
 
-          if (storedToken && storedUser) {
-            const parsedUser: User = JSON.parse(storedUser)
-            setToken(storedToken)
-            setUser(parsedUser)
-            setIsAuthenticated(true)
-            console.log('[auth-provider] Restored session from localStorage')
+          // Check for stored session data
+          const sessionData = localStorage.getItem('gtv_session')
+
+          if (sessionData) {
+            const session = JSON.parse(sessionData)
+
+            // Validate session data
+            if (session.token && session.user && session.expiresAt) {
+              const now = new Date().getTime()
+              const expiresAt = new Date(session.expiresAt).getTime()
+
+              if (now < expiresAt) {
+                // Session is valid
+                setToken(session.token)
+                setUser(session.user)
+                setIsAuthenticated(true)
+                console.log('[auth-provider] Session restored successfully')
+              } else {
+                // Session expired
+                console.log('[auth-provider] Session expired, clearing...')
+                clearSession()
+              }
+            } else {
+              // Invalid session data
+              console.log('[auth-provider] Invalid session data, clearing...')
+              clearSession()
+            }
           } else {
+            // No session found
+            console.log('[auth-provider] No session found')
             setToken(null)
             setUser(null)
             setIsAuthenticated(false)
-            console.log('[auth-provider] No stored session; user is logged out')
           }
-        } catch (e) {
-          console.error('[auth-provider] Failed to restore session:', e)
-          localStorage.removeItem('auth_token')
-          localStorage.removeItem('auth_user')
-          setToken(null)
-          setUser(null)
-          setIsAuthenticated(false)
+        } catch (error) {
+          console.error('[auth-provider] Error initializing auth:', error)
+          clearSession()
         } finally {
           setLoading(false)
         }
@@ -90,53 +106,90 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [pathname, isAuthenticated, loading, router])
 
+  // Helper function to clear session
+  const clearSession = () => {
+    localStorage.removeItem('gtv_session')
+    setToken(null)
+    setUser(null)
+    setIsAuthenticated(false)
+  }
+
+  // Helper function to save session
+  const saveSession = (user: User, token: string) => {
+    const expiresAt = new Date()
+    expiresAt.setDate(expiresAt.getDate() + 7) // 7 days from now
+
+    const session = {
+      token,
+      user,
+      expiresAt: expiresAt.toISOString(),
+      createdAt: new Date().toISOString()
+    }
+
+    localStorage.setItem('gtv_session', JSON.stringify(session))
+    setToken(token)
+    setUser(user)
+    setIsAuthenticated(true)
+  }
+
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      // Developer Mode - Always return success
-      console.log("[auth-provider] Developer Mode - Login always succeeds")
+      console.log("[auth-provider] Starting login process...")
 
-      const defaultUser: User = {
-        id: 1,
-        username: 'admin',
-        email: 'admin@gtvmotor.com',
-        full_name: 'Administrator',
-        role: 'admin',
-        staff_id: 1,
-        is_active: true,
-        last_login: new Date().toISOString(),
-        created_at: new Date().toISOString()
+      // Make actual API call to backend
+      const response = await fetch(API_ENDPOINTS.AUTH.LOGIN, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email,
+          password: password
+        })
+      })
+
+      if (!response.ok) {
+        console.error("[auth-provider] Login failed with status:", response.status)
+        return false
       }
 
-      // Store token and user data in localStorage
-      localStorage.setItem('auth_token', 'dev-token-123')
-      localStorage.setItem('auth_user', JSON.stringify(defaultUser))
-      setToken('dev-token-123')
-      setUser(defaultUser)
-      setIsAuthenticated(true)
-      return true
+      const data = await response.json()
+
+      if (data.success && data.data) {
+        const userData = data.data.user || data.data
+        const token = data.data.token || data.data.access_token
+
+        if (userData && token) {
+          // Save session with real user data
+          saveSession(userData, token)
+
+          console.log("[auth-provider] Login successful")
+          return true
+        }
+      }
+
+      console.error("[auth-provider] Invalid login response format")
+      return false
     } catch (e) {
       console.error("[auth-provider] Login error:", e)
+      clearSession()
       return false
     }
   }
 
   const logout = async () => {
     try {
-      // Clear token and user data from localStorage
-      localStorage.removeItem('auth_token')
-      localStorage.removeItem('auth_user')
-      setToken(null)
-      setUser(null)
-      setIsAuthenticated(false)
+      console.log("[auth-provider] Starting logout process...")
+
+      // Clear session data
+      clearSession()
+
+      console.log("[auth-provider] Logout successful, redirecting to login...")
       router.replace("/login")
     } catch (e) {
-      console.error("[auth-provider] logout failed:", e)
+      console.error("[auth-provider] Logout error:", e)
       // Even if logout fails, clear local state
-      localStorage.removeItem('auth_token')
-      localStorage.removeItem('auth_user')
-      setToken(null)
-      setUser(null)
-      setIsAuthenticated(false)
+      clearSession()
       router.replace("/login")
     }
   }
@@ -161,24 +214,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (res.status === 401) {
         console.log("[auth-provider] Token expired during refresh")
-        localStorage.removeItem('auth_token')
-        setToken(null)
-        setUser(null)
-        setIsAuthenticated(false)
+        clearSession()
       } else if (res.ok) {
         const ct = res.headers.get("content-type") || ""
         const json = ct.includes("application/json") ? await res.json() : { success: false }
 
         if (json?.success && json.data) {
           console.log("[auth-provider] User refreshed successfully")
-          setUser(json.data as User)
-          setIsAuthenticated(true)
-          // Update stored user data
-          localStorage.setItem('auth_user', JSON.stringify(json.data))
+          // Update session with new user data
+          saveSession(json.data as User, token)
         } else {
           console.log("[auth-provider] Refresh failed")
-          setUser(null)
-          setIsAuthenticated(false)
+          clearSession()
         }
       } else {
         // Network error or other issue - don't clear user state

@@ -73,7 +73,7 @@ export default function RegisterPage() {
       })
 
       const result = await response.json()
-      
+
       console.log("[register] Response status:", response.status)
       console.log("[register] Response data:", result)
 
@@ -105,22 +105,22 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-xl border-0 bg-white/90">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-xl border-0 bg-white/90 dark:bg-gray-800/90">
         <CardHeader className="text-center border-0 bg-transparent pb-2">
           <div className="flex justify-center mb-2">
             <div className="relative w-24 h-24">
-              <Image 
-                src="/Logo GTV.png" 
-                alt="GTV Logo" 
+              <Image
+                src="/Logo GTV.png"
+                alt="GTV Logo"
                 fill
                 style={{ objectFit: 'contain' }}
-                priority 
+                priority
               />
             </div>
           </div>
-          <p className="text-gray-600 font-medium">Create New Account</p>
-          <p className="text-sm text-gray-500">After Sales Management System</p>
+          <p className="text-gray-600 dark:text-gray-300 font-medium">Create New Account</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">After Sales Management System</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleRegister} className="space-y-4">
@@ -133,7 +133,7 @@ export default function RegisterPage() {
                 onChange={(e) => handleInputChange("full_name", e.target.value)}
                 placeholder="Enter your full name"
                 required
-                className="bg-white/80"
+                className="bg-white/80 dark:bg-gray-700/80"
               />
             </div>
 
@@ -146,7 +146,7 @@ export default function RegisterPage() {
                 onChange={(e) => handleInputChange("username", e.target.value)}
                 placeholder="Choose a username"
                 required
-                className="bg-white/80"
+                className="bg-white/80 dark:bg-gray-700/80"
               />
             </div>
 
@@ -159,14 +159,14 @@ export default function RegisterPage() {
                 onChange={(e) => handleInputChange("email", e.target.value)}
                 placeholder="Enter your email"
                 required
-                className="bg-white/80"
+                className="bg-white/80 dark:bg-gray-700/80"
               />
             </div>
 
             <div>
               <Label htmlFor="role">Role</Label>
               <Select value={formData.role} onValueChange={(value) => handleInputChange("role", value)}>
-                <SelectTrigger className="bg-white/80">
+                <SelectTrigger className="bg-white/80 dark:bg-gray-700/80">
                   <SelectValue placeholder="Select your role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -187,7 +187,7 @@ export default function RegisterPage() {
                 value={formData.staff_id}
                 onChange={(e) => handleInputChange("staff_id", e.target.value)}
                 placeholder="Enter staff ID if applicable"
-                className="bg-white/80"
+                className="bg-white/80 dark:bg-gray-700/80"
               />
             </div>
 
@@ -201,7 +201,7 @@ export default function RegisterPage() {
                   onChange={(e) => handleInputChange("password", e.target.value)}
                   placeholder="Create a password"
                   required
-                  className="bg-white/80"
+                  className="bg-white/80 dark:bg-gray-700/80"
                 />
                 <Button
                   type="button"
@@ -226,7 +226,7 @@ export default function RegisterPage() {
                   onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
                   placeholder="Confirm your password"
                   required
-                  className="bg-white/80"
+                  className="bg-white/80 dark:bg-gray-700/80"
                 />
                 <Button
                   type="button"
@@ -242,16 +242,16 @@ export default function RegisterPage() {
             </div>
 
             {error && (
-              <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-md">
-                <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
-                <p className="text-sm text-red-600">{error}</p>
+              <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                <AlertCircle className="h-4 w-4 text-red-500 dark:text-red-400 flex-shrink-0" />
+                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
               </div>
             )}
 
             {success && (
-              <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-md">
-                <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
-                <p className="text-sm text-green-600">{success}</p>
+              <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
+                <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400 flex-shrink-0" />
+                <p className="text-sm text-green-600 dark:text-green-400">{success}</p>
               </div>
             )}
 
@@ -274,16 +274,16 @@ export default function RegisterPage() {
           {/* Debug Information */}
           {debugInfo && (
             <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-md">
-              <h4 className="text-sm font-semibold text-gray-700 mb-2">Debug Information</h4>
-              <div className="text-xs text-gray-600 space-y-1">
+              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Debug Information</h4>
+              <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
                 <p><strong>Status:</strong> {debugInfo.status}</p>
                 <p><strong>Success:</strong> {debugInfo.response?.success ? "Yes" : "No"}</p>
                 {debugInfo.response?.error && (
                   <p><strong>Error:</strong> {debugInfo.response.error}</p>
                 )}
                 <details className="mt-2">
-                  <summary className="cursor-pointer text-blue-600">View Full Response</summary>
-                  <pre className="mt-2 text-xs bg-white p-2 rounded border overflow-auto max-h-32">
+                  <summary className="cursor-pointer text-blue-600 dark:text-blue-400">View Full Response</summary>
+                  <pre className="mt-2 text-xs bg-white dark:bg-gray-700 p-2 rounded border overflow-auto max-h-32">
                     {JSON.stringify(debugInfo.response, null, 2)}
                   </pre>
                 </details>
@@ -292,7 +292,7 @@ export default function RegisterPage() {
           )}
 
           <div className="mt-6 text-center">
-            <Link href="/login" className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700">
+            <Link href="/login" className="inline-flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300">
               <ArrowLeft className="h-4 w-4 mr-1" />
               Back to Login
             </Link>

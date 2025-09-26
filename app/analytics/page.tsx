@@ -20,15 +20,15 @@ export default function Analytics() {
       setIsLoading(true)
       setConnectionStatus('connected')
       const response = await fetch(`/api/analytics?range=${range}`)
-      
+
       if (!response.ok) {
         throw new Error("Failed to fetch analytics data")
       }
-      
+
       const data = await response.json()
       setCurrentData(data)
       setLastUpdated(new Date())
-      
+
       // Show update notification
       setShowUpdateNotification(true)
       setTimeout(() => setShowUpdateNotification(false), 3000)
@@ -71,21 +71,21 @@ export default function Analytics() {
       {showUpdateNotification && (
         <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg animate-in slide-in-from-right-2 duration-300">
           <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+            <div className="w-2 h-2 bg-white dark:bg-gray-200 rounded-full animate-pulse"></div>
             <span>Data updated successfully!</span>
           </div>
         </div>
       )}
-      
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
-          <p className="text-gray-600">Comprehensive business insights and data visualization</p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">Analytics Dashboard</h1>
+          <p className="text-gray-600 dark:text-gray-400">Comprehensive business insights and data visualization</p>
           {lastUpdated && (
             <div className="flex items-center space-x-2 mt-1">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 Last updated: {lastUpdated.toLocaleTimeString()}
               </p>
               <span className="text-xs text-green-600 font-medium">
@@ -97,25 +97,25 @@ export default function Analytics() {
         <div className="flex items-center space-x-3">
           {/* Connection Status */}
           <div className="flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium">
-            <div 
+            <div
               className={`w-2 h-2 rounded-full ${
-                connectionStatus === 'connected' ? 'bg-green-500' : 
+                connectionStatus === 'connected' ? 'bg-green-500' :
                 connectionStatus === 'error' ? 'bg-red-500' : 'bg-yellow-500'
               }`}
             />
             <span className={
-              connectionStatus === 'connected' ? 'text-green-600' : 
+              connectionStatus === 'connected' ? 'text-green-600' :
               connectionStatus === 'error' ? 'text-red-600' : 'text-yellow-600'
             }>
-              {connectionStatus === 'connected' ? 'Live' : 
+              {connectionStatus === 'connected' ? 'Live' :
                connectionStatus === 'error' ? 'Error' : 'Connecting...'}
             </span>
           </div>
-          
+
           <button
             onClick={handleRefresh}
             disabled={isLoading}
-            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors duration-200 disabled:opacity-50"
+            className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200 disabled:opacity-50"
             title="Refresh data"
           >
             <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
@@ -137,8 +137,8 @@ export default function Analytics() {
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <div className="text-gray-600 mb-2">Fetching real-time data...</div>
-            <div className="text-sm text-gray-500">Connecting to live database</div>
+            <div className="text-gray-600 dark:text-gray-400 mb-2">Fetching real-time data...</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">Connecting to live database</div>
           </div>
         </div>
       )}
@@ -146,8 +146,8 @@ export default function Analytics() {
       {!isLoading && !currentData && (
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
-            <div className="text-gray-500 text-lg mb-2">No data available</div>
-            <div className="text-sm text-gray-400 mb-4">Unable to connect to live database</div>
+            <div className="text-gray-500 dark:text-gray-400 text-lg mb-2">No data available</div>
+            <div className="text-sm text-gray-400 dark:text-gray-500 mb-4">Unable to connect to live database</div>
             <button
               onClick={handleRefresh}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
@@ -171,11 +171,11 @@ export default function Analytics() {
                  </div>
                )
              }
-             
-                           const maxRevenue = Math.max(...currentData.revenue.map((d) => d.revenue)) || 1
-              const maxServices = Math.max(...currentData.revenue.map((d) => d.services)) || 1
-              const totalServices = currentData.serviceTypes.reduce((sum, item) => sum + item.count, 0)
-             
+
+                           const maxRevenue = Math.max(...(currentData.revenue || []).map((d) => d.revenue || 0)) || 1
+              const maxServices = Math.max(...(currentData.revenue || []).map((d) => d.services || 0)) || 1
+              const totalServices = (currentData.serviceTypes || []).reduce((sum, item) => sum + (item.count || 0), 0)
+
              return (
                <>
                  {/* KPI Cards */}
@@ -189,7 +189,7 @@ export default function Analytics() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">${currentData.totals.revenue.toLocaleString()}</div>
+                <div className="text-2xl font-bold">${(currentData.totals.revenue || 0).toLocaleString()}</div>
                 <p className="text-xs text-green-600">Live data</p>
               </CardContent>
             </Card>
@@ -203,7 +203,7 @@ export default function Analytics() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{currentData.totals.services}</div>
+                <div className="text-2xl font-bold">{currentData.totals.services || 0}</div>
                 <p className="text-xs text-blue-600">Live data</p>
               </CardContent>
             </Card>
@@ -217,7 +217,7 @@ export default function Analytics() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{currentData.totals.customers}</div>
+                <div className="text-2xl font-bold">{currentData.totals.customers || 0}</div>
                 <p className="text-xs text-purple-600">Live data</p>
               </CardContent>
             </Card>
@@ -231,7 +231,7 @@ export default function Analytics() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">${currentData.totals.avgValue}</div>
+                <div className="text-2xl font-bold">${currentData.totals.avgValue || 0}</div>
                 <p className="text-xs text-orange-600">Live data</p>
               </CardContent>
             </Card>
@@ -284,9 +284,9 @@ export default function Analytics() {
                       </defs>
 
                                              <path
-                         d={`M60,160 ${currentData.revenue.map((data, index) => {
-                           const x = currentData.revenue.length > 1 
-                             ? 60 + (index * 680) / (currentData.revenue.length - 1)
+                         d={`M60,160 ${(currentData.revenue || []).map((data, index) => {
+                           const x = (currentData.revenue || []).length > 1
+                             ? 60 + (index * 680) / ((currentData.revenue || []).length - 1)
                              : 60 + (index * 680)
                            const y = 160 - ((data.revenue / maxRevenue) * 120)
                            return `L${x},${y}`
@@ -303,8 +303,8 @@ export default function Analytics() {
                         strokeLinejoin="round"
                         points={currentData.revenue
                           .map((data, index) => {
-                            const x = currentData.revenue.length > 1 
-                              ? 60 + (index * 680) / (currentData.revenue.length - 1)
+                            const x = (currentData.revenue || []).length > 1
+                              ? 60 + (index * 680) / ((currentData.revenue || []).length - 1)
                               : 60 + (index * 680)
                             const y = 160 - ((data.revenue / maxRevenue) * 120)
                             return `${x},${y}`
@@ -313,9 +313,9 @@ export default function Analytics() {
                       />
 
                       {/* Data points */}
-                      {currentData.revenue.map((data, index) => {
-                        const x = currentData.revenue.length > 1 
-                          ? 60 + (index * 680) / (currentData.revenue.length - 1)
+                      {(currentData.revenue || []).map((data, index) => {
+                        const x = (currentData.revenue || []).length > 1
+                          ? 60 + (index * 680) / ((currentData.revenue || []).length - 1)
                           : 60 + (index * 680)
                         const y = 160 - ((data.revenue / maxRevenue) * 120)
                         return (
@@ -346,16 +346,16 @@ export default function Analytics() {
                   {/* Revenue Statistics */}
                   <div className="grid grid-cols-3 gap-4 text-center">
                     <div className="bg-blue-50 p-3 rounded-lg">
-                      <div className="text-lg font-bold text-blue-600">${Math.max(...currentData.revenue.map(d => d.revenue)).toLocaleString()}</div>
+                      <div className="text-lg font-bold text-blue-600">${Math.max(...(currentData.revenue || []).map(d => d.revenue || 0)).toLocaleString()}</div>
                       <div className="text-xs text-gray-600">Peak Revenue</div>
                     </div>
                     <div className="bg-green-50 p-3 rounded-lg">
-                      <div className="text-lg font-bold text-green-600">${Math.round(currentData.revenue.reduce((sum, d) => sum + d.revenue, 0) / currentData.revenue.length).toLocaleString()}</div>
+                      <div className="text-lg font-bold text-green-600">${Math.round((currentData.revenue || []).reduce((sum, d) => sum + (d.revenue || 0), 0) / Math.max((currentData.revenue || []).length, 1)).toLocaleString()}</div>
                       <div className="text-xs text-gray-600">Average</div>
                     </div>
                     <div className="bg-purple-50 p-3 rounded-lg">
                       <div className="text-lg font-bold text-purple-600">
-                        {((currentData.revenue[currentData.revenue.length - 1].revenue - currentData.revenue[0].revenue) / currentData.revenue[0].revenue * 100).toFixed(1)}%
+                        {((currentData.revenue || []).length > 0 ? (((currentData.revenue || [])[(currentData.revenue || []).length - 1]?.revenue || 0) - ((currentData.revenue || [])[0]?.revenue || 0)) / Math.max((currentData.revenue || [])[0]?.revenue || 1, 1) * 100 : 0).toFixed(1)}%
                       </div>
                       <div className="text-xs text-gray-600">Growth</div>
                     </div>
@@ -409,9 +409,9 @@ export default function Analytics() {
                       </defs>
 
                                              <path
-                         d={`M60,160 ${currentData.revenue.map((data, index) => {
-                           const x = currentData.revenue.length > 1 
-                             ? 60 + (index * 680) / (currentData.revenue.length - 1)
+                         d={`M60,160 ${(currentData.revenue || []).map((data, index) => {
+                           const x = (currentData.revenue || []).length > 1
+                             ? 60 + (index * 680) / ((currentData.revenue || []).length - 1)
                              : 60 + (index * 680)
                            const y = 160 - ((data.services / maxServices) * 120)
                            return `L${x},${y}`
@@ -428,7 +428,7 @@ export default function Analytics() {
                          strokeLinejoin="round"
                          points={currentData.revenue
                            .map((data, index) => {
-                             const x = currentData.revenue.length > 1 
+                             const x = currentData.revenue.length > 1
                                ? 60 + (index * 680) / (currentData.revenue.length - 1)
                                : 60 + (index * 680)
                              const y = 160 - ((data.services / maxServices) * 120)
@@ -438,8 +438,8 @@ export default function Analytics() {
                        />
 
                                              {/* Data points */}
-                       {currentData.revenue.map((data, index) => {
-                         const x = currentData.revenue.length > 1 
+                       {(currentData.revenue || []).map((data, index) => {
+                         const x = currentData.revenue.length > 1
                            ? 60 + (index * 680) / (currentData.revenue.length - 1)
                            : 60 + (index * 680)
                          const y = 160 - ((data.services / maxServices) * 120)
@@ -471,16 +471,16 @@ export default function Analytics() {
                   {/* Service Statistics */}
                   <div className="grid grid-cols-3 gap-4 text-center">
                     <div className="bg-green-50 p-3 rounded-lg">
-                      <div className="text-lg font-bold text-green-600">{Math.max(...currentData.revenue.map(d => d.services))}</div>
+                      <div className="text-lg font-bold text-green-600">{Math.max(...(currentData.revenue || []).map(d => d.services || 0))}</div>
                       <div className="text-xs text-gray-600">Peak Services</div>
                     </div>
                     <div className="bg-blue-50 p-3 rounded-lg">
-                      <div className="text-lg font-bold text-blue-600">{Math.round(currentData.revenue.reduce((sum, d) => sum + d.services, 0) / currentData.revenue.length)}</div>
+                      <div className="text-lg font-bold text-blue-600">{Math.round((currentData.revenue || []).reduce((sum, d) => sum + (d.services || 0), 0) / Math.max((currentData.revenue || []).length, 1))}</div>
                       <div className="text-xs text-gray-600">Average</div>
                     </div>
                     <div className="bg-orange-50 p-3 rounded-lg">
                       <div className="text-lg font-bold text-orange-600">
-                        {((currentData.revenue[currentData.revenue.length - 1].services - currentData.revenue[0].services) / currentData.revenue[0].services * 100).toFixed(1)}%
+                        {((currentData.revenue || []).length > 0 ? (((currentData.revenue || [])[(currentData.revenue || []).length - 1]?.services || 0) - ((currentData.revenue || [])[0]?.services || 0)) / Math.max((currentData.revenue || [])[0]?.services || 1, 1) * 100 : 0).toFixed(1)}%
                       </div>
                       <div className="text-xs text-gray-600">Growth</div>
                     </div>
@@ -510,12 +510,12 @@ export default function Analytics() {
   viewBox="0 0 100 100"
 >
 
-                      {currentData.serviceTypes.map((item, index) => {
+                      {(currentData.serviceTypes || []).map((item, index) => {
                         const percentage = (item.count / totalServices) * 100
                         const strokeDasharray = `${percentage} ${100 - percentage}`
-                        const strokeDashoffset = currentData.serviceTypes
+                        const strokeDashoffset = (currentData.serviceTypes || [])
                           .slice(0, index)
-                          .reduce((acc, curr) => acc + (curr.count / totalServices) * 100, 0)
+                          .reduce((acc, curr) => acc + ((curr.count || 0) / Math.max(totalServices, 1)) * 100, 0)
 
                         return (
                           <circle
@@ -537,7 +537,7 @@ export default function Analytics() {
                       <div className="text-center">
                         <div className="text-4xl font-bold text-gray-800">{totalServices}</div>
                         <div className="text-lg text-gray-500">Total Services</div>
-                        <div className="text-sm text-gray-400 mt-1">${currentData.serviceTypes.reduce((sum, item) => sum + item.revenue, 0).toLocaleString()}</div>
+                        <div className="text-sm text-gray-400 mt-1">${(currentData.serviceTypes || []).reduce((sum, item) => sum + (item.revenue || 0), 0).toLocaleString()}</div>
                       </div>
                     </div>
                   </div>
@@ -546,7 +546,7 @@ export default function Analytics() {
                 {/* Detailed Legend and Statistics */}
                 <div className="xl:col-span-2 space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {currentData.serviceTypes.map((item, index) => (
+                    {(currentData.serviceTypes || []).map((item, index) => (
                       <div
                         key={index}
                         className="flex items-center justify-between p-4 border-2 rounded-lg hover:bg-gray-50 transition-colors duration-200 hover:border-gray-300"
@@ -580,19 +580,19 @@ export default function Analytics() {
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-green-600">
-                          ${currentData.serviceTypes.reduce((sum, item) => sum + item.revenue, 0).toLocaleString()}
+                          ${(currentData.serviceTypes || []).reduce((sum, item) => sum + (item.revenue || 0), 0).toLocaleString()}
                         </div>
                         <div className="text-sm text-gray-600">Total Revenue</div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-purple-600">
-                          ${Math.round(currentData.serviceTypes.reduce((sum, item) => sum + item.revenue, 0) / totalServices)}
+                          ${Math.round((currentData.serviceTypes || []).reduce((sum, item) => sum + (item.revenue || 0), 0) / Math.max(totalServices, 1))}
                         </div>
                         <div className="text-sm text-gray-600">Avg per Service</div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-orange-600">
-                          {currentData.serviceTypes.length}
+                          {(currentData.serviceTypes || []).length}
                         </div>
                         <div className="text-sm text-gray-600">Service Types</div>
                       </div>
@@ -655,7 +655,7 @@ export default function Analytics() {
                     {/* Area fill for new customers */}
                     <path
                       d={`M80,190 ${currentData.customers.map((data, index) => {
-                        const x = currentData.customers.length > 1 
+                        const x = currentData.customers.length > 1
                           ? 80 + (index * 740) / (currentData.customers.length - 1)
                           : 80 + (index * 740)
                         const maxCustomers = Math.max(...currentData.customers.map(d => Math.max(d.new, d.returning)))
@@ -668,7 +668,7 @@ export default function Analytics() {
                     {/* Area fill for returning customers */}
                     <path
                       d={`M80,190 ${currentData.customers.map((data, index) => {
-                        const x = currentData.customers.length > 1 
+                        const x = currentData.customers.length > 1
                           ? 80 + (index * 740) / (currentData.customers.length - 1)
                           : 80 + (index * 740)
                         const maxCustomers = Math.max(...currentData.customers.map(d => Math.max(d.new, d.returning)))
@@ -687,7 +687,7 @@ export default function Analytics() {
                       strokeLinejoin="round"
                       points={currentData.customers
                         .map((data, index) => {
-                          const x = currentData.customers.length > 1 
+                          const x = currentData.customers.length > 1
                             ? 80 + (index * 740) / (currentData.customers.length - 1)
                             : 80 + (index * 740)
                           const maxCustomers = Math.max(...currentData.customers.map(d => Math.max(d.new, d.returning)))
@@ -706,7 +706,7 @@ export default function Analytics() {
                       strokeLinejoin="round"
                       points={currentData.customers
                         .map((data, index) => {
-                          const x = currentData.customers.length > 1 
+                          const x = currentData.customers.length > 1
                             ? 80 + (index * 740) / (currentData.customers.length - 1)
                             : 80 + (index * 740)
                           const maxCustomers = Math.max(...currentData.customers.map(d => Math.max(d.new, d.returning)))
@@ -718,7 +718,7 @@ export default function Analytics() {
 
                     {/* Enhanced data points for new customers */}
                     {currentData.customers.map((data, index) => {
-                      const x = currentData.customers.length > 1 
+                      const x = currentData.customers.length > 1
                         ? 80 + (index * 740) / (currentData.customers.length - 1)
                         : 80 + (index * 740)
                       const maxCustomers = Math.max(...currentData.customers.map(d => Math.max(d.new, d.returning)))
@@ -748,7 +748,7 @@ export default function Analytics() {
 
                     {/* Enhanced data points for returning customers */}
                     {currentData.customers.map((data, index) => {
-                      const x = currentData.customers.length > 1 
+                      const x = currentData.customers.length > 1
                         ? 80 + (index * 740) / (currentData.customers.length - 1)
                         : 80 + (index * 740)
                       const maxCustomers = Math.max(...currentData.customers.map(d => Math.max(d.new, d.returning)))
@@ -778,7 +778,7 @@ export default function Analytics() {
 
                     {/* X-axis labels */}
                     {currentData.customers.map((data, index) => {
-                      const x = currentData.customers.length > 1 
+                      const x = currentData.customers.length > 1
                         ? 80 + (index * 740) / (currentData.customers.length - 1)
                         : 80 + (index * 740)
                       return (

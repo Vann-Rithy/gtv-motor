@@ -69,18 +69,18 @@ export default function LoginPage() {
   // If already authenticated, show loading
   if (isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-lg text-gray-600">Already logged in, redirecting...</p>
+          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-blue-600 dark:text-blue-400" />
+          <p className="text-lg text-gray-600 dark:text-gray-300">Already logged in, redirecting...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-xl border-0 bg-white/90">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-xl border-0 bg-white/90 dark:bg-gray-800/90">
         <CardHeader className="text-center border-0 bg-transparent pb-2">
           <div className="flex justify-center mb-2">
             <div className="relative w-24 h-24">
@@ -93,15 +93,15 @@ export default function LoginPage() {
               />
             </div>
           </div>
-          <p className="text-gray-600 font-medium">After Sales Management System</p>
+          <p className="text-gray-600 dark:text-gray-300 font-medium">After Sales Management System</p>
         </CardHeader>
         <CardContent>
           {success ? (
             <div className="text-center py-8">
-              <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">Login Successful!</h3>
-              <p className="text-gray-600">Redirecting to dashboard...</p>
-              <div className="flex items-center justify-center text-blue-600 mt-4">
+              <CheckCircle className="h-16 w-16 text-green-500 dark:text-green-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">Login Successful!</h3>
+              <p className="text-gray-600 dark:text-gray-300">Redirecting to dashboard...</p>
+              <div className="flex items-center justify-center text-blue-600 dark:text-blue-400 mt-4">
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 <span>Please wait...</span>
               </div>
@@ -117,7 +117,7 @@ export default function LoginPage() {
                   onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
                   placeholder="Enter your email"
                   required
-                  className="bg-white/80"
+                  className="bg-white/80 dark:bg-gray-700/80"
                   disabled={isLoading}
                 />
               </div>
@@ -131,7 +131,7 @@ export default function LoginPage() {
                     onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
                     placeholder="Enter password"
                     required
-                    className="bg-white/80"
+                    className="bg-white/80 dark:bg-gray-700/80"
                     disabled={isLoading}
                   />
                   <Button
@@ -149,9 +149,9 @@ export default function LoginPage() {
               </div>
 
               {error && (
-                <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-md">
-                  <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
-                  <p className="text-sm text-red-600">{error}</p>
+                <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                  <AlertCircle className="h-4 w-4 text-red-500 dark:text-red-400 flex-shrink-0" />
+                  <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
                 </div>
               )}
 
@@ -174,7 +174,7 @@ export default function LoginPage() {
 
           {!success && (
             <div className="mt-4 text-center">
-              <Link href="/register" className="text-sm text-blue-600 hover:text-blue-700">
+              <Link href="/register" className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300">
                 Don't have an account? Create one
               </Link>
             </div>

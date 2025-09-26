@@ -71,8 +71,12 @@ export default function ServiceDetailPage() {
     const fetchService = async () => {
       try {
         setLoading(true)
-        const data = await apiClient.getService(serviceId)
-        setService(data as ServiceDetail)
+        const response = await apiClient.getService(serviceId)
+        console.log('[Service Details] API Response:', response)
+        // Extract service data from the response
+        const serviceData = response.data || response
+        console.log('[Service Details] Service Data:', serviceData)
+        setService(serviceData as ServiceDetail)
         setError(null)
       } catch (err: any) {
         console.error("Failed to fetch service:", err)
@@ -100,11 +104,11 @@ export default function ServiceDetailPage() {
 
   if (error || !service) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-red-600 mb-4">Error</h1>
-            <p className="text-gray-600 mb-4">{error || "Service not found"}</p>
+            <h1 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">Error</h1>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">{error || "Service not found"}</p>
             <Link href="/services">
               <Button>
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -117,17 +121,17 @@ export default function ServiceDetailPage() {
     )
   }
 
-  const statusTone = service.service_status === "completed" ? "bg-green-100 text-green-800" : 
-                    service.service_status === "in_progress" ? "bg-blue-100 text-blue-800" : 
-                    "bg-yellow-100 text-yellow-800"
+  const statusTone = service.service_status === "completed" ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200" :
+                    service.service_status === "in_progress" ? "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200" :
+                    "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200"
 
-  const paymentTone = service.payment_status === "paid" ? "bg-green-100 text-green-800" : 
-                     service.payment_status === "cancelled" ? "bg-red-100 text-red-800" : 
-                     "bg-yellow-100 text-yellow-800"
+  const paymentTone = service.payment_status === "paid" ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200" :
+                     service.payment_status === "cancelled" ? "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200" :
+                     "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200"
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-4">
             <div className="flex items-center">
@@ -138,12 +142,12 @@ export default function ServiceDetailPage() {
                 </Button>
               </Link>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">{service.invoice_number}</h1>
-                <p className="text-sm text-gray-500">Service Details</p>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{service.invoice_number}</h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Service Details</p>
               </div>
             </div>
             <div className="flex space-x-2">
-              <Link href={`/services/${service.id}/invoice`}>
+              <Link href={`/services/${serviceId}/invoice`}>
                 <Button>
                   <DollarSign className="h-4 w-4 mr-2" />
                   View Invoice
@@ -166,7 +170,7 @@ export default function ServiceDetailPage() {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Service Status</label>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Service Status</label>
                     <div className="mt-1">
                       <Badge className={statusTone}>
                         {STATUS_LABELS[service.service_status] || service.service_status}
@@ -174,7 +178,7 @@ export default function ServiceDetailPage() {
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Payment Status</label>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Payment Status</label>
                     <div className="mt-1">
                       <Badge className={paymentTone}>
                         {PAYMENT_LABELS[service.payment_status] || service.payment_status}
@@ -182,22 +186,22 @@ export default function ServiceDetailPage() {
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Service Date</label>
-                    <div className="mt-1 text-sm">
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Service Date</label>
+                    <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">
                       {service.service_date ? new Date(service.service_date).toLocaleDateString() : "—"}
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Payment Method</label>
-                    <div className="mt-1 text-sm">{service.payment_method || "—"}</div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Payment Method</label>
+                    <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">{service.payment_method || "—"}</div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Current Kilometers</label>
-                    <div className="mt-1 text-sm">{service.current_km?.toLocaleString() || "—"}</div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Current Kilometers</label>
+                    <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">{service.current_km?.toLocaleString() || "—"}</div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Next Service KM</label>
-                    <div className="mt-1 text-sm">{service.next_service_km?.toLocaleString() || "—"}</div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Next Service KM</label>
+                    <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">{service.next_service_km?.toLocaleString() || "—"}</div>
                   </div>
                 </div>
               </CardContent>
@@ -215,7 +219,7 @@ export default function ServiceDetailPage() {
                     <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex-1">
                         <div className="font-medium">{item.description}</div>
-                                                 <div className="text-sm text-gray-500">
+                                                 <div className="text-sm text-gray-500 dark:text-gray-400">
                            {item.quantity} × {toMoney(Number(item.unit_price) || 0)} ({item.item_type})
                          </div>
                       </div>
@@ -258,16 +262,16 @@ export default function ServiceDetailPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Name</label>
-                  <div className="mt-1 text-sm">{service.customer_name}</div>
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Name</label>
+                  <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">{service.customer_name}</div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Phone</label>
-                  <div className="mt-1 text-sm">{service.customer_phone}</div>
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Phone</label>
+                  <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">{service.customer_phone}</div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Address</label>
-                  <div className="mt-1 text-sm">{service.customer_address || "—"}</div>
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Address</label>
+                  <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">{service.customer_address || "—"}</div>
                 </div>
               </CardContent>
             </Card>
@@ -282,16 +286,16 @@ export default function ServiceDetailPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Plate Number</label>
-                  <div className="mt-1 text-sm">{service.vehicle_plate}</div>
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Plate Number</label>
+                  <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">{service.vehicle_plate}</div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Model</label>
-                  <div className="mt-1 text-sm">{service.vehicle_model}</div>
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Model</label>
+                  <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">{service.vehicle_model}</div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Year</label>
-                  <div className="mt-1 text-sm">{service.vehicle_year || "—"}</div>
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Year</label>
+                  <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">{service.vehicle_year || "—"}</div>
                 </div>
               </CardContent>
             </Card>
@@ -306,20 +310,20 @@ export default function ServiceDetailPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Service Type</label>
-                  <div className="mt-1 text-sm">{service.service_type_name}</div>
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Service Type</label>
+                  <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">{service.service_type_name}</div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Category</label>
-                  <div className="mt-1 text-sm">{service.service_category}</div>
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Category</label>
+                  <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">{service.service_category}</div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Technician</label>
-                  <div className="mt-1 text-sm">{service.technician_name || "—"}</div>
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Technician</label>
+                  <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">{service.technician_name || "—"}</div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Sales Rep</label>
-                  <div className="mt-1 text-sm">{service.sales_rep_name || "—"}</div>
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Sales Rep</label>
+                  <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">{service.sales_rep_name || "—"}</div>
                 </div>
               </CardContent>
             </Card>

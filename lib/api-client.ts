@@ -167,6 +167,9 @@ class ApiClient {
   async getService(id: number | string) {
     return this.request(`/api/services/${id}`, { method: "GET" })
   }
+  async getServiceInvoice(id: number | string) {
+    return this.request(`/api/services/${id}/invoice`, { method: "GET" })
+  }
   async createService(data: {
     customer_id: number
     vehicle_id: number
@@ -238,6 +241,16 @@ class ApiClient {
 
   // ---------- Inventory ----------
   async getInventory(params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    low_stock?: boolean;
+    out_of_stock?: boolean;
+    category_id?: string | number
+  }) {
+    return this.request(`/api/inventory${buildQuery(params)}`, { method: "GET" })
+  }
+  async getInventoryItems(params?: {
     page?: number;
     limit?: number;
     search?: string;

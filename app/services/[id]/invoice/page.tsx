@@ -46,12 +46,28 @@ export default function ServiceInvoicePage() {
     const fetchService = async () => {
       try {
         setLoading(true)
-        const data = await apiClient.getService(serviceId)
-        setService(data as ServiceInvoice)
+        const response = await apiClient.getServiceInvoice(serviceId)
+        // Extract service data from the invoice response
+        const serviceData = response.data?.service || response.data
+        const invoiceData = response.data?.invoice
+
+        // Map invoice items to service_items format
+        if (invoiceData?.items) {
+          serviceData.service_items = invoiceData.items.map((item: any, index: number) => ({
+            id: index + 1,
+            description: item.description,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            total_price: item.total,
+            item_type: 'service'
+          }))
+        }
+
+        setService(serviceData as ServiceInvoice)
         setError(null)
       } catch (err: any) {
-        console.error("Failed to fetch service:", err)
-        setError(err?.message || "Failed to fetch service details")
+        console.error("Failed to fetch service invoice:", err)
+        setError(err?.message || "Failed to fetch service invoice")
       } finally {
         setLoading(false)
       }
@@ -91,11 +107,11 @@ export default function ServiceInvoicePage() {
 
   if (error || !service) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-red-600 mb-4">Error</h1>
-            <p className="text-gray-600 mb-4">{error || "Service not found"}</p>
+            <h1 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">Error</h1>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">{error || "Service not found"}</p>
             <Link href="/services">
               <Button>
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -150,93 +166,93 @@ export default function ServiceInvoicePage() {
           className="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden transition-colors duration-200"
         >
           {/* Invoice Header */}
-          <div className="bg-white p-6 border-b-2 border-gray-300 relative">
+          <div className="bg-white dark:bg-gray-800 p-6 border-b-2 border-gray-300 dark:border-gray-600 relative">
               <div className="flex justify-between items-start">
                 <div className="flex items-center">
                   {/* GTV Motor Logo */}
-                  <img 
-                    src="/Logo GTV Motor eng&kh.png" 
-                    alt="GTV Motor Logo" 
+                  <img
+                    src="/Logo GTV Motor eng&kh.png"
+                    alt="GTV Motor Logo"
                     className="h-16 w-auto object-contain"
                   />
                 </div>
                 <div className="flex items-center">
                   {/* GTV Slogan Logo */}
-                  <img 
-                    src="/Slogan GTV.png" 
-                    alt="GTV Slogan" 
+                  <img
+                    src="/Slogan GTV.png"
+                    alt="GTV Slogan"
                     className="h-16 w-auto object-contain"
                   />
                 </div>
               </div>
-            
+
             {/* Invoice Title */}
             <div className="text-center mt-6">
-              <h1 className="text-3xl font-bold text-gray-800">វិក្កយបត្រ</h1>
-              <h2 className="text-2xl font-semibold text-gray-700">INVOICE</h2>
+              <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">វិក្កយបត្រ</h1>
+              <h2 className="text-2xl font-semibold text-gray-700 dark:text-gray-300">INVOICE</h2>
             </div>
           </div>
 
           {/* Invoice Details and Customer Information */}
-          <div className="p-6">
+          <div className="p-6 bg-white dark:bg-gray-800">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               {/* Customer Information - Left Side */}
               <div>
                 <div className="text-sm">
                   <div className="mb-1">
-                    <span className="font-semibold text-gray-800">ឈ្មោះអតិថិជន/Customer Name:</span>
-                    <span className="ml-2 text-gray-700">{service.customer_name}</span>
+                    <span className="font-semibold text-gray-800 dark:text-gray-200">ឈ្មោះអតិថិជន/Customer Name:</span>
+                    <span className="ml-2 text-gray-700 dark:text-gray-300">{service.customer_name}</span>
                   </div>
                   <div className="mb-1">
-                    <span className="font-semibold text-gray-800">អាសយដ្ឋាន/Address:</span>
-                    <span className="ml-2 text-gray-700">{service.customer_address || "—"}</span>
+                    <span className="font-semibold text-gray-800 dark:text-gray-200">អាសយដ្ឋាន/Address:</span>
+                    <span className="ml-2 text-gray-700 dark:text-gray-300">{service.customer_address || "—"}</span>
                   </div>
                   <div>
-                    <span className="font-semibold text-gray-800">លេខទូរស័ព្ទ/ Tel:</span>
-                    <span className="ml-2 text-gray-700">{service.customer_phone}</span>
+                    <span className="font-semibold text-gray-800 dark:text-gray-200">លេខទូរស័ព្ទ/ Tel:</span>
+                    <span className="ml-2 text-gray-700 dark:text-gray-300">{service.customer_phone}</span>
                   </div>
                 </div>
               </div>
-              
+
               {/* Invoice Details - Right Side */}
               <div>
                 <div className="text-sm text-right">
                   <div className="mb-1">
-                    <span className="font-semibold text-gray-800">លេខវិក្កយបត្រ /Invoice:</span>
-                    <span className="ml-2 text-gray-700">{service.invoice_number}</span>
+                    <span className="font-semibold text-gray-800 dark:text-gray-200">លេខវិក្កយបត្រ /Invoice:</span>
+                    <span className="ml-2 text-gray-700 dark:text-gray-300">{service.invoice_number}</span>
                   </div>
                   <div>
-                    <span className="font-semibold text-gray-800">កាលបរិច្ឆេទ / Date:</span>
-                    <span className="ml-2 text-gray-700">{service.service_date ? new Date(service.service_date).toLocaleDateString() : "—"}</span>
+                    <span className="font-semibold text-gray-800 dark:text-gray-200">កាលបរិច្ឆេទ / Date:</span>
+                    <span className="ml-2 text-gray-700 dark:text-gray-300">{service.service_date ? new Date(service.service_date).toLocaleDateString() : "—"}</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Service Items Table */}
-            <div className="border border-gray-300 rounded-lg overflow-hidden mb-6">
+            <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden mb-6">
               <table className="w-full">
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-800 border-b border-gray-300">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-800 dark:text-gray-200 border-b border-gray-300 dark:border-gray-600">
                       N°
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-800 border-b border-gray-300">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-800 dark:text-gray-200 border-b border-gray-300 dark:border-gray-600">
                       បរិយាយមុខទំនិញ/សេវា
                       <br />
                       (Description of Goods/Services)
                     </th>
-                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-800 border-b border-gray-300">
+                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-800 dark:text-gray-200 border-b border-gray-300 dark:border-gray-600">
                       បរិមាណ
                       <br />
                       (Quantity)
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-800 border-b border-gray-300">
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-800 dark:text-gray-200 border-b border-gray-300 dark:border-gray-600">
                       តម្លៃឯកតា
                       <br />
                       (Unit Price)
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-800 border-b border-gray-300">
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-800 dark:text-gray-200 border-b border-gray-300 dark:border-gray-600">
                       ថ្លៃទំនិញ/សេវា
                       <br />
                       (Amount)
@@ -245,30 +261,24 @@ export default function ServiceInvoicePage() {
                 </thead>
                 <tbody>
                   {service.service_items?.map((item, index) => (
-                    <tr key={item.id} className="border-b border-gray-200">
-                      <td className="px-4 py-3 text-center text-gray-700">{index + 1}</td>
-                      <td className="px-4 py-3 text-gray-700">{item.description}</td>
-                      <td className="px-4 py-3 text-center text-gray-700">{item.quantity}</td>
-                      <td className="px-4 py-3 text-right text-gray-700">
+                    <tr key={item.id} className="border-b border-gray-200 dark:border-gray-600">
+                      <td className="px-4 py-3 text-center text-gray-700 dark:text-gray-300">{index + 1}</td>
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{item.description}</td>
+                      <td className="px-4 py-3 text-center text-gray-700 dark:text-gray-300">{item.quantity}</td>
+                      <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">
                         ${(Number(item.unit_price) || 0).toFixed(2)}
                       </td>
-                      <td className="px-4 py-3 text-right font-medium text-gray-900">
+                      <td className="px-4 py-3 text-right font-medium text-gray-900 dark:text-gray-100">
                         ${(Number(item.total_price) || 0).toFixed(2)}
                       </td>
                     </tr>
-                  ))}
-                  {/* Empty rows for formatting */}
-                  {[...Array(Math.max(0, 3 - (service.service_items?.length || 0)))].map((_, index) => (
-                    <tr key={`empty-${index}`} className="border-b border-gray-200">
-                      <td className="px-4 py-3 text-center text-gray-700">
-                        {(service.service_items?.length || 0) + index + 1}
+                  )) || (
+                    <tr className="border-b border-gray-200 dark:border-gray-600">
+                      <td colSpan={5} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                        No service items found
                       </td>
-                      <td className="px-4 py-3">&nbsp;</td>
-                      <td className="px-4 py-3">&nbsp;</td>
-                      <td className="px-4 py-3">&nbsp;</td>
-                      <td className="px-4 py-3">&nbsp;</td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
@@ -278,16 +288,16 @@ export default function ServiceInvoicePage() {
               <div className="w-80">
                 <div className="space-y-1">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-700">Subtotal:</span>
-                    <span className="text-gray-700">${((Number(service.total_amount) || 0) / 1.1).toFixed(2)}</span>
+                    <span className="text-gray-700 dark:text-gray-300">Subtotal:</span>
+                    <span className="text-gray-700 dark:text-gray-300">${((Number(service.total_amount) || 0) / 1.1).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-700">VAT 10%:</span>
-                    <span className="text-gray-700">${((Number(service.total_amount) || 0) * 0.1 / 1.1).toFixed(2)}</span>
+                    <span className="text-gray-700 dark:text-gray-300">VAT 10%:</span>
+                    <span className="text-gray-700 dark:text-gray-300">${((Number(service.total_amount) || 0) * 0.1 / 1.1).toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between items-center py-1 border-t border-gray-400">
-                    <span className="font-bold text-gray-900">Total (including VAT 10% in USD):</span>
-                    <span className="font-bold text-gray-900">${(Number(service.total_amount) || 0).toFixed(2)}</span>
+                  <div className="flex justify-between items-center py-1 border-t border-gray-400 dark:border-gray-600">
+                    <span className="font-bold text-gray-900 dark:text-gray-100">Total (including VAT 10% in USD):</span>
+                    <span className="font-bold text-gray-900 dark:text-gray-100">${(Number(service.total_amount) || 0).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -295,23 +305,23 @@ export default function ServiceInvoicePage() {
 
             {/* Notes and Vehicle Information */}
             <div className="mb-6">
-              <h3 className="font-semibold text-gray-800 mb-2">កំណត់សម្គាល់/Note:</h3>
+              <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">កំណត់សម្គាល់/Note:</h3>
               <div className="text-sm space-y-1">
                 <div>
-                  <span className="font-semibold">ស្លាកលេខ/Plate No:</span>
-                  <span className="ml-2">{service.vehicle_plate}</span>
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">ស្លាកលេខ/Plate No:</span>
+                  <span className="ml-2 text-gray-700 dark:text-gray-300">{service.vehicle_plate}</span>
                 </div>
                 <div>
-                  <span className="font-semibold">ម៉ាករថយន្ត/Model:</span>
-                  <span className="ml-2">{service.vehicle_model}</span>
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">ម៉ាករថយន្ត/Model:</span>
+                  <span className="ml-2 text-gray-700 dark:text-gray-300">{service.vehicle_model}</span>
                 </div>
                 <div>
-                  <span className="font-semibold">លេខតួរថយន្ត/VIN No:</span>
-                  <span className="ml-2">{service.vehicle_vin_number || "—"}</span>
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">លេខតួរថយន្ត/VIN No:</span>
+                  <span className="ml-2 text-gray-700 dark:text-gray-300">{service.vehicle_vin_number || "—"}</span>
                 </div>
                 <div>
-                  <span className="font-semibold">គីឡូម៉ែត្រ/Kilometers:</span>
-                  <span className="ml-2">{service.current_km?.toLocaleString() || "—"}km</span>
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">គីឡូម៉ែត្រ/Kilometers:</span>
+                  <span className="ml-2 text-gray-700 dark:text-gray-300">{service.current_km?.toLocaleString() || "—"}km</span>
                 </div>
               </div>
             </div>
@@ -319,15 +329,15 @@ export default function ServiceInvoicePage() {
             {/* Signatures */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
               <div className="text-center">
-                <div className="border-t border-gray-400 pt-2 mt-16">
-                  <p className="text-sm font-medium text-gray-800">ហត្ថលេខា និងឈ្មោះអ្នកទិញ</p>
-                  <p className="text-sm text-gray-600">Customer's Signature & Name</p>
+                <div className="border-t border-gray-400 dark:border-gray-600 pt-2 mt-16">
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">ហត្ថលេខា និងឈ្មោះអ្នកទិញ</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Customer's Signature & Name</p>
                 </div>
               </div>
               <div className="text-center">
-                <div className="border-t border-gray-400 pt-2 mt-16">
-                  <p className="text-sm font-medium text-gray-800">ហត្ថលេខា និងឈ្មោះអ្នកលក់</p>
-                  <p className="text-sm text-gray-600">Seller's Signature & Name</p>
+                <div className="border-t border-gray-400 dark:border-gray-600 pt-2 mt-16">
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">ហត្ថលេខា និងឈ្មោះអ្នកលក់</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Seller's Signature & Name</p>
                 </div>
               </div>
             </div>

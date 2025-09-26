@@ -36,7 +36,7 @@ export default function WarrantyPage() {
 
       const data = await response.json()
       console.log("Warranty API response:", data) // Debug log
-      
+
       if (data.success && data.data) {
         setWarranties(data.data)
       } else {
@@ -77,7 +77,7 @@ export default function WarrantyPage() {
   const getStatusBadge = (warranty: WarrantyWithDetails) => {
     const calculatedStatus = calculateWarrantyStatus(warranty)
     const statusColor = getWarrantyStatusColor(calculatedStatus.status)
-    
+
     return (
       <Badge className={statusColor}>
         {calculatedStatus.status.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase())}
@@ -95,11 +95,11 @@ export default function WarrantyPage() {
       <div className="p-4 lg:p-8 space-y-6">
         <div className="flex items-center space-x-4">
           <Shield className="h-8 w-8 text-blue-600" />
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Warranty Management</h1>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">Warranty Management</h1>
         </div>
         <div className="flex items-center justify-center py-12">
           <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
-          <span className="ml-2 text-gray-600">Loading warranties...</span>
+          <span className="ml-2 text-gray-600 dark:text-gray-400">Loading warranties...</span>
         </div>
       </div>
     )
@@ -110,7 +110,7 @@ export default function WarrantyPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Shield className="h-8 w-8 text-blue-600" />
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Warranty Management</h1>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">Warranty Management</h1>
         </div>
                  <div className="flex space-x-2">
            <Button
@@ -166,7 +166,7 @@ export default function WarrantyPage() {
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
               <Input
                 placeholder="Search warranties by customer, phone, or vehicle..."
                 value={searchTerm}
@@ -218,9 +218,9 @@ export default function WarrantyPage() {
           <div className="space-y-4">
             {warranties.map((warranty) => {
               const calculatedStatus = calculateWarrantyStatus(warranty)
-              const kmPercentage = Math.min(((warranty.current_km || 0) / warranty.km_limit) * 100, 100)
-              const servicePercentage = (warranty.services_used / warranty.max_services) * 100
-              
+              const kmPercentage = Math.min(((warranty.current_km || 0) / Math.max(warranty.km_limit || 1, 1)) * 100, 100)
+              const servicePercentage = ((warranty.services_used || 0) / Math.max(warranty.max_services || 1, 1)) * 100
+
               return (
                 <div
                   key={warranty.id}
@@ -228,13 +228,14 @@ export default function WarrantyPage() {
                     hover:bg-gray-50 dark:hover:bg-gray-800
                     bg-white dark:bg-gray-900
                     border-gray-200 dark:border-gray-700
-                    space-y-4 lg:space-y-0"
+                    space-y-4 lg:space-y-0 cursor-pointer"
+                  onClick={() => window.open(`/warranty/${warranty.id}`, '_blank')}
                 >
                   <div className="flex-1">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4">
                       <div>
                         <h3 className="text-lg font-semibold">{warranty.customer_name}</h3>
-                        <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 text-sm text-gray-500">
+                        <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 text-sm text-gray-500 dark:text-gray-400">
                           <div className="flex items-center">
                             <Phone className="h-4 w-4 mr-1" />
                             {warranty.customer_phone}
@@ -260,19 +261,19 @@ export default function WarrantyPage() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                       <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
-                        <p className="text-sm text-gray-500">Warranty Period</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Warranty Period</p>
                         <p className="font-medium text-xs">
                           {new Date(warranty.start_date).toLocaleDateString()} - {new Date(warranty.end_date).toLocaleDateString()}
                         </p>
                       </div>
                       <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
-                        <p className="text-sm text-gray-500">KM Limit</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">KM Limit</p>
                         <p className="font-medium">
                           {warranty.current_km?.toLocaleString() || 0} / {warranty.km_limit.toLocaleString()}
                         </p>
                       </div>
                       <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
-                        <p className="text-sm text-gray-500">Services Used</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Services Used</p>
                         <p className="font-medium">
                           {warranty.services_used} / {warranty.max_services}
                         </p>
@@ -280,7 +281,7 @@ export default function WarrantyPage() {
                       <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
                         <p className="text-sm text-gray-500">Last Service</p>
                         <p className="font-medium text-xs">
-                          {warranty.last_service_date 
+                          {warranty.last_service_date
                             ? new Date(warranty.last_service_date).toLocaleDateString()
                             : "N/A"
                           }
@@ -333,7 +334,7 @@ export default function WarrantyPage() {
                     <Button variant="outline" size="sm">
                       View Details
                     </Button>
-                    <Button 
+                    <Button
                       size="sm"
                       disabled={calculatedStatus.status === "expired" || calculatedStatus.status === "cancelled"}
                       title={calculatedStatus.status === "expired" || calculatedStatus.status === "cancelled" ? "Warranty not eligible for service" : "Create new service"}
@@ -350,7 +351,7 @@ export default function WarrantyPage() {
             <div className="text-center py-12">
               <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500">
-                {searchTerm || statusFilter !== "all" 
+                {searchTerm || statusFilter !== "all"
                   ? "No warranty records found matching your search."
                   : "No warranty records found. Create your first warranty to get started."
                 }

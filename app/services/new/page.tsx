@@ -69,7 +69,8 @@ export default function NewService() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const bookingId = searchParams.get('booking_id')
-  
+  const customerId = searchParams.get('customer')
+
   const [customerType, setCustomerType] = useState<"booking" | "walking">(bookingId ? "booking" : "walking")
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null)
@@ -142,23 +143,74 @@ export default function NewService() {
     loadStaffMembers()
     if (bookingId) {
       loadBookingData()
+    } else if (customerId) {
+      loadCustomerData()
     }
-  }, [bookingId])
+  }, [bookingId, customerId])
+
+  const loadCustomerData = async () => {
+    if (!customerId) return
+
+    setLoadingBooking(true)
+    try {
+      const response = await apiClient.getCustomer(customerId)
+      const customer = response.data
+
+      if (customer) {
+        // Pre-fill customer information
+        setFormData(prev => ({
+          ...prev,
+          customerName: customer.name || "",
+          phone: customer.phone || "",
+          address: customer.address || "",
+          email: customer.email || ""
+        }))
+
+        // Set customer type to walking since we're coming from customer page
+        setCustomerType("walking")
+
+        // Load customer's vehicles
+        try {
+          const vehiclesResponse = await apiClient.getVehicles({ customer_id: customerId })
+          const vehicles = vehiclesResponse.data || []
+
+          if (vehicles.length > 0) {
+            // Pre-select the first vehicle
+            const firstVehicle = vehicles[0]
+            setSelectedVehicle(firstVehicle)
+            setFormData(prev => ({
+              ...prev,
+              plateNumber: firstVehicle.plate_number || "",
+              model: firstVehicle.model || "",
+              year: firstVehicle.year?.toString() || "",
+              vinNumber: firstVehicle.vin_number || ""
+            }))
+          }
+        } catch (vehicleError) {
+          console.warn("Could not load customer vehicles:", vehicleError)
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load customer data:", error)
+    } finally {
+      setLoadingBooking(false)
+    }
+  }
 
   const loadBookingData = async () => {
     if (!bookingId) return
-    
+
     setLoadingBooking(true)
     try {
       const response = await apiClient.getBooking(Number(bookingId))
       const booking = response.data
       setBookingData(booking)
-      
+
       if (booking) {
         // First, try to find existing customer and vehicle
         let existingCustomer: Customer | null = null
         let existingVehicle: Vehicle | null = null
-        
+
         // Search for existing customer by phone number
         if (booking.customer_phone) {
           try {
@@ -166,7 +218,7 @@ export default function NewService() {
             const customers = customersResponse?.data || []
             if (customers.length > 0) {
               existingCustomer = customers[0] as Customer
-              
+
               // Search for existing vehicle by plate number for this customer
               if (booking.vehicle_plate) {
                 const vehiclesResponse = await apiClient.getVehicles({ search: booking.vehicle_plate, limit: 1 })
@@ -181,7 +233,7 @@ export default function NewService() {
             console.warn("Error searching for existing customer:", error)
           }
         }
-        
+
         // Auto-fill form with booking data
         const updatedFormData = {
           ...formData,
@@ -201,7 +253,7 @@ export default function NewService() {
           warrantyEndDate: formatDateForInput(booking.warranty_end_date),
           nextServiceDate: formatDateForInput(booking.next_service_date),
         }
-        
+
         // Also add a default service item based on the service type
         if (booking.service_type_name && serviceItems.length === 0) {
           const serviceType = serviceTypes.find(s => s.label === booking.service_type_name)
@@ -217,9 +269,9 @@ export default function NewService() {
             setServiceItems([defaultItem])
           }
         }
-        
+
         setFormData(updatedFormData)
-        
+
         if (existingCustomer && existingVehicle) {
           // Use existing customer and vehicle
           setSelectedCustomer(existingCustomer)
@@ -248,7 +300,7 @@ export default function NewService() {
             email: booking.customer_email || "",
             address: booking.customer_address || ""
           })
-          
+
           setSelectedVehicle({
             id: 0, // Will create new vehicle
             plate_number: booking.vehicle_plate,
@@ -257,7 +309,7 @@ export default function NewService() {
             year: booking.vehicle_year || 0,
             customer_id: 0 // Will be set to new customer ID
           })
-          
+
           setCustomerType("booking")
           toast.success("Booking data loaded! New customer and vehicle records will be created.")
         }
@@ -307,11 +359,11 @@ export default function NewService() {
       warrantyEndDate: formatDateForInput(bookingData.warranty_end_date),
       nextServiceDate: formatDateForInput(bookingData.next_service_date),
     }
-    
+
     setFormData(updatedFormData)
     setCustomerType("booking")
     setShowBookingForm(false)
-    
+
     // Also add a default service item based on the service type
     if (bookingData.service_type_name && serviceItems.length === 0) {
       const serviceType = serviceTypes.find(s => s.label === bookingData.service_type_name)
@@ -327,7 +379,7 @@ export default function NewService() {
         setServiceItems([defaultItem])
       }
     }
-    
+
     toast.success("Booking created! Service form has been pre-filled with booking data.")
   }
 
@@ -374,7 +426,7 @@ export default function NewService() {
   const handleBookingAction = (action: "existing" | "new") => {
     setBookingAction(action)
     setShowBookingActionModal(false) // Close the action modal
-    
+
     if (action === "new") {
       // Navigate to booking form page instead of showing popup
       router.push("/bookings/new?from_service=true")
@@ -387,21 +439,21 @@ export default function NewService() {
   // Handle existing booking selection
   const handleExistingBookingSelect = (booking: any) => {
     console.log("Booking selected:", booking)
-    
+
     // Parse JSON data from booking
     let customerData: any = {}
     let vehicleData: any = {}
-    
+
     try {
       customerData = typeof booking.customer_data === 'string' ? JSON.parse(booking.customer_data) : booking.customer_data || {}
       vehicleData = typeof booking.vehicle_data === 'string' ? JSON.parse(booking.vehicle_data) : booking.vehicle_data || {}
     } catch (error) {
       console.error("Error parsing booking data:", error)
     }
-    
+
     console.log("Parsed customer data:", customerData)
     console.log("Parsed vehicle data:", vehicleData)
-    
+
     // Auto-fill form with booking data
     const updatedFormData = {
       ...formData,
@@ -421,26 +473,26 @@ export default function NewService() {
       warrantyEndDate: formatDateForInput((vehicleData as any).warranty_end_date),
       nextServiceDate: formatDateForInput(booking.next_service_date),
     }
-    
+
     console.log("Updated form data:", updatedFormData)
-    
+
     setFormData(updatedFormData)
     setBookingData(booking)
     setShowBookingSelector(false)
-    
+
     // Also add a default service item based on the service type
     if (booking.service_type_name && serviceItems.length === 0) {
       // Try to find service type by name first
       let serviceType = serviceTypes.find(s => s.label === booking.service_type_name)
-      
+
       // If not found, try to find by partial match
       if (!serviceType) {
-        serviceType = serviceTypes.find(s => 
+        serviceType = serviceTypes.find(s =>
           s.label.toLowerCase().includes(booking.service_type_name.toLowerCase()) ||
           booking.service_type_name.toLowerCase().includes(s.label.toLowerCase())
         )
       }
-      
+
       // If still not found, try to map common service types
       if (!serviceType) {
         const serviceTypeMapping: { [key: string]: string } = {
@@ -454,13 +506,13 @@ export default function NewService() {
           'repair': 'Repairing',
           'repairing': 'Repairing'
         }
-        
+
         const mappedType = serviceTypeMapping[booking.service_type_name.toLowerCase()]
         if (mappedType) {
           serviceType = serviceTypes.find(s => s.label === mappedType)
         }
       }
-      
+
       if (serviceType) {
         const defaultItem: ServiceItem = {
           id: String(Date.now()),
@@ -475,7 +527,7 @@ export default function NewService() {
       } else {
         console.log("Service type not found:", booking.service_type_name)
         console.log("Available service types:", serviceTypes.map(s => s.label))
-        
+
         // Add a generic service item if no match found
         const genericItem: ServiceItem = {
           id: String(Date.now()),
@@ -489,23 +541,23 @@ export default function NewService() {
         console.log("Added generic service item:", genericItem)
       }
     }
-    
+
     toast.success("Existing booking selected! Service form has been pre-filled with booking data.")
   }
 
   // Auto-complete customer and vehicle data when plate number is entered
   const handlePlateNumberChange = async (plateNumber: string) => {
     setFormData({ ...formData, plateNumber })
-    
+
     if (plateNumber.length >= 3) {
       setSearchingPlate(true)
       try {
         console.log("Searching for plate number:", plateNumber)
-        
+
         // Search for vehicle by plate number
         const vehiclesResponse = await apiClient.getVehicles({ search: plateNumber, limit: 1 })
         console.log("Vehicles response:", vehiclesResponse)
-        
+
         // Handle different API response structures
         let vehicle = null
         if (vehiclesResponse?.vehicles && vehiclesResponse.vehicles.length > 0) {
@@ -515,24 +567,24 @@ export default function NewService() {
         } else if (Array.isArray(vehiclesResponse) && vehiclesResponse.length > 0) {
           vehicle = vehiclesResponse[0]
         }
-        
+
         console.log("Found vehicle:", vehicle)
-        
+
         if (vehicle) {
           setSelectedVehicle(vehicle)
-          
+
           // Get customer data for this vehicle
           console.log("Getting customer data for customer_id:", vehicle.customer_id)
           const customerResponse = await apiClient.getCustomer(vehicle.customer_id)
           console.log("Customer response:", customerResponse)
-          
+
           if (customerResponse) {
             // Extract customer data from the response structure
             const customerData = customerResponse.data || customerResponse
             console.log("Customer data extracted:", customerData)
-            
+
             setSelectedCustomer(customerData)
-            
+
             // Auto-fill form data
             const updatedFormData = {
               ...formData,
@@ -548,10 +600,10 @@ export default function NewService() {
               warrantyStartDate: formatDateForInput(vehicle.warranty_start_date),
               warrantyEndDate: formatDateForInput(vehicle.warranty_end_date),
             }
-            
+
             console.log("Auto-filling form data:", updatedFormData)
             setFormData(updatedFormData)
-            
+
             // Show success message for walking customers
             if (customerType === "walking") {
               toast.success(`Found existing vehicle: ${vehicle.model} (${vehicle.plate_number}) - Customer data auto-filled`)
@@ -561,7 +613,7 @@ export default function NewService() {
           console.log("No vehicle found for plate number:", plateNumber)
           setSelectedVehicle(null)
           setSelectedCustomer(null)
-          
+
           // Show info message for walking customers
           if (customerType === "walking") {
             toast.info("No existing vehicle found - new customer and vehicle records will be created")
@@ -581,15 +633,15 @@ export default function NewService() {
   // Auto-complete customer data when customer name is entered
   const handleCustomerNameChange = async (customerName: string) => {
     setFormData({ ...formData, customerName })
-    
+
     if (customerName.length >= 3 && customerType === "walking") {
       try {
         console.log("Searching for customer by name:", customerName)
-        
+
         // Search for customer by name
         const customersResponse = await apiClient.getCustomers({ search: customerName, limit: 1 })
         console.log("Customers response:", customersResponse)
-        
+
         // Handle different API response structures
         let customer = null
         if (customersResponse?.customers && customersResponse.customers.length > 0) {
@@ -599,12 +651,12 @@ export default function NewService() {
         } else if (Array.isArray(customersResponse) && customersResponse.length > 0) {
           customer = customersResponse[0]
         }
-        
+
         console.log("Found customer:", customer)
-        
+
         if (customer) {
           setSelectedCustomer(customer)
-          
+
           // Auto-fill customer data
           const updatedFormData = {
             ...formData,
@@ -613,10 +665,10 @@ export default function NewService() {
             email: customer.email || "",
             address: customer.address || "",
           }
-          
+
           console.log("Auto-filling customer data:", updatedFormData)
           setFormData(updatedFormData)
-          
+
           toast.success(`Found existing customer: ${customer.name} - Customer data auto-filled`)
         } else {
           console.log("No customer found for name:", customerName)
@@ -631,15 +683,15 @@ export default function NewService() {
   // Auto-complete customer data when phone number is entered
   const handlePhoneChange = async (phone: string) => {
     setFormData({ ...formData, phone })
-    
+
     if (phone.length >= 3 && customerType === "walking") {
       try {
         console.log("Searching for customer by phone:", phone)
-        
+
         // Search for customer by phone
         const customersResponse = await apiClient.getCustomers({ search: phone, limit: 1 })
         console.log("Customers response:", customersResponse)
-        
+
         // Handle different API response structures
         let customer = null
         if (customersResponse?.customers && customersResponse.customers.length > 0) {
@@ -649,12 +701,12 @@ export default function NewService() {
         } else if (Array.isArray(customersResponse) && customersResponse.length > 0) {
           customer = customersResponse[0]
         }
-        
+
         console.log("Found customer:", customer)
-        
+
         if (customer) {
           setSelectedCustomer(customer)
-          
+
           // Auto-fill customer data
           const updatedFormData = {
             ...formData,
@@ -663,10 +715,10 @@ export default function NewService() {
             email: customer.email || "",
             address: customer.address || "",
           }
-          
+
           console.log("Auto-filling customer data:", updatedFormData)
           setFormData(updatedFormData)
-          
+
           toast.success(`Found existing customer: ${customer.name} - Customer data auto-filled`)
         } else {
           console.log("No customer found for phone:", phone)
@@ -681,7 +733,7 @@ export default function NewService() {
   // Function to handle service type selection
   const handleServiceTypeSelect = (serviceType: string) => {
     setFormData({ ...formData, serviceType })
-    
+
     // Add a default service item if none exist
     if (serviceItems.length === 0) {
       const selectedService = serviceTypes.find(s => s.value === serviceType)
@@ -760,8 +812,8 @@ export default function NewService() {
     const subtotal = Number(itemsTotal) || 0
     const discount = Number(invoiceData.discount) || 0
     const vatRate = Number(invoiceData.vatRate) || 0
-    
-    const discountAmount = invoiceData.discountType === 'percentage' 
+
+    const discountAmount = invoiceData.discountType === 'percentage'
       ? (subtotal * discount) / 100
       : discount
     const afterDiscount = subtotal - discountAmount
@@ -789,28 +841,28 @@ export default function NewService() {
     const wantedName = SLUG_TO_NAME[formData.serviceType] || formData.serviceType
     const res = await apiClient.getServiceTypes()
     const list: Array<{ id: number; name: string; description?: string }> = res?.data || res || []
-    
+
     console.log("Available service types:", list.map(t => t.name))
     console.log("Looking for service type:", wantedName)
-    
+
     // First try exact match
     let match = list.find((t) => t.name?.toLowerCase() === wantedName?.toLowerCase())
-    
+
     // If no exact match, try partial match
     if (!match) {
       match = list.find((t) => t.name?.toLowerCase().includes(wantedName?.toLowerCase()))
     }
-    
+
     // If still no match, try reverse partial match (wanted name contains service type)
     if (!match) {
       match = list.find((t) => wantedName?.toLowerCase().includes(t.name?.toLowerCase()))
     }
-    
+
     if (!match) {
       const availableTypes = list.map(t => t.name).filter(Boolean).join(", ")
       throw new Error(`Service type "${wantedName || "(not selected)"}" not found. Available types: ${availableTypes}`)
     }
-    
+
     console.log("Found service type:", match.name, "with ID:", match.id)
     return match.id
   }
@@ -818,7 +870,7 @@ export default function NewService() {
   async function findOrCreateCustomer(): Promise<{ id: number | string; name: string }> {
     const name = (formData.customerName || "").trim()
     const phone = (formData.phone || "").trim()
-    
+
     if (!name || !phone) {
       throw new Error("Customer name and phone are required")
     }
@@ -833,7 +885,7 @@ export default function NewService() {
       const customersResponse = await apiClient.getCustomers({ search: phone, limit: 1 })
       const customers = customersResponse?.data || []
       const existingCustomer = customers.find((c: any) => c.phone === phone)
-      
+
       if (existingCustomer) {
         return { id: existingCustomer.id, name: existingCustomer.name }
       }
@@ -869,13 +921,13 @@ export default function NewService() {
       console.log("=== VEHICLE SEARCH DEBUG ===")
       console.log("Searching for existing vehicle with plate:", formData.plateNumber)
       console.log("Customer ID:", customerId)
-      
+
       const vehiclesResponse = await apiClient.getVehicles({ search: formData.plateNumber, limit: 50 })
-      
+
       console.log("Raw API Response:", vehiclesResponse)
       console.log("Response type:", typeof vehiclesResponse)
       console.log("Response keys:", vehiclesResponse ? Object.keys(vehiclesResponse) : 'No response')
-      
+
       // Handle different API response structures
       let vehicles: any[] = []
       if (vehiclesResponse?.vehicles) {
@@ -893,10 +945,10 @@ export default function NewService() {
       } else {
         console.log("No valid vehicles array found in response")
       }
-      
+
       console.log("Extracted vehicles array:", vehicles)
       console.log("Vehicles array length:", vehicles.length)
-      
+
       // Find vehicles with matching plate number
       const matchingVehicles = vehicles.filter((v: any) => {
         console.log("Checking vehicle:", v.plate_number, "against:", formData.plateNumber)
@@ -904,13 +956,13 @@ export default function NewService() {
         console.log("Match result:", matches)
         return matches
       })
-      
+
       console.log("Found matching vehicles:", matchingVehicles.length)
-      
+
       if (matchingVehicles.length > 0) {
         // Find the best match - prioritize vehicles for the same customer
         let bestVehicle = matchingVehicles[0]
-        
+
         // First, try to find a vehicle for the same customer
         const sameCustomerVehicle = matchingVehicles.find(v => v.customer_id === Number(customerId))
         if (sameCustomerVehicle) {
@@ -918,12 +970,12 @@ export default function NewService() {
           console.log("Found vehicle for same customer:", bestVehicle)
         } else {
           // If no vehicle for same customer, use the most recent one
-          bestVehicle = matchingVehicles.sort((a, b) => 
+          bestVehicle = matchingVehicles.sort((a, b) =>
             new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
           )[0]
           console.log("Using most recent vehicle:", bestVehicle)
         }
-        
+
         // Check if it belongs to the same customer
         if (bestVehicle.customer_id === Number(customerId)) {
           console.log("Vehicle belongs to same customer, using existing vehicle")
@@ -933,7 +985,7 @@ export default function NewService() {
           // Vehicle exists but belongs to different customer
           console.log("Vehicle exists but belongs to different customer")
           console.log("Vehicle customer_id:", bestVehicle.customer_id, "vs current customer_id:", customerId)
-          
+
           // Since we allow duplicate plate numbers, we can create a new vehicle for this customer
           console.log("Creating new vehicle for different customer with same plate number")
         }
@@ -959,7 +1011,7 @@ export default function NewService() {
         warranty_start_date: formData.warrantyStartDate || null,
         warranty_end_date: formData.warrantyEndDate || null,
       })
-      
+
       const vehicleId = created?.data?.id ?? created?.id ?? created?.vehicle?.id
       console.log("New vehicle created with ID:", vehicleId)
       toast.success(`New vehicle created: ${formData.model} (${formData.plateNumber})`)
@@ -1059,7 +1111,7 @@ export default function NewService() {
 
     // Record stock movements for inventory items
     const inventoryItems = items.filter(item => item.itemType === 'part' && item.inventoryItemId)
-    
+
     for (const item of inventoryItems) {
       try {
         await apiClient.recordStockMovement({
@@ -1136,13 +1188,13 @@ export default function NewService() {
                   Walking Customer
                 </Button>
               </div>
-              
+
               {/* Booking Customer Status */}
               {customerType === "booking" && bookingAction && (
                 <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <h4 className="font-medium text-blue-900 mb-2">Booking Customer Selected</h4>
                   <p className="text-sm text-blue-700">
-                    {bookingAction === "existing" 
+                    {bookingAction === "existing"
                       ? "✓ Existing booking selected - service form will be pre-filled"
                       : bookingAction === "new"
                       ? "✓ New booking created - service form will be pre-filled"
@@ -1162,7 +1214,7 @@ export default function NewService() {
                 Vehicle Information
               </CardTitle>
               <CardDescription>
-                {customerType === "walking" 
+                {customerType === "walking"
                   ? "Enter plate number, customer name, or phone number to auto-complete existing customer data"
                   : "Enter vehicle plate number to auto-complete customer and vehicle data"
                 }
@@ -1198,8 +1250,8 @@ export default function NewService() {
                 </div>
                 <div>
                   <Label htmlFor="model">Model *</Label>
-                  <Select 
-                    value={formData.model} 
+                  <Select
+                    value={formData.model}
                     onValueChange={(value) => setFormData({ ...formData, model: value })}
                   >
                     <SelectTrigger>
@@ -1282,10 +1334,10 @@ export default function NewService() {
                 Customer Information
               </CardTitle>
               <CardDescription>
-                {customerType === "walking" 
+                {customerType === "walking"
                   ? "Enter customer name or phone number to auto-complete existing customer data"
-                  : selectedCustomer 
-                    ? "Customer data auto-filled from existing record (new record will be created)" 
+                  : selectedCustomer
+                    ? "Customer data auto-filled from existing record (new record will be created)"
                     : "Enter customer details"
                 }
               </CardDescription>
@@ -1367,7 +1419,7 @@ export default function NewService() {
                   </div>
                 ))}
               </div>
-              
+
               {/* Service Detail - Only show when service type is selected */}
               {formData.serviceType && (
                 <div className="mt-6">
@@ -1442,8 +1494,8 @@ export default function NewService() {
                 </div>
                 <div>
                   <Label htmlFor="technicianId">Technician</Label>
-                  <Select 
-                    value={formData.technicianId} 
+                  <Select
+                    value={formData.technicianId}
                     onValueChange={(value) => setFormData({ ...formData, technicianId: value })}
                   >
                     <SelectTrigger>
@@ -1460,8 +1512,8 @@ export default function NewService() {
                 </div>
                 <div>
                   <Label htmlFor="salesRepId">Sales Representative</Label>
-                  <Select 
-                    value={formData.salesRepId} 
+                  <Select
+                    value={formData.salesRepId}
                     onValueChange={(value) => setFormData({ ...formData, salesRepId: value })}
                   >
                     <SelectTrigger>
@@ -1509,15 +1561,15 @@ export default function NewService() {
                     {inventoryItems.map((item) => {
                       const isOutOfStock = item.current_stock <= 0
                       const isLowStock = item.current_stock <= 5
-                      
+
                       return (
                         <div
                           key={item.id}
                           className={`p-3 border rounded transition-colors ${
-                            isOutOfStock 
-                              ? 'bg-red-50 border-red-200 cursor-not-allowed opacity-60' 
-                              : isLowStock 
-                                ? 'bg-yellow-50 border-yellow-200 cursor-pointer hover:bg-yellow-100' 
+                            isOutOfStock
+                              ? 'bg-red-50 border-red-200 cursor-not-allowed opacity-60'
+                              : isLowStock
+                                ? 'bg-yellow-50 border-yellow-200 cursor-pointer hover:bg-yellow-100'
                                 : 'bg-white cursor-pointer hover:bg-blue-50'
                           }`}
                           onClick={() => !isOutOfStock && addInventoryItem(item)}
@@ -1742,7 +1794,7 @@ export default function NewService() {
                               <Label htmlFor="discountType" className="text-sm font-semibold text-gray-700">Discount Type</Label>
                               <Select
                                 value={invoiceData.discountType}
-                                onValueChange={(value: 'percentage' | 'fixed') => 
+                                onValueChange={(value: 'percentage' | 'fixed') =>
                                   setInvoiceData({...invoiceData, discountType: value})
                                 }
                               >
@@ -1810,12 +1862,12 @@ export default function NewService() {
                                     <td className="p-4">
                                       <div className="flex items-center space-x-3">
                                         <div className={`w-3 h-3 rounded-full ${
-                                          item.itemType === 'service' ? 'bg-blue-500' : 
+                                          item.itemType === 'service' ? 'bg-blue-500' :
                                           item.itemType === 'part' ? 'bg-green-500' : 'bg-purple-500'
                                         }`}></div>
                                         <span className="font-medium text-gray-900">{item.description}</span>
                                         <span className={`px-2 py-1 text-xs rounded-full ${
-                                          item.itemType === 'service' ? 'bg-blue-100 text-blue-800' : 
+                                          item.itemType === 'service' ? 'bg-blue-100 text-blue-800' :
                                           item.itemType === 'part' ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800'
                                         }`}>
                                           {item.itemType.charAt(0).toUpperCase() + item.itemType.slice(1)}
@@ -1852,7 +1904,7 @@ export default function NewService() {
                             <span className="font-medium text-gray-700">Subtotal</span>
                             <span className="font-semibold text-gray-900">${invoiceCalculations.subtotal.toFixed(2)}</span>
                           </div>
-                          
+
                           {invoiceCalculations.discountAmount > 0 && (
                             <div className="flex justify-between items-center py-3 px-4 bg-green-100 rounded-lg shadow-sm border border-green-200">
                               <div className="flex items-center space-x-2">
@@ -1864,12 +1916,12 @@ export default function NewService() {
                               <span className="font-bold text-green-800">-${invoiceCalculations.discountAmount.toFixed(2)}</span>
                             </div>
                           )}
-                          
+
                           <div className="flex justify-between items-center py-3 px-4 bg-white rounded-lg shadow-sm">
                             <span className="font-medium text-gray-700">After Discount</span>
                             <span className="font-semibold text-gray-900">${invoiceCalculations.afterDiscount.toFixed(2)}</span>
                           </div>
-                          
+
                           <div className="flex justify-between items-center py-3 px-4 bg-white rounded-lg shadow-sm">
                             <div className="flex items-center space-x-2">
                               <span className="font-medium text-gray-700">VAT</span>
@@ -1877,7 +1929,7 @@ export default function NewService() {
                             </div>
                             <span className="font-semibold text-gray-900">${invoiceCalculations.vatAmount.toFixed(2)}</span>
                           </div>
-                          
+
                           <div className="flex justify-between items-center py-4 px-6 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg shadow-lg">
                             <span className="text-xl font-bold">Total Amount</span>
                             <span className="text-2xl font-bold">${invoiceCalculations.total.toFixed(2)}</span>
@@ -1967,7 +2019,7 @@ export default function NewService() {
                   </Button>
                 </div>
               </CardHeader>
-              
+
               <CardContent className="p-8">
                 <div className="space-y-6">
                   {/* Description */}
@@ -1976,7 +2028,7 @@ export default function NewService() {
                       <User className="h-8 w-8 text-blue-600" />
                     </div>
                   </div>
-                  
+
                   {/* Action Buttons */}
                   <div className="space-y-4">
                     <Button
@@ -1996,7 +2048,7 @@ export default function NewService() {
                         </div>
                       </div>
                     </Button>
-                    
+
                     <Button
                       onClick={() => handleBookingAction("new")}
                       className="w-full h-16 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
@@ -2015,7 +2067,7 @@ export default function NewService() {
                       </div>
                     </Button>
                   </div>
-                  
+
                   {/* Cancel Button */}
                   <div className="pt-6 border-t border-gray-100">
                     <Button

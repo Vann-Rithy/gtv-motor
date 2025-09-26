@@ -10,7 +10,7 @@ require_once __DIR__ . '/../includes/Response.php';
 
 try {
     // No authentication required - Developer Mode
-
+    require_once __DIR__ . '/../config/database.php';
     $database = new Database();
     $db = $database->getConnection();
 
@@ -20,7 +20,7 @@ try {
         // Get service types
         $query = "SELECT * FROM service_types ORDER BY service_type_name ASC";
         $serviceTypes = $db->prepare($query);
-        $serviceTypes->execute($params);
+        $serviceTypes->execute();
         $serviceTypes = $serviceTypes->fetchAll(PDO::FETCH_ASSOC);
 
         Response::success($serviceTypes, 'Service types retrieved successfully');

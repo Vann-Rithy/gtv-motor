@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { useAuth } from "@/components/auth-provider"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -77,16 +78,10 @@ export default function Sidebar(props: SidebarProps) {
     if ("onToggle" in props && props.onToggle) return props.onToggle()
   }
 
+  const { logout } = useAuth()
+
   const handleLogout = async () => {
-    try {
-      await fetch(API_ENDPOINTS.AUTH.LOGOUT, { method: "POST" })
-    } finally {
-      try {
-        localStorage.removeItem("isAuthenticated")
-        localStorage.removeItem("user")
-      } catch {}
-      window.location.href = "/login"
-    }
+    await logout()
   }
 
   return (

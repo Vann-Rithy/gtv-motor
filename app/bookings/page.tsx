@@ -41,7 +41,7 @@ export default function Bookings() {
     try {
       setLoading(true)
       const params: any = {}
-      
+
       if (searchTerm) {
         params.search = searchTerm
       }
@@ -65,7 +65,7 @@ export default function Bookings() {
       const customerName = booking.customer_name || ""
       const customerPhone = booking.customer_phone || ""
       const vehiclePlate = booking.vehicle_plate || ""
-      
+
       return customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
              customerPhone.includes(searchTerm) ||
              vehiclePlate.toLowerCase().includes(searchTerm.toLowerCase())
@@ -75,7 +75,7 @@ export default function Bookings() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "confirmed":
-        return <Badge className="bg-blue-100 text-blue-800">Confirmed</Badge>
+        return <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">Confirmed</Badge>
       case "completed":
         return <Badge className="bg-green-100 text-green-800">Completed</Badge>
       case "in_progress":
@@ -83,7 +83,7 @@ export default function Bookings() {
       case "cancelled":
         return <Badge variant="destructive">Cancelled</Badge>
       case "no_show":
-        return <Badge className="bg-gray-100 text-gray-800">No Show</Badge>
+        return <Badge className="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200">No Show</Badge>
       default:
         return <Badge variant="outline">Unknown</Badge>
     }
@@ -101,13 +101,13 @@ export default function Bookings() {
     try {
       setStartingService(booking.id)
       console.log("Starting service for booking:", booking.id)
-      
+
       // Try to update booking status to in_progress
       try {
         const updateResponse = await apiClient.updateBooking(booking.id, {
           status: "in_progress"
         })
-        
+
         if (updateResponse.data) {
           toast.success(`Started service for ${booking.customer_name || 'Customer'}`)
           // Refresh the bookings list
@@ -119,7 +119,7 @@ export default function Bookings() {
         console.warn("Could not update booking status (database schema may need update):", statusError)
         toast.success(`Starting service for ${booking.customer_name || 'Customer'}`)
       }
-      
+
       // Redirect to service creation with booking data
       router.push(`/services/new?booking_id=${booking.id}`)
     } catch (error) {
@@ -137,7 +137,7 @@ export default function Bookings() {
   return (
     <div className="p-4 lg:p-8 space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
-        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Booking Management</h1>
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">Booking Management</h1>
         <Link href="/bookings/new">
           <Button>
             <Plus className="h-4 w-4 mr-2" />
@@ -150,44 +150,44 @@ export default function Bookings() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 lg:gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Today's Bookings</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-900 dark:text-gray-100">Today's Bookings</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{todayBookings.length}</div>
+            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{todayBookings.length}</div>
             <p className="text-xs text-muted-foreground">Scheduled for today</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Upcoming Bookings</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-900 dark:text-gray-100">Upcoming Bookings</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{upcomingBookings.length}</div>
+            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{upcomingBookings.length}</div>
             <p className="text-xs text-muted-foreground">Future appointments</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-900 dark:text-gray-100">In Progress</CardTitle>
             <Play className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{inProgressBookings.length}</div>
+            <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{inProgressBookings.length}</div>
             <p className="text-xs text-muted-foreground">Currently being serviced</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Bookings</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-900 dark:text-gray-100">Total Bookings</CardTitle>
             <User className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{bookings.length}</div>
+            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{bookings.length}</div>
             <p className="text-xs text-muted-foreground">All time bookings</p>
           </CardContent>
         </Card>
@@ -197,7 +197,7 @@ export default function Bookings() {
       <Card>
         <CardContent className="pt-6">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
             <Input
               placeholder="Search bookings by customer, phone, or vehicle..."
               value={searchTerm}
@@ -217,98 +217,111 @@ export default function Bookings() {
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
-              <span className="ml-2">Loading bookings...</span>
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900 dark:border-gray-100"></div>
+              <span className="ml-2 text-gray-900 dark:text-gray-100">Loading bookings...</span>
             </div>
           ) : (
             <div className="space-y-4">
               {filteredBookings.map((booking) => (
-                <div
+                <Card
                   key={booking.id}
-                  className="flex flex-col lg:flex-row lg:items-center justify-between p-4 border rounded-lg hover:bg-gray-50 space-y-4 lg:space-y-0"
+                  className="hover:shadow-md transition-shadow duration-200 border-gray-200 dark:border-gray-700 cursor-pointer"
+                  onClick={() => router.push(`/bookings/${booking.id}`)}
                 >
-                  <div className="flex-1">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2">
-                      <h3 className="text-lg font-semibold">{booking.customer_name || 'Unknown Customer'}</h3>
-                      {getStatusBadge(booking.status)}
+                  <CardContent className="p-6">
+                    <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+                      {/* Main Content */}
+                      <div className="flex-1 space-y-4">
+                        {/* Header with Customer Name and Status */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div>
+                            <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                              {booking.customer_name || 'Unknown Customer'}
+                            </h3>
+                            <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                              <Phone className="h-4 w-4 mr-2" />
+                              {booking.customer_phone || 'No phone'}
+                            </div>
+                          </div>
+                          {getStatusBadge(booking.status)}
+                        </div>
+
+                        {/* Service Information */}
+                        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+                          <div className="flex items-center text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
+                            <span className="text-blue-600 dark:text-blue-400">Service:</span>
+                            <span className="ml-2">{booking.service_type_name}</span>
+                          </div>
+                          {booking.notes && (
+                            <div className="text-sm text-gray-600 dark:text-gray-400">
+                              <span className="font-medium">Notes:</span>
+                              <span className="ml-2">{booking.notes}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Vehicle and Schedule Details */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                            <Car className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
+                            <span className="font-medium">Vehicle:</span>
+                            <span className="ml-2">{booking.vehicle_plate || 'No plate'} ({booking.vehicle_model || 'Unknown model'})</span>
+                          </div>
+                          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                            <Calendar className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
+                            <span className="font-medium">Date:</span>
+                            <span className="ml-2">{new Date(booking.booking_date).toLocaleDateString()}</span>
+                          </div>
+                          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                            <Clock className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
+                            <span className="font-medium">Time:</span>
+                            <span className="ml-2">{booking.booking_time}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex flex-row lg:flex-col gap-2 lg:min-w-[120px]">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewBooking(booking)}
+                          title="View Details"
+                          className="w-full lg:w-auto"
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          View
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditBooking(booking)}
+                          title="Edit Booking"
+                          className="w-full lg:w-auto"
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </Button>
+                        {booking.status === "confirmed" && (
+                          <Button
+                            size="sm"
+                            onClick={() => handleStartService(booking)}
+                            title="Start Service"
+                            disabled={startingService === booking.id}
+                            className="w-full lg:w-auto bg-blue-600 hover:bg-blue-700 text-white"
+                          >
+                            {startingService === booking.id ? (
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                              <Play className="h-4 w-4 mr-2" />
+                            )}
+                            {startingService === booking.id ? "Starting..." : "Create Service"}
+                          </Button>
+                        )}
+                      </div>
                     </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Phone className="h-4 w-4 mr-2" />
-                        {booking.customer_phone || 'No phone'}
-                      </div>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Car className="h-4 w-4 mr-2" />
-                        {booking.vehicle_plate || 'No plate'} ({booking.vehicle_model || 'Unknown model'})
-                      </div>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Calendar className="h-4 w-4 mr-2" />
-                        {new Date(booking.booking_date).toLocaleDateString()}
-                      </div>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Clock className="h-4 w-4 mr-2" />
-                        {booking.booking_time}
-                      </div>
-                    </div>
-
-                    <div className="text-sm">
-                      <span className="font-medium">Service: </span>
-                      {booking.service_type_name}
-                    </div>
-
-                    {booking.notes && (
-                      <div className="text-sm text-gray-600 mt-1">
-                        <span className="font-medium">Notes: </span>
-                        {booking.notes}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex flex-row lg:flex-col space-x-2 lg:space-x-0 lg:space-y-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleViewBooking(booking)}
-                      title="View Details"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleEditBooking(booking)}
-                      title="Edit Booking"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                                         {booking.status === "confirmed" && (
-                       <Button 
-                         size="sm"
-                         onClick={() => handleStartService(booking)}
-                         title="Start Service"
-                         disabled={startingService === booking.id}
-                       >
-                         {startingService === booking.id ? (
-                           <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                         ) : (
-                           <Play className="h-4 w-4 mr-1" />
-                         )}
-                         {startingService === booking.id ? "Starting..." : "Start Service"}
-                       </Button>
-                     )}
-                     {booking.status === "in_progress" && (
-                       <Button 
-                         size="sm"
-                         variant="secondary"
-                         onClick={() => router.push(`/services/new?booking_id=${booking.id}`)}
-                         title="Create Service"
-                       >
-                         Create Service
-                       </Button>
-                     )}
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           )}

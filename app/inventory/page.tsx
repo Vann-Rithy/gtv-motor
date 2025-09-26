@@ -5,13 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { 
-  AlertTriangle, 
-  Package, 
-  TrendingDown, 
-  TrendingUp, 
-  Search, 
-  Plus, 
+import {
+  AlertTriangle,
+  Package,
+  TrendingDown,
+  TrendingUp,
+  Search,
+  Plus,
   RefreshCw,
   Filter,
   Download,
@@ -69,7 +69,7 @@ export default function Inventory() {
   const [showLowStock, setShowLowStock] = useState(false)
   const [showOutOfStock, setShowOutOfStock] = useState(false)
   const [categories, setCategories] = useState<Array<{ id: number; name: string }>>([])
-  
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
@@ -79,7 +79,7 @@ export default function Inventory() {
     limit: 10,
     totalPages: 0
   })
-  
+
   // Modal states
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
@@ -108,7 +108,7 @@ export default function Inventory() {
         page,
         limit: itemsPerPage
       }
-      
+
       if (searchTerm) params.search = searchTerm
       if (selectedCategory !== "all") params.category_id = selectedCategory
       if (showLowStock && !showOutOfStock) {
@@ -123,7 +123,7 @@ export default function Inventory() {
 
       const response = await apiClient.getInventory(params)
       setInventory(response.data || [])
-      
+
       // Update pagination info if available
       if (response.pagination) {
         setPagination(response.pagination)
@@ -283,7 +283,7 @@ export default function Inventory() {
     if (!selectedItem) return
 
     // Validate required fields
-    if (!editForm.name || !editForm.category_id || !editForm.current_stock || 
+    if (!editForm.name || !editForm.category_id || !editForm.current_stock ||
         !editForm.min_stock || !editForm.max_stock || !editForm.unit_price) {
       toast.error("Please fill in all required fields")
       return
@@ -302,7 +302,7 @@ export default function Inventory() {
       }
 
       await apiClient.updateInventoryItem(selectedItem.id, updateData)
-      
+
       toast.success(`Successfully updated ${editForm.name}`)
       setShowEditModal(false)
       setSelectedItem(null)
@@ -553,7 +553,11 @@ export default function Inventory() {
                 </thead>
                 <tbody>
             {inventory.map((item) => (
-                    <tr key={item.id} className="border-b hover:bg-muted/50">
+                    <tr
+                      key={item.id}
+                      className="border-b hover:bg-muted/50 cursor-pointer"
+                      onClick={() => handleViewDetails(item)}
+                    >
                       <td className="p-2">
                         <div>
                           <div className="font-medium">{item.name}</div>
@@ -583,24 +587,24 @@ export default function Inventory() {
                       </td>
                       <td className="p-2 text-center">
                         <div className="flex items-center justify-center gap-1">
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                             size="sm"
                             onClick={() => handleViewDetails(item)}
                             title="View Details"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                             size="sm"
                             onClick={() => handleEditItem(item)}
                             title="Edit Item"
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                             size="sm"
                             onClick={() => handleQuickRestock(item)}
                             title="Quick Restock"
@@ -613,7 +617,7 @@ export default function Inventory() {
                   ))}
                 </tbody>
               </table>
-              
+
               {inventory.length === 0 && !loading && (
                 <div className="text-center py-8 text-muted-foreground">
                   {!showLowStock && !showOutOfStock && searchTerm === "" && selectedCategory === "all" ? (
@@ -628,7 +632,7 @@ export default function Inventory() {
               )}
             </div>
           )}
-          
+
           {/* Pagination Controls */}
           {!loading && pagination.totalPages > 1 && (
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t">
@@ -648,7 +652,7 @@ export default function Inventory() {
                   Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, pagination.total)} of {pagination.total} items
                 </span>
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
@@ -659,7 +663,7 @@ export default function Inventory() {
                   <ChevronLeft className="h-4 w-4" />
                   Previous
                 </Button>
-                
+
                 <div className="flex items-center gap-1">
                   {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
                     let pageNum;
@@ -672,7 +676,7 @@ export default function Inventory() {
                     } else {
                       pageNum = currentPage - 2 + i;
                     }
-                    
+
                     return (
                       <Button
                         key={pageNum}
@@ -686,7 +690,7 @@ export default function Inventory() {
                     );
                   })}
                 </div>
-                
+
                 <Button
                   variant="outline"
                   size="sm"
@@ -942,7 +946,7 @@ export default function Inventory() {
               </Button>
               <Button
                 onClick={handleEditSubmit}
-                disabled={!editForm.name || !editForm.category_id || !editForm.current_stock || 
+                disabled={!editForm.name || !editForm.category_id || !editForm.current_stock ||
                           !editForm.min_stock || !editForm.max_stock || !editForm.unit_price}
               >
                 Save Changes
