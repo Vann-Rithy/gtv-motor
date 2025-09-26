@@ -40,31 +40,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const didInit = useRef(false)
 
-  // Initialize authentication - Developer Mode (No authentication required)
+  // Initialize authentication - Developer Mode (restore only if stored)
   useEffect(() => {
     const initializeAuth = async () => {
       if (typeof window !== 'undefined') {
-        console.log("[auth-provider] Developer Mode - No authentication required")
+        try {
+          setLoading(true)
+          const storedToken = localStorage.getItem('auth_token')
+          const storedUser = localStorage.getItem('auth_user')
 
-        // Set default user without authentication
-        const defaultUser: User = {
-          id: 1,
-          username: 'admin',
-          email: 'admin@gtvmotor.com',
-          full_name: 'Administrator',
-          role: 'admin',
-          staff_id: 1,
-          is_active: true,
-          last_login: new Date().toISOString(),
-          created_at: new Date().toISOString()
+          if (storedToken && storedUser) {
+            const parsedUser: User = JSON.parse(storedUser)
+            setToken(storedToken)
+            setUser(parsedUser)
+            setIsAuthenticated(true)
+            console.log('[auth-provider] Restored session from localStorage')
+          } else {
+            setToken(null)
+            setUser(null)
+            setIsAuthenticated(false)
+            console.log('[auth-provider] No stored session; user is logged out')
+          }
+        } catch (e) {
+          console.error('[auth-provider] Failed to restore session:', e)
+          localStorage.removeItem('auth_token')
+          localStorage.removeItem('auth_user')
+          setToken(null)
+          setUser(null)
+          setIsAuthenticated(false)
+        } finally {
+          setLoading(false)
         }
-
-        setUser(defaultUser)
-        setIsAuthenticated(true)
-        setToken('dev-token-123')
-        setLoading(false)
-
-        console.log("[auth-provider] User authenticated in developer mode")
       }
     }
 
