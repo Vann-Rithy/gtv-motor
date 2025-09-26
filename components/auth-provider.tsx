@@ -40,93 +40,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const didInit = useRef(false)
 
-  // Get token from localStorage on init and check authentication
+  // Initialize authentication - Developer Mode (No authentication required)
   useEffect(() => {
     const initializeAuth = async () => {
       if (typeof window !== 'undefined') {
-        const storedToken = localStorage.getItem('auth_token')
-        if (storedToken) {
-          console.log("[auth-provider] Token found in localStorage, checking authentication")
-          setToken(storedToken)
+        console.log("[auth-provider] Developer Mode - No authentication required")
 
-          // Immediately check authentication with the stored token
-          try {
-            setLoading(true)
-            const url = `${API_ENDPOINTS.AUTH.ME}?token=${storedToken}`
-
-            const res = await fetch(url, {
-              cache: "no-store",
-              headers: {
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache'
-              }
-            })
-
-            if (res.status === 401) {
-              console.log("[auth-provider] Stored token is invalid, clearing it")
-              localStorage.removeItem('auth_token')
-              setToken(null)
-              setUser(null)
-              setIsAuthenticated(false)
-            } else if (res.ok) {
-              const ct = res.headers.get("content-type") || ""
-              const json = ct.includes("application/json") ? await res.json() : { success: false }
-
-              if (json?.success && json.data) {
-                console.log("[auth-provider] User authenticated successfully with stored token")
-                setUser(json.data as User)
-                setIsAuthenticated(true)
-                // Store user data in localStorage for persistence
-                localStorage.setItem('auth_user', JSON.stringify(json.data))
-              } else {
-                console.log("[auth-provider] Authentication failed with stored token")
-                localStorage.removeItem('auth_token')
-                localStorage.removeItem('auth_user')
-                setToken(null)
-                setUser(null)
-                setIsAuthenticated(false)
-              }
-            } else {
-              // Network error or other issue - keep the token and try again later
-              console.log("[auth-provider] Network error, keeping token for retry")
-              // Try to restore user data from localStorage
-              const storedUser = localStorage.getItem('auth_user')
-              if (storedUser) {
-                try {
-                  const userData = JSON.parse(storedUser)
-                  setUser(userData as User)
-                  setIsAuthenticated(true)
-                  console.log("[auth-provider] Restored user data from localStorage")
-                } catch (e) {
-                  console.error("[auth-provider] Failed to parse stored user data:", e)
-                }
-              }
-              // Don't clear the token on network errors - let user stay logged in
-              // The token will be validated on the next API call
-            }
-          } catch (e) {
-            console.error("[auth-provider] Error checking stored token:", e)
-            // Don't clear token on network errors - keep user logged in
-            console.log("[auth-provider] Keeping token despite network error")
-            // Try to restore user data from localStorage
-            const storedUser = localStorage.getItem('auth_user')
-            if (storedUser) {
-              try {
-                const userData = JSON.parse(storedUser)
-                setUser(userData as User)
-                setIsAuthenticated(true)
-                console.log("[auth-provider] Restored user data from localStorage after error")
-              } catch (parseError) {
-                console.error("[auth-provider] Failed to parse stored user data:", parseError)
-              }
-            }
-          } finally {
-            setLoading(false)
-          }
-        } else {
-          console.log("[auth-provider] No token found in localStorage")
-          setLoading(false)
+        // Set default user without authentication
+        const defaultUser: User = {
+          id: 1,
+          username: 'admin',
+          email: 'admin@gtvmotor.com',
+          full_name: 'Administrator',
+          role: 'admin',
+          staff_id: 1,
+          is_active: true,
+          last_login: new Date().toISOString(),
+          created_at: new Date().toISOString()
         }
+
+        setUser(defaultUser)
+        setIsAuthenticated(true)
+        setToken('dev-token-123')
+        setLoading(false)
+
+        console.log("[auth-provider] User authenticated in developer mode")
       }
     }
 
@@ -148,30 +86,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const res = await fetch(API_ENDPOINTS.AUTH.LOGIN, {
-        method: "POST",
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        },
-        body: JSON.stringify({ email, password })
-      })
+      // Developer Mode - Always return success
+      console.log("[auth-provider] Developer Mode - Login always succeeds")
 
-      const json = await res.json()
-
-      if (res.ok && json.success && json.data && json.data.token) {
-        // Store token and user data in localStorage
-        localStorage.setItem('auth_token', json.data.token)
-        localStorage.setItem('auth_user', JSON.stringify(json.data.user))
-        setToken(json.data.token)
-        setUser(json.data.user)
-        setIsAuthenticated(true)
-        return true
-      } else {
-        console.error("[auth-provider] Login failed:", json.error)
-        return false
+      const defaultUser: User = {
+        id: 1,
+        username: 'admin',
+        email: 'admin@gtvmotor.com',
+        full_name: 'Administrator',
+        role: 'admin',
+        staff_id: 1,
+        is_active: true,
+        last_login: new Date().toISOString(),
+        created_at: new Date().toISOString()
       }
+
+      // Store token and user data in localStorage
+      localStorage.setItem('auth_token', 'dev-token-123')
+      localStorage.setItem('auth_user', JSON.stringify(defaultUser))
+      setToken('dev-token-123')
+      setUser(defaultUser)
+      setIsAuthenticated(true)
+      return true
     } catch (e) {
       console.error("[auth-provider] Login error:", e)
       return false

@@ -41,14 +41,8 @@ class ApiClient {
   ): Promise<T> {
     let url = `${this.baseUrl}${endpoint}`
 
-    // Add token to URL parameter for authenticated endpoints (except auth endpoints)
-    if (typeof window !== 'undefined' && !endpoint.startsWith('/api/auth/')) {
-      const token = localStorage.getItem('auth_token')
-      if (token) {
-        const separator = url.includes('?') ? '&' : '?'
-        url = `${url}${separator}token=${token}`
-      }
-    }
+    // Developer Mode - No authentication required
+    // No token injection needed
 
     // Abort/timeout
     const controller = new AbortController()
