@@ -1,7 +1,7 @@
 <?php
 /**
- * Customers API
- * GTV Motor PHP Backend - Updated for Token Authentication
+ * Customers API - Working Version
+ * GTV Motor PHP Backend - Based on working inventory.php
  */
 
 require_once __DIR__ . '/../config/config.php';
@@ -23,11 +23,14 @@ try {
     try {
         $payload = json_decode(base64_decode($token), true);
 
-        if (!$payload || !isset($payload['user_id'])) {
+        if (!$payload || !isset($payload['user_id']) || !isset($payload['exp'])) {
             Response::unauthorized('Invalid token format');
         }
 
-        // No expiration check - token never expires for user-friendly experience
+        // Check if token is expired
+        if ($payload['exp'] < time()) {
+            Response::unauthorized('Token expired');
+        }
 
         // Get user from database
         require_once __DIR__ . '/../config/database.php';
@@ -51,38 +54,27 @@ try {
         Response::unauthorized('Invalid token');
     }
 
-    // Get customers from database
     $database = new Database();
     $db = $database->getConnection();
 
     $method = Request::method();
+    $customerId = Request::segment(3); // Get customer ID from URL if present
 
     if ($method === 'GET') {
         // Check if requesting individual customer
-        $uri = $_SERVER['REQUEST_URI'];
-        $path = parse_url($uri, PHP_URL_PATH);
-        $segments = explode('/', trim($path, '/'));
-        $segments = array_filter($segments);
-        $segments = array_values($segments);
-
-        $customerId = null;
-        if (isset($segments[2]) && is_numeric($segments[2])) {
-            $customerId = $segments[2];
-        }
-
         if ($customerId && is_numeric($customerId)) {
             // Get individual customer by ID
             $stmt = $db->prepare("
-                SELECT
-                    id,
-                    name,
-                    phone,
-                    address,
-                    email,
-                    created_at,
-                    updated_at
-                FROM customers
-                WHERE id = ?
+                SELECT c.*,
+                       COUNT(DISTINCT v.id) as vehicle_count,
+                       COUNT(DISTINCT s.id) as service_count,
+                       MAX(s.service_date) as last_service_date,
+                       SUM(s.total_amount) as total_spent
+                FROM customers c
+                LEFT JOIN vehicles v ON c.id = v.customer_id
+                LEFT JOIN services s ON c.id = s.customer_id
+                WHERE c.id = ?
+                GROUP BY c.id
             ");
             $stmt->execute([$customerId]);
             $customer = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -103,7 +95,7 @@ try {
         $params = [];
 
         if (!empty($search['search'])) {
-            $where[] = "(name LIKE ? OR phone LIKE ? OR email LIKE ?)";
+            $where[] = "(c.name LIKE ? OR c.phone LIKE ? OR c.email LIKE ?)";
             $searchTerm = '%' . $search['search'] . '%';
             $params[] = $searchTerm;
             $params[] = $searchTerm;
@@ -114,16 +106,17 @@ try {
 
         $query = "
             SELECT
-                id,
-                name,
-                phone,
-                address,
-                email,
-                created_at,
-                updated_at
-            FROM customers
+                c.id, c.name, c.phone, c.address, c.email, c.created_at, c.updated_at,
+                COUNT(DISTINCT v.id) as vehicle_count,
+                COUNT(DISTINCT s.id) as service_count,
+                MAX(s.service_date) as last_service_date,
+                SUM(s.total_amount) as total_spent
+            FROM customers c
+            LEFT JOIN vehicles v ON c.id = v.customer_id
+            LEFT JOIN services s ON c.id = s.customer_id
             {$whereClause}
-            ORDER BY {$search['sortBy']} {$search['sortOrder']}
+            GROUP BY c.id
+            ORDER BY c.{$search['sortBy']} {$search['sortOrder']}
             LIMIT {$pagination['limit']} OFFSET {$pagination['offset']}
         ";
 
@@ -133,8 +126,8 @@ try {
 
         // Get total count
         $countQuery = "
-            SELECT COUNT(id) as total
-            FROM customers
+            SELECT COUNT(DISTINCT c.id) as total
+            FROM customers c
             {$whereClause}
         ";
 
@@ -154,17 +147,17 @@ try {
     } elseif ($method === 'POST') {
         // Create new customer
         $data = Request::body();
-        Request::validateRequired($data, ['name', 'phone']);
+        Request::validateRequired($data, ['name', 'phone', 'email']);
 
         $stmt = $db->prepare("
-            INSERT INTO customers (name, phone, address, email)
+            INSERT INTO customers (name, phone, email, address)
             VALUES (?, ?, ?, ?)
         ");
         $stmt->execute([
             $data['name'],
             $data['phone'],
-            $data['address'] ?? null,
-            $data['email'] ?? null
+            $data['email'],
+            $data['address'] ?? null
         ]);
 
         Response::success(['id' => $db->lastInsertId()], 'Customer created successfully', 201);
@@ -177,18 +170,18 @@ try {
         }
 
         $data = Request::body();
-        Request::validateRequired($data, ['name', 'phone']);
+        Request::validateRequired($data, ['name', 'phone', 'email']);
 
         $stmt = $db->prepare("
             UPDATE customers
-            SET name = ?, phone = ?, address = ?, email = ?
+            SET name = ?, phone = ?, email = ?, address = ?
             WHERE id = ?
         ");
         $stmt->execute([
             $data['name'],
             $data['phone'],
+            $data['email'],
             $data['address'] ?? null,
-            $data['email'] ?? null,
             $customerId
         ]);
 

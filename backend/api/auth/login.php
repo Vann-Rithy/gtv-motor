@@ -23,14 +23,14 @@ try {
         Response::error('Invalid email or password', 401);
     }
 
-    // Create simple token (base64 encoded JSON)
-    $tokenPayload = [
-        'user_id' => $user['id'],
-        'email' => $user['email'],
-        'role' => $user['role'],
-        'iat' => time(),
-        'exp' => time() + 3600 // 1 hour
-    ];
+            // Create simple token (base64 encoded JSON) - No expiration for user-friendly experience
+            $tokenPayload = [
+                'user_id' => $user['id'],
+                'email' => $user['email'],
+                'role' => $user['role'],
+                'iat' => time()
+                // Removed 'exp' field - token never expires
+            ];
 
     $simpleToken = base64_encode(json_encode($tokenPayload));
 

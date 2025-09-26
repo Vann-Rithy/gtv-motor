@@ -5,21 +5,21 @@
  */
 
 class Request {
-    
+
     /**
      * Get request method
      */
     public static function method() {
         return $_SERVER['REQUEST_METHOD'];
     }
-    
+
     /**
      * Get request URI
      */
     public static function uri() {
         return $_SERVER['REQUEST_URI'];
     }
-    
+
     /**
      * Get request body as JSON
      */
@@ -27,7 +27,7 @@ class Request {
         $input = file_get_contents('php://input');
         return json_decode($input, true);
     }
-    
+
     /**
      * Get request body as array
      */
@@ -36,7 +36,7 @@ class Request {
         $data = json_decode($input, true);
         return $data ?: [];
     }
-    
+
     /**
      * Get query parameters
      */
@@ -46,7 +46,7 @@ class Request {
         }
         return $_GET;
     }
-    
+
     /**
      * Get POST data
      */
@@ -56,7 +56,7 @@ class Request {
         }
         return $_POST;
     }
-    
+
     /**
      * Get request headers
      */
@@ -67,7 +67,7 @@ class Request {
         }
         return $headers;
     }
-    
+
     /**
      * Get authorization header
      */
@@ -78,7 +78,7 @@ class Request {
         }
         return null;
     }
-    
+
     /**
      * Get client IP address
      */
@@ -97,14 +97,14 @@ class Request {
         }
         return $_SERVER['REMOTE_ADDR'] ?? 'unknown';
     }
-    
+
     /**
      * Get user agent
      */
     public static function userAgent() {
         return $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
     }
-    
+
     /**
      * Validate required fields
      */
@@ -115,12 +115,12 @@ class Request {
                 $missing[] = $field;
             }
         }
-        
+
         if (!empty($missing)) {
             Response::validationError($missing, 'Missing required fields: ' . implode(', ', $missing));
         }
     }
-    
+
     /**
      * Sanitize input data
      */
@@ -130,7 +130,7 @@ class Request {
         }
         return htmlspecialchars(trim($data), ENT_QUOTES, 'UTF-8');
     }
-    
+
     /**
      * Get pagination parameters
      */
@@ -138,14 +138,14 @@ class Request {
         $page = max(1, (int)($_GET['page'] ?? 1));
         $limit = min(100, max(1, (int)($_GET['limit'] ?? 10)));
         $offset = ($page - 1) * $limit;
-        
+
         return [
             'page' => $page,
             'limit' => $limit,
             'offset' => $offset
         ];
     }
-    
+
     /**
      * Get search parameters
      */
@@ -156,7 +156,7 @@ class Request {
             'sortOrder' => ($_GET['sortOrder'] ?? 'desc') === 'asc' ? 'ASC' : 'DESC'
         ];
     }
-    
+
     /**
      * Get date range parameters
      */
@@ -165,6 +165,32 @@ class Request {
             'startDate' => $_GET['startDate'] ?? null,
             'endDate' => $_GET['endDate'] ?? null
         ];
+    }
+
+    /**
+     * Get URI segment by index
+     */
+    public static function segment($index) {
+        if (!isset($_SERVER['REQUEST_URI'])) {
+            return null;
+        }
+
+        $uri = $_SERVER['REQUEST_URI'];
+        $path = parse_url($uri, PHP_URL_PATH);
+
+        if (!$path) {
+            return null;
+        }
+
+        $segments = explode('/', trim($path, '/'));
+
+        // Remove empty segments
+        $segments = array_filter($segments, function($segment) {
+            return $segment !== '';
+        });
+        $segments = array_values($segments);
+
+        return isset($segments[$index]) ? $segments[$index] : null;
     }
 }
 ?>

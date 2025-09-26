@@ -1,41 +1,84 @@
 <?php
 /**
  * Warranty Reports API
- * GTV Motor PHP Backend
+ * GTV Motor PHP Backend - Updated for Token Authentication
  */
 
-require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../../includes/Auth.php';
+require_once __DIR__ . '/../../config/config.php';
+require_once __DIR__ . '/../../includes/Request.php';
+require_once __DIR__ . '/../../includes/Response.php';
 
 try {
-    $auth = new Auth();
-    $user = $auth->requireAuth();
-    
+    // Get token from URL parameter first, then Authorization header
+    $token = $_GET['token'] ?? Request::authorization();
+
+    if (!$token) {
+        Response::unauthorized('No authorization token provided');
+    }
+
+    // Remove 'Bearer ' prefix if present
+    $token = str_replace('Bearer ', '', $token);
+
+    // Simple token validation (base64 encoded JSON)
+    try {
+        $payload = json_decode(base64_decode($token), true);
+
+        if (!$payload || !isset($payload['user_id']) || !isset($payload['exp'])) {
+            Response::unauthorized('Invalid token format');
+        }
+
+        // Check if token is expired
+        if ($payload['exp'] < time()) {
+            Response::unauthorized('Token expired');
+        }
+
+        // Get user from database
+        require_once __DIR__ . '/../../config/database.php';
+        $database = new Database();
+        $conn = $database->getConnection();
+
+        $stmt = $conn->prepare("
+            SELECT u.*, s.name as staff_name, s.role as staff_role
+            FROM users u
+            LEFT JOIN staff s ON u.staff_id = s.id
+            WHERE u.id = ? AND u.is_active = 1
+        ");
+        $stmt->execute([$payload['user_id']]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$user) {
+            Response::unauthorized('User not found or inactive');
+        }
+
+    } catch (Exception $e) {
+        Response::unauthorized('Invalid token');
+    }
+
     $database = new Database();
     $db = $database->getConnection();
-    
+
     $fromDate = Request::query('from') ?? '2024-01-01';
     $toDate = Request::query('to') ?? date('Y-m-d');
     $status = Request::query('status');
     $expiringSoon = Request::query('expiring_soon') === 'true';
-    
+
     $where = [];
     $params = [];
-    
+
     if ($status) {
         $where[] = "w.status = ?";
         $params[] = $status;
     }
-    
+
     if ($expiringSoon) {
         $where[] = "w.end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)";
     }
-    
+
     $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
-    
+
     // Get warranties with details
     $query = "
-        SELECT 
+        SELECT
             w.*,
             c.name as customer_name,
             c.phone as customer_phone,
@@ -50,7 +93,7 @@ try {
             MAX(ws.service_date) as last_service_date,
             COALESCE(SUM(ws.cost_covered), 0) as total_cost_covered,
             DATEDIFF(w.end_date, CURDATE()) as days_until_expiry,
-            CASE 
+            CASE
                 WHEN w.end_date < CURDATE() THEN 'expired'
                 WHEN w.end_date <= DATE_ADD(CURDATE(), INTERVAL 7 DAY) THEN 'expiring_soon'
                 WHEN w.end_date <= DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 'expiring_month'
@@ -64,12 +107,14 @@ try {
         GROUP BY w.id
         ORDER BY w.end_date ASC
     ";
-    
-    $warranties = $db->query($query)->fetchAll(PDO::FETCH_ASSOC);
-    
+
+    $warranties = $db->prepare($query);
+    $warranties->execute($params);
+    $warranties = $warranties->fetchAll(PDO::FETCH_ASSOC);
+
     // Get warranty statistics
     $stmt = $db->prepare("
-        SELECT 
+        SELECT
             COUNT(*) as total_warranties,
             SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_warranties,
             SUM(CASE WHEN status = 'expired' THEN 1 ELSE 0 END) as expired_warranties,
@@ -83,10 +128,10 @@ try {
     ");
     $stmt->execute($params);
     $statistics = $stmt->fetch(PDO::FETCH_ASSOC);
-    
+
     // Get warranties by type
     $stmt = $db->prepare("
-        SELECT 
+        SELECT
             warranty_type,
             COUNT(*) as count,
             COALESCE(SUM(total_cost_covered), 0) as total_cost_covered
@@ -98,10 +143,10 @@ try {
     ");
     $stmt->execute($params);
     $warrantiesByType = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
+
     // Get monthly warranty trends
     $stmt = $db->prepare("
-        SELECT 
+        SELECT
             DATE_FORMAT(created_at, '%Y-%m') as month,
             COUNT(*) as new_warranties,
             SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_warranties
@@ -112,7 +157,7 @@ try {
     ");
     $stmt->execute([$fromDate, $toDate]);
     $monthlyTrends = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
+
     $warrantyReport = [
         'warranties' => $warranties,
         'statistics' => $statistics,
@@ -123,9 +168,9 @@ try {
             'to' => $toDate
         ]
     ];
-    
+
     Response::success($warrantyReport, 'Warranty report generated successfully');
-    
+
 } catch (Exception $e) {
     error_log("Warranty reports API error: " . $e->getMessage());
     Response::error('Failed to generate warranty report', 500);

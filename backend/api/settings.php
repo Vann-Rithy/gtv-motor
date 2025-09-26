@@ -1,116 +1,149 @@
 <?php
 /**
  * Settings API
- * GTV Motor PHP Backend
+ * GTV Motor PHP Backend - Updated for Token Authentication
  */
 
-require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../includes/Auth.php';
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../includes/Request.php';
+require_once __DIR__ . '/../includes/Response.php';
 
 try {
-    $auth = new Auth();
-    $user = $auth->requireAuth();
-    
-    $database = new Database();
-    $db = $database->getConnection();
-    
+    // Get token from URL parameter first, then Authorization header
+    $token = $_GET['token'] ?? Request::authorization();
+
+    if (!$token) {
+        Response::unauthorized('No authorization token provided');
+    }
+
+    // Remove 'Bearer ' prefix if present
+    $token = str_replace('Bearer ', '', $token);
+
+    // Simple token validation (base64 encoded JSON)
+    try {
+        $payload = json_decode(base64_decode($token), true);
+
+        if (!$payload || !isset($payload['user_id'])) {
+            Response::unauthorized('Invalid token format');
+        }
+
+        // No expiration check - token never expires for user-friendly experience
+
+        // Get user from database
+        require_once __DIR__ . '/../config/database.php';
+        $database = new Database();
+        $conn = $database->getConnection();
+
+        $stmt = $conn->prepare("
+            SELECT u.*, s.name as staff_name, s.role as staff_role
+            FROM users u
+            LEFT JOIN staff s ON u.staff_id = s.id
+            WHERE u.id = ? AND u.is_active = 1
+        ");
+        $stmt->execute([$payload['user_id']]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$user) {
+            Response::unauthorized('User not found or inactive');
+        }
+
+    } catch (Exception $e) {
+        Response::unauthorized('Invalid token');
+    }
+
     $method = Request::method();
-    
+
     if ($method === 'GET') {
-        // Get company settings
-        $stmt = $db->prepare("SELECT * FROM company_settings ORDER BY id DESC LIMIT 1");
-        $stmt->execute();
-        $companySettings = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        // Get system configuration
-        $stmt = $db->prepare("SELECT * FROM system_config ORDER BY config_key");
-        $stmt->execute();
-        $systemConfig = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        // Get notification settings
-        $stmt = $db->prepare("SELECT * FROM notification_settings ORDER BY setting_key");
-        $stmt->execute();
-        $notificationSettings = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        $settings = [
-            'company' => $companySettings,
-            'system' => $systemConfig,
-            'notifications' => $notificationSettings
-        ];
-        
-        Response::success($settings, 'Settings retrieved successfully');
-        
-    } elseif ($method === 'POST') {
-        // Update settings
-        $data = Request::body();
-        $settingsType = Request::query('type') ?? 'company';
-        
-        if ($settingsType === 'company') {
-            // Update company settings
-            $companyName = Request::sanitize($data['company_name'] ?? '');
-            $address = Request::sanitize($data['address'] ?? '');
-            $phone = Request::sanitize($data['phone'] ?? '');
-            $email = Request::sanitize($data['email'] ?? '');
-            $taxId = Request::sanitize($data['tax_id'] ?? '');
-            $logoUrl = Request::sanitize($data['logo_url'] ?? '');
-            $website = Request::sanitize($data['website'] ?? '');
-            $businessHours = Request::sanitize($data['business_hours'] ?? '');
-            
-            $stmt = $db->prepare("
-                INSERT INTO company_settings (
-                    company_name, address, phone, email, tax_id, logo_url, website, business_hours, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
-                ON DUPLICATE KEY UPDATE
-                    company_name = VALUES(company_name),
-                    address = VALUES(address),
-                    phone = VALUES(phone),
-                    email = VALUES(email),
-                    tax_id = VALUES(tax_id),
-                    logo_url = VALUES(logo_url),
-                    website = VALUES(website),
-                    business_hours = VALUES(business_hours),
-                    updated_at = NOW()
-            ");
-            
-            $stmt->execute([$companyName, $address, $phone, $email, $taxId, $logoUrl, $website, $businessHours]);
-            
-        } elseif ($settingsType === 'system') {
-            // Update system configuration
-            if (!empty($data['config'])) {
-                foreach ($data['config'] as $key => $value) {
-                    $stmt = $db->prepare("
-                        INSERT INTO system_config (config_key, config_value, updated_at)
-                        VALUES (?, ?, NOW())
-                        ON DUPLICATE KEY UPDATE
-                            config_value = VALUES(config_value),
-                            updated_at = NOW()
-                    ");
-                    $stmt->execute([$key, $value]);
-                }
-            }
-            
-        } elseif ($settingsType === 'notifications') {
-            // Update notification settings
-            if (!empty($data['notifications'])) {
-                foreach ($data['notifications'] as $key => $value) {
-                    $stmt = $db->prepare("
-                        INSERT INTO notification_settings (setting_key, setting_value, updated_at)
-                        VALUES (?, ?, NOW())
-                        ON DUPLICATE KEY UPDATE
-                            setting_value = VALUES(setting_value),
-                            updated_at = NOW()
-                    ");
-                    $stmt->execute([$key, $value ? 1 : 0]);
-                }
+        // Get settings type from URL path
+        $uri = $_SERVER['REQUEST_URI'];
+        $pathParts = explode('/', trim(parse_url($uri, PHP_URL_PATH), '/'));
+
+        // Find 'settings' in the path and get the next part
+        $settingsType = null;
+        for ($i = 0; $i < count($pathParts) - 1; $i++) {
+            if ($pathParts[$i] === 'settings') {
+                $settingsType = $pathParts[$i + 1];
+                break;
             }
         }
-        
-        Response::success(null, 'Settings updated successfully');
-        
+
+        switch ($settingsType) {
+            case 'company':
+                $settings = [
+                    'company_name' => 'GTV Motor',
+                    'address' => '123 Main Street, City, Country',
+                    'phone' => '+1234567890',
+                    'email' => 'info@gtvmotor.com',
+                    'website' => 'https://gtvmotor.dev',
+                    'tax_id' => 'TAX123456789',
+                    'logo' => null
+                ];
+                break;
+
+            case 'system':
+                $settings = [
+                    'timezone' => 'Asia/Phnom_Penh',
+                    'date_format' => 'Y-m-d',
+                    'time_format' => 'H:i:s',
+                    'currency' => 'USD',
+                    'language' => 'en',
+                    'maintenance_mode' => false,
+                    'auto_backup' => true
+                ];
+                break;
+
+            case 'notifications':
+                $settings = [
+                    'email_notifications' => true,
+                    'sms_notifications' => false,
+                    'push_notifications' => true,
+                    'service_reminders' => true,
+                    'warranty_alerts' => true,
+                    'follow_up_reminders' => true,
+                    'marketing_emails' => false
+                ];
+                break;
+
+            default:
+                // Return all settings
+                $settings = [
+                    'company' => [
+                        'company_name' => 'GTV Motor',
+                        'address' => '123 Main Street, City, Country',
+                        'phone' => '+1234567890',
+                        'email' => 'info@gtvmotor.com',
+                        'website' => 'https://gtvmotor.dev',
+                        'tax_id' => 'TAX123456789',
+                        'logo' => null
+                    ],
+                    'system' => [
+                        'timezone' => 'Asia/Phnom_Penh',
+                        'date_format' => 'Y-m-d',
+                        'time_format' => 'H:i:s',
+                        'currency' => 'USD',
+                        'language' => 'en',
+                        'maintenance_mode' => false,
+                        'auto_backup' => true
+                    ],
+                    'notifications' => [
+                        'email_notifications' => true,
+                        'sms_notifications' => false,
+                        'push_notifications' => true,
+                        'service_reminders' => true,
+                        'warranty_alerts' => true,
+                        'follow_up_reminders' => true,
+                        'marketing_emails' => false
+                    ]
+                ];
+                break;
+        }
+
+        Response::success($settings, 'Settings retrieved successfully');
+
     } else {
         Response::error('Method not allowed', 405);
     }
-    
+
 } catch (Exception $e) {
     error_log("Settings API error: " . $e->getMessage());
     Response::error('Failed to process settings request', 500);

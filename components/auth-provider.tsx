@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             })
 
             if (res.status === 401) {
-              console.log("[auth-provider] Stored token is expired, clearing it")
+              console.log("[auth-provider] Stored token is invalid, clearing it")
               localStorage.removeItem('auth_token')
               setToken(null)
               setUser(null)
@@ -76,20 +76,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 console.log("[auth-provider] User authenticated successfully with stored token")
                 setUser(json.data as User)
                 setIsAuthenticated(true)
+                // Store user data in localStorage for persistence
+                localStorage.setItem('auth_user', JSON.stringify(json.data))
               } else {
                 console.log("[auth-provider] Authentication failed with stored token")
                 localStorage.removeItem('auth_token')
+                localStorage.removeItem('auth_user')
                 setToken(null)
                 setUser(null)
                 setIsAuthenticated(false)
               }
+            } else {
+              // Network error or other issue - keep the token and try again later
+              console.log("[auth-provider] Network error, keeping token for retry")
+              // Try to restore user data from localStorage
+              const storedUser = localStorage.getItem('auth_user')
+              if (storedUser) {
+                try {
+                  const userData = JSON.parse(storedUser)
+                  setUser(userData as User)
+                  setIsAuthenticated(true)
+                  console.log("[auth-provider] Restored user data from localStorage")
+                } catch (e) {
+                  console.error("[auth-provider] Failed to parse stored user data:", e)
+                }
+              }
+              // Don't clear the token on network errors - let user stay logged in
+              // The token will be validated on the next API call
             }
           } catch (e) {
             console.error("[auth-provider] Error checking stored token:", e)
-            localStorage.removeItem('auth_token')
-            setToken(null)
-            setUser(null)
-            setIsAuthenticated(false)
+            // Don't clear token on network errors - keep user logged in
+            console.log("[auth-provider] Keeping token despite network error")
+            // Try to restore user data from localStorage
+            const storedUser = localStorage.getItem('auth_user')
+            if (storedUser) {
+              try {
+                const userData = JSON.parse(storedUser)
+                setUser(userData as User)
+                setIsAuthenticated(true)
+                console.log("[auth-provider] Restored user data from localStorage after error")
+              } catch (parseError) {
+                console.error("[auth-provider] Failed to parse stored user data:", parseError)
+              }
+            }
           } finally {
             setLoading(false)
           }
@@ -131,8 +161,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const json = await res.json()
 
       if (res.ok && json.success && json.data && json.data.token) {
-        // Store token in localStorage
+        // Store token and user data in localStorage
         localStorage.setItem('auth_token', json.data.token)
+        localStorage.setItem('auth_user', JSON.stringify(json.data.user))
         setToken(json.data.token)
         setUser(json.data.user)
         setIsAuthenticated(true)
@@ -149,8 +180,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      // Clear token from localStorage
+      // Clear token and user data from localStorage
       localStorage.removeItem('auth_token')
+      localStorage.removeItem('auth_user')
       setToken(null)
       setUser(null)
       setIsAuthenticated(false)
@@ -159,6 +191,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error("[auth-provider] logout failed:", e)
       // Even if logout fails, clear local state
       localStorage.removeItem('auth_token')
+      localStorage.removeItem('auth_user')
       setToken(null)
       setUser(null)
       setIsAuthenticated(false)
@@ -198,16 +231,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log("[auth-provider] User refreshed successfully")
           setUser(json.data as User)
           setIsAuthenticated(true)
+          // Update stored user data
+          localStorage.setItem('auth_user', JSON.stringify(json.data))
         } else {
           console.log("[auth-provider] Refresh failed")
           setUser(null)
           setIsAuthenticated(false)
         }
+      } else {
+        // Network error or other issue - don't clear user state
+        console.log("[auth-provider] Network error during refresh, keeping user state")
       }
     } catch (e) {
       console.error("[auth-provider] Error refreshing user:", e)
-      setUser(null)
-      setIsAuthenticated(false)
+      // Don't clear user state on network errors - keep them logged in
+      console.log("[auth-provider] Keeping user state despite network error")
     } finally {
       setLoading(false)
     }

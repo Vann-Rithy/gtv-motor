@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GTV Motor - Complete System Verification</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1600px; margin: 0 auto; padding: 20px; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border-color: #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border-color: #bee5eb; }
+        .warning { background: #fff3cd; color: #856404; border-color: #ffeaa7; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .pass { background: #d4edda; color: #155724; }
+        .fail { background: #f8d7da; color: #721c24; }
+        .pending { background: #fff3cd; color: #856404; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .feature-test { padding: 15px; border: 1px solid #ddd; border-radius: 5px; margin: 10px 0; }
+        .status-indicator { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
+        .status-pass { background: #28a745; }
+        .status-fail { background: #dc3545; }
+        .status-pending { background: #ffc107; }
+        .progress-bar { width: 100%; height: 20px; background: #f0f0f0; border-radius: 10px; overflow: hidden; margin: 10px 0; }
+        .progress-fill { height: 100%; background: #28a745; transition: width 0.3s ease; }
+        .feature-group { margin: 20px 0; }
+        .feature-title { font-size: 18px; font-weight: bold; margin-bottom: 10px; color: #333; }
+    </style>
+</head>
+<body>
+    <h1>🔧 GTV Motor - Complete System Verification</h1>
+
+    <div class="section success">
+        <h2>✅ COMPREHENSIVE SYSTEM CHECK</h2>
+        <p><strong>Status:</strong> Testing every single feature and endpoint</p>
+        <p><strong>Goal:</strong> Ensure 100% functionality across all modules</p>
+        <div class="progress-bar">
+            <div class="progress-fill" id="overallProgress" style="width: 0%"></div>
+        </div>
+        <p id="progressText">Ready to start comprehensive testing...</p>
+    </div>
+
+    <div class="section">
+        <h2>🧪 System Tests</h2>
+        <button onclick="runCompleteTest()">Run Complete System Test</button>
+        <button onclick="testAuthentication()">Test Authentication Only</button>
+        <button onclick="testAllModules()">Test All Modules</button>
+        <button onclick="clearAllResults()">Clear Results</button>
+        <div id="testResults"></div>
+    </div>
+
+    <div class="section info">
+        <h2>📋 Feature Test Results</h2>
+        <div id="featureResults"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://api.gtvmotor.dev';
+        const LOGIN_CREDENTIALS = {
+            email: 'admin@rhtower.com',
+            password: '}dSNZYD@@b40'
+        };
+
+        let testResults = {};
+        let authToken = null;
+        let totalTests = 0;
+        let completedTests = 0;
+
+        // Complete feature test matrix
+        const FEATURE_TESTS = {
+            authentication: {
+                name: 'Authentication System',
+                tests: [
+                    { name: 'Login', endpoint: '/api/auth/login', method: 'POST', requiresAuth: false },
+                    { name: 'Get Current User', endpoint: '/api/auth/me', method: 'GET', requiresAuth: true },
+                    { name: 'Logout', endpoint: '/api/auth/logout', method: 'POST', requiresAuth: true }
+                ]
+            },
+            dashboard: {
+                name: 'Dashboard Features',
+                tests: [
+                    { name: 'Dashboard Stats', endpoint: '/api/dashboard/stats', method: 'GET', requiresAuth: true },
+                    { name: 'Dashboard Analytics', endpoint: '/api/dashboard/analytics', method: 'GET', requiresAuth: true }
+                ]
+            },
+            customers: {
+                name: 'Customer Management',
+                tests: [
+                    { name: 'Customer List', endpoint: '/api/customers', method: 'GET', requiresAuth: true },
+                    { name: 'Customer Details (ID: 1)', endpoint: '/api/customers/1', method: 'GET', requiresAuth: true },
+                    { name: 'Customer Details (ID: 2)', endpoint: '/api/customers/2', method: 'GET', requiresAuth: true }
+                ]
+            },
+            services: {
+                name: 'Service Management',
+                tests: [
+                    { name: 'Service List', endpoint: '/api/services', method: 'GET', requiresAuth: true },
+                    { name: 'Service Details (ID: 1)', endpoint: '/api/services/1', method: 'GET', requiresAuth: true },
+                    { name: 'Service Details (ID: 2)', endpoint: '/api/services/2', method: 'GET', requiresAuth: true },
+                    { name: 'Service Types', endpoint: '/api/service-types', method: 'GET', requiresAuth: true }
+                ]
+            },
+            vehicles: {
+                name: 'Vehicle Management',
+                tests: [
+                    { name: 'Vehicle List', endpoint: '/api/vehicles', method: 'GET', requiresAuth: true },
+                    { name: 'Vehicle Details (ID: 1)', endpoint: '/api/vehicles/1', method: 'GET', requiresAuth: true },
+                    { name: 'Vehicle Details (ID: 2)', endpoint: '/api/vehicles/2', method: 'GET', requiresAuth: true }
+                ]
+            },
+            inventory: {
+                name: 'Inventory Management',
+                tests: [
+                    { name: 'Inventory List', endpoint: '/api/inventory', method: 'GET', requiresAuth: true }
+                ]
+            },
+            bookings: {
+                name: 'Booking Management',
+                tests: [
+                    { name: 'Booking List', endpoint: '/api/bookings', method: 'GET', requiresAuth: true },
+                    { name: 'Booking Details (ID: 1)', endpoint: '/api/bookings/1', method: 'GET', requiresAuth: true },
+                    { name: 'Booking Details (ID: 2)', endpoint: '/api/bookings/2', method: 'GET', requiresAuth: true }
+                ]
+            },
+            warranties: {
+                name: 'Warranty Management',
+                tests: [
+                    { name: 'Warranty List', endpoint: '/api/warranties', method: 'GET', requiresAuth: true },
+                    { name: 'Warranty Details (ID: 1)', endpoint: '/api/warranties/1', method: 'GET', requiresAuth: true },
+                    { name: 'Warranty Details (ID: 2)', endpoint: '/api/warranties/2', method: 'GET', requiresAuth: true }
+                ]
+            },
+            alerts: {
+                name: 'Alert Management',
+                tests: [
+                    { name: 'Alert List', endpoint: '/api/alerts', method: 'GET', requiresAuth: true }
+                ]
+            },
+            reports: {
+                name: 'Report System',
+                tests: [
+                    { name: 'Summary Report', endpoint: '/api/reports/summary', method: 'GET', requiresAuth: true },
+                    { name: 'Customer Report', endpoint: '/api/reports/customer', method: 'GET', requiresAuth: true },
+                    { name: 'Warranty Report', endpoint: '/api/reports/warranty', method: 'GET', requiresAuth: true },
+                    { name: 'Inventory Report', endpoint: '/api/reports/inventory', method: 'GET', requiresAuth: true }
+                ]
+            },
+            analytics: {
+                name: 'Analytics System',
+                tests: [
+                    { name: 'Analytics Data', endpoint: '/api/analytics', method: 'GET', requiresAuth: true }
+                ]
+            },
+            settings: {
+                name: 'Settings Management',
+                tests: [
+                    { name: 'Settings List', endpoint: '/api/settings', method: 'GET', requiresAuth: true },
+                    { name: 'Company Settings', endpoint: '/api/settings/company', method: 'GET', requiresAuth: true },
+                    { name: 'System Settings', endpoint: '/api/settings/system', method: 'GET', requiresAuth: true },
+                    { name: 'Notification Settings', endpoint: '/api/settings/notifications', method: 'GET', requiresAuth: true }
+                ]
+            },
+            staff: {
+                name: 'Staff Management',
+                tests: [
+                    { name: 'Staff List', endpoint: '/api/staff', method: 'GET', requiresAuth: true }
+                ]
+            },
+            notifications: {
+                name: 'Notification System',
+                tests: [
+                    { name: 'Notification List', endpoint: '/api/notifications', method: 'GET', requiresAuth: true }
+                ]
+            }
+        };
+
+        function addTestResult(test, result, details = '') {
+            testResults[test] = { result, details };
+            updateDisplay();
+        }
+
+        function updateProgress() {
+            const progress = totalTests > 0 ? Math.round((completedTests / totalTests) * 100) : 0;
+            document.getElementById('overallProgress').style.width = progress + '%';
+            document.getElementById('progressText').textContent =
+                `Progress: ${completedTests}/${totalTests} tests completed (${progress}%)`;
+        }
+
+        function updateDisplay() {
+            const resultsDiv = document.getElementById('testResults');
+
+            let html = '<h3>Test Results Summary:</h3>';
+            let totalTests = 0;
+            let passedTests = 0;
+
+            Object.entries(testResults).forEach(([test, data]) => {
+                totalTests++;
+                if (data.result) passedTests++;
+
+                const status = data.result ? 'pass' : 'fail';
+                const icon = data.result ? '✅' : '❌';
+                html += `<div class="test-result ${status}">
+                    ${icon} ${test}: ${data.details}
+                </div>`;
+            });
+
+            const successRate = totalTests > 0 ? Math.round((passedTests / totalTests) * 100) : 0;
+
+            if (totalTests > 0) {
+                html += `<div class="test-result ${successRate === 100 ? 'pass' : successRate >= 90 ? 'pending' : 'fail'}">
+                    📊 ${passedTests}/${totalTests} tests passed (${successRate}%)
+                    ${successRate === 100 ? '🎉 PERFECT SYSTEM!' : successRate >= 90 ? '👍 EXCELLENT!' : '⚠️ NEEDS ATTENTION'}
+                </div>`;
+            }
+
+            resultsDiv.innerHTML = html;
+        }
+
+        function updateFeatureResults() {
+            const resultsDiv = document.getElementById('featureResults');
+            let html = '';
+
+            Object.entries(FEATURE_TESTS).forEach(([featureKey, feature]) => {
+                const featureTests = feature.tests;
+                let featurePassed = 0;
+                let featureTotal = featureTests.length;
+
+                featureTests.forEach(test => {
+                    if (testResults[test.name] && testResults[test.name].result) {
+                        featurePassed++;
+                    }
+                });
+
+                const featureStatus = featurePassed === featureTotal ? 'pass' :
+                                    featurePassed > 0 ? 'pending' : 'fail';
+                const statusIcon = featureStatus === 'pass' ? '✅' :
+                                 featureStatus === 'pending' ? '⚠️' : '❌';
+                const statusClass = featureStatus === 'pass' ? 'status-pass' :
+                                  featureStatus === 'pending' ? 'status-pending' : 'status-fail';
+
+                html += `<div class="feature-group">
+                    <div class="feature-title">
+                        <span class="status-indicator ${statusClass}"></span>
+                        ${statusIcon} ${feature.name} (${featurePassed}/${featureTotal})
+                    </div>
+                    <div class="grid">`;
+
+                featureTests.forEach(test => {
+                    const testStatus = testResults[test.name] ?
+                        (testResults[test.name].result ? 'pass' : 'fail') : 'pending';
+                    const testIcon = testStatus === 'pass' ? '✅' :
+                                   testStatus === 'fail' ? '❌' : '⏳';
+                    const testIndicator = testStatus === 'pass' ? 'status-pass' :
+                                        testStatus === 'fail' ? 'status-fail' : 'status-pending';
+
+                    html += `<div class="feature-test">
+                        <span class="status-indicator ${testIndicator}"></span>
+                        <strong>${testIcon} ${test.name}</strong><br>
+                        <small>${test.method} ${test.endpoint}</small>
+                    </div>`;
+                });
+
+                html += `</div></div>`;
+            });
+
+            resultsDiv.innerHTML = html;
+        }
+
+        async function runCompleteTest() {
+            clearAllResults();
+
+            // Calculate total tests
+            totalTests = 0;
+            Object.values(FEATURE_TESTS).forEach(feature => {
+                totalTests += feature.tests.length;
+            });
+            completedTests = 0;
+            updateProgress();
+
+            try {
+                // Test authentication first
+                await testAuthentication();
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                // Test all modules
+                await testAllModules();
+
+            } catch (error) {
+                console.error('Complete test failed:', error);
+                addTestResult('Complete System Test', false, `Test failed: ${error.message}`);
+            }
+        }
+
+        async function testAuthentication() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(LOGIN_CREDENTIALS)
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success && data.data && data.data.token) {
+                    authToken = data.data.token;
+                    localStorage.setItem('auth_token', authToken);
+                    addTestResult('Authentication Login', true, `Success - User: ${data.data.user.email}`);
+                } else {
+                    addTestResult('Authentication Login', false, `Failed: ${data.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                addTestResult('Authentication Login', false, `Error: ${error.message}`);
+            }
+
+            completedTests++;
+            updateProgress();
+        }
+
+        async function testAllModules() {
+            for (const [featureKey, feature] of Object.entries(FEATURE_TESTS)) {
+                console.log(`Testing ${feature.name}...`);
+
+                for (const test of feature.tests) {
+                    await testEndpoint(test);
+                    completedTests++;
+                    updateProgress();
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                }
+            }
+        }
+
+        async function testEndpoint(test) {
+            if (test.requiresAuth && !authToken) {
+                addTestResult(test.name, false, 'No auth token - login first');
+                return;
+            }
+
+            try {
+                let url = `${API_BASE_URL}${test.endpoint}`;
+                let options = { method: test.method };
+
+                if (test.requiresAuth && authToken) {
+                    url += `?token=${authToken}`;
+                }
+
+                if (test.method === 'POST' && test.endpoint === '/api/auth/login') {
+                    options.headers = { 'Content-Type': 'application/json' };
+                    options.body = JSON.stringify(LOGIN_CREDENTIALS);
+                }
+
+                const response = await fetch(url, options);
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    const dataType = test.endpoint.includes('/services/') ? 'service' :
+                                   test.endpoint.includes('/customers/') ? 'customer' :
+                                   test.endpoint.includes('/vehicles/') ? 'vehicle' : 'data';
+                    addTestResult(test.name, true, `Working - ${dataType} retrieved (${response.status})`);
+                } else {
+                    addTestResult(test.name, false, `Failed: ${data.error || 'Unknown error'} (${response.status})`);
+                }
+            } catch (error) {
+                addTestResult(test.name, false, `Error: ${error.message}`);
+            }
+        }
+
+        function clearAllResults() {
+            testResults = {};
+            completedTests = 0;
+            totalTests = 0;
+            updateDisplay();
+            updateFeatureResults();
+            updateProgress();
+        }
+
+        // Initialize on page load
+        window.onload = function() {
+            updateDisplay();
+            updateFeatureResults();
+            updateProgress();
+        };
+    </script>
+</body>
+</html>

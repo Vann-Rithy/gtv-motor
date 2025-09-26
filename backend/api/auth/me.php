@@ -23,14 +23,11 @@ try {
     try {
         $payload = json_decode(base64_decode($token), true);
 
-        if (!$payload || !isset($payload['user_id']) || !isset($payload['exp'])) {
-            Response::unauthorized('Invalid token format');
-        }
+            if (!$payload || !isset($payload['user_id'])) {
+                Response::unauthorized('Invalid token format');
+            }
 
-        // Check if token is expired
-        if ($payload['exp'] < time()) {
-            Response::unauthorized('Token expired');
-        }
+            // No expiration check - token never expires for user-friendly experience
 
         // Get user from database
         require_once __DIR__ . '/../../config/database.php';

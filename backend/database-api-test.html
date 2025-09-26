@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GTV Motor - Database & API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border-color: #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border-color: #bee5eb; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .pass { background: #d4edda; color: #155724; }
+        .fail { background: #f8d7da; color: #721c24; }
+        .pending { background: #fff3cd; color: #856404; }
+        .response-details { background: #f8f9fa; padding: 10px; border-radius: 5px; margin: 10px 0; }
+        pre { white-space: pre-wrap; word-wrap: break-word; max-height: 300px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔧 GTV Motor - Database & API Test</h1>
+
+    <div class="section error">
+        <h2>🚨 JSON Parsing Error Fix</h2>
+        <p><strong>Issue:</strong> "Failed to execute 'json' on 'Response': Unexpected end of JSON input"</p>
+        <p><strong>Root Cause:</strong> Database queries using $db->query() instead of prepared statements</p>
+        <p><strong>Fix Applied:</strong> Updated all API files to use proper prepared statements</p>
+    </div>
+
+    <div class="section">
+        <h2>🧪 Test Fixed APIs</h2>
+        <button onclick="testAllAPIs()">Test All Fixed APIs</button>
+        <button onclick="testCustomersAPI()">Test Customers API</button>
+        <button onclick="testServicesAPI()">Test Services API</button>
+        <button onclick="testDatabaseTables()">Test Database Tables</button>
+        <div id="testResults"></div>
+    </div>
+
+    <div class="section info">
+        <h2>📋 Response Details</h2>
+        <div id="responseDetails"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://api.gtvmotor.dev';
+        const LOGIN_CREDENTIALS = {
+            email: 'admin@rhtower.com',
+            password: '}dSNZYD@@b40'
+        };
+
+        let authToken = null;
+
+        async function testAllAPIs() {
+            clearResults();
+
+            try {
+                // Login first
+                await login();
+
+                // Test all major APIs
+                await testAPI('Customers', '/api/customers');
+                await testAPI('Services', '/api/services');
+                await testAPI('Vehicles', '/api/vehicles');
+                await testAPI('Bookings', '/api/bookings');
+                await testAPI('Inventory', '/api/inventory');
+                await testAPI('Warranties', '/api/warranties');
+                await testAPI('Alerts', '/api/alerts');
+                await testAPI('Staff', '/api/staff');
+                await testAPI('Service Types', '/api/service-types');
+                await testAPI('Notifications', '/api/notifications');
+                await testAPI('Dashboard Stats', '/api/dashboard/stats');
+                await testAPI('Analytics', '/api/analytics');
+
+            } catch (error) {
+                console.error('Test failed:', error);
+                addResult('Complete Test', false, `Test failed: ${error.message}`);
+            }
+        }
+
+        async function testCustomersAPI() {
+            clearResults();
+            await login();
+            await testAPI('Customers', '/api/customers');
+        }
+
+        async function testServicesAPI() {
+            clearResults();
+            await login();
+            await testAPI('Services', '/api/services');
+        }
+
+        async function testDatabaseTables() {
+            clearResults();
+            await login();
+
+            // Test if we can get any data from the database
+            await testAPI('Dashboard Stats (DB Test)', '/api/dashboard/stats');
+            await testAPI('Service Types (Simple Query)', '/api/service-types');
+        }
+
+        async function login() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(LOGIN_CREDENTIALS)
+                });
+
+                const responseText = await response.text();
+
+                if (response.ok) {
+                    try {
+                        const data = JSON.parse(responseText);
+                        if (data.success && data.data && data.data.token) {
+                            authToken = data.data.token;
+                            addResult('Login', true, `Success - User: ${data.data.user.email}`);
+                        } else {
+                            addResult('Login', false, `Failed: ${data.error || 'Unknown error'}`);
+                        }
+                    } catch (e) {
+                        addResult('Login', false, `JSON Parse Error: ${e.message}`);
+                        addResponseDetails('Login Response', responseText);
+                    }
+                } else {
+                    addResult('Login', false, `HTTP ${response.status}: ${responseText}`);
+                    addResponseDetails('Login Response', responseText);
+                }
+            } catch (error) {
+                addResult('Login', false, `Network Error: ${error.message}`);
+            }
+        }
+
+        async function testAPI(name, endpoint) {
+            if (!authToken) {
+                addResult(name, false, 'No auth token - login first');
+                return;
+            }
+
+            try {
+                const url = `${API_BASE_URL}${endpoint}?token=${authToken}`;
+                console.log(`Testing: ${url}`);
+
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const responseText = await response.text();
+                console.log(`${name} response:`, responseText);
+
+                if (response.ok) {
+                    if (responseText.trim() === '') {
+                        addResult(name, false, 'Empty response body');
+                        addResponseDetails(`${name} Response`, 'EMPTY RESPONSE');
+                    } else {
+                        try {
+                            const data = JSON.parse(responseText);
+                            if (data.success) {
+                                const dataCount = Array.isArray(data.data) ? data.data.length :
+                                                (data.data && typeof data.data === 'object') ? Object.keys(data.data).length : 1;
+                                addResult(name, true, `Success - ${dataCount} items, ${responseText.length} chars`);
+
+                                // Show sample data for debugging
+                                if (data.data && Array.isArray(data.data) && data.data.length > 0) {
+                                    addResponseDetails(`${name} Sample Data`, JSON.stringify(data.data[0], null, 2));
+                                } else if (data.data && typeof data.data === 'object') {
+                                    addResponseDetails(`${name} Data Structure`, JSON.stringify(data.data, null, 2));
+                                }
+                            } else {
+                                addResult(name, false, `API Error: ${data.error || 'Unknown error'}`);
+                                addResponseDetails(`${name} Error Response`, responseText);
+                            }
+                        } catch (e) {
+                            addResult(name, false, `JSON Parse Error: ${e.message}`);
+                            addResponseDetails(`${name} Raw Response`, responseText);
+                        }
+                    }
+                } else {
+                    addResult(name, false, `HTTP ${response.status}: ${response.statusText}`);
+                    addResponseDetails(`${name} Error Response`, responseText);
+                }
+            } catch (error) {
+                addResult(name, false, `Network Error: ${error.message}`);
+            }
+        }
+
+        function addResult(test, result, details) {
+            const resultsDiv = document.getElementById('testResults');
+            const status = result ? 'pass' : 'fail';
+            const icon = result ? '✅' : '❌';
+
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${status}`;
+            resultDiv.innerHTML = `${icon} <strong>${test}:</strong> ${details}`;
+            resultsDiv.appendChild(resultDiv);
+        }
+
+        function addResponseDetails(title, content) {
+            const detailsDiv = document.getElementById('responseDetails');
+            const detailDiv = document.createElement('div');
+            detailDiv.className = 'response-details';
+            detailDiv.innerHTML = `<h4>${title}</h4><pre>${content}</pre>`;
+            detailsDiv.appendChild(detailDiv);
+        }
+
+        function clearResults() {
+            document.getElementById('testResults').innerHTML = '';
+            document.getElementById('responseDetails').innerHTML = '';
+        }
+    </script>
+</body>
+</html>
