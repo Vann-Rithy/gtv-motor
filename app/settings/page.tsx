@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Settings, User, Bell, Database, Save, Plus, Loader2 } from "lucide-react"
 import { useSettings } from "@/hooks/use-settings"
 import { useLanguage } from "@/lib/language-context"
+import { StaffList } from "@/components/staff/staff-list"
 
 export default function SettingsPage() {
   const { t } = useLanguage()

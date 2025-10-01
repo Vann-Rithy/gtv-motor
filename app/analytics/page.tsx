@@ -9,6 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { TrendingUp, DollarSign, Users, BarChart3, PieChart, Activity, RefreshCw, Calendar as CalendarIcon, Filter } from "lucide-react"
 import { toast } from "sonner"
 import { useLanguage } from "@/lib/language-context"
+import { format } from "date-fns"
 
 export default function Analytics() {
   const { t } = useLanguage()
@@ -139,9 +140,9 @@ export default function Analytics() {
     <div className="p-4 lg:p-8 space-y-6">
       {/* Update Notification */}
       {showUpdateNotification && (
-        <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg animate-in slide-in-from-right-2 duration-300">
+        <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg">
           <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-white dark:bg-gray-200 rounded-full animate-pulse"></div>
+            <div className="w-2 h-2 bg-white dark:bg-gray-200 rounded-full"></div>
             <span>Data updated successfully!</span>
           </div>
         </div>
@@ -165,7 +166,7 @@ export default function Analytics() {
 
           {lastUpdated && (
             <div className="flex items-center space-x-2 mt-1">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Last updated: {lastUpdated.toLocaleTimeString()}
               </p>
@@ -196,10 +197,10 @@ export default function Analytics() {
           <button
             onClick={handleRefresh}
             disabled={isLoading}
-            className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200 disabled:opacity-50"
+            className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg disabled:opacity-50"
             title="Refresh data"
           >
-            <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-5 w-5 ${isLoading ? '' : ''}`} />
           </button>
           <div className="flex flex-col sm:flex-row gap-3">
             <Select value={timeRange} onValueChange={handleTimeRangeChange}>
@@ -322,7 +323,7 @@ export default function Analytics() {
       {isLoading && (
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <div className=" rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <div className="text-gray-600 dark:text-gray-400 mb-2">Fetching real-time data...</div>
             <div className="text-sm text-gray-500 dark:text-gray-400">Connecting to live database</div>
           </div>
@@ -336,7 +337,7 @@ export default function Analytics() {
             <div className="text-sm text-gray-400 dark:text-gray-500 mb-4">Unable to connect to live database</div>
             <button
               onClick={handleRefresh}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
               Try Again
             </button>
@@ -369,58 +370,58 @@ export default function Analytics() {
                <>
                  {/* KPI Cards */}
                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6" key={`kpi-${animationKey}`}>
-            <Card className="animate-fade-in-up">
+            <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
                 <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                   <DollarSign className="h-4 w-4 text-green-500" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold animate-count-up">${revenueData.reduce((sum, d) => sum + (parseFloat(d.revenue) || 0), 0).toLocaleString()}</div>
+                <div className="text-2xl font-bold">${revenueData.reduce((sum, d) => sum + (parseFloat(d.revenue) || 0), 0).toLocaleString()}</div>
                 <p className="text-xs text-green-600">Live data</p>
               </CardContent>
             </Card>
 
-            <Card className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+            <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Services</CardTitle>
                 <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                   <Activity className="h-4 w-4 text-blue-500" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold animate-count-up">{totalServices}</div>
+                <div className="text-2xl font-bold">{totalServices}</div>
                 <p className="text-xs text-blue-600">Live data</p>
               </CardContent>
             </Card>
 
-            <Card className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+            <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Active Customers</CardTitle>
                 <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
                   <Users className="h-4 w-4 text-purple-500" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold animate-count-up">{(currentData.customer_growth || []).reduce((sum, d) => sum + (parseInt(d.new_customers) || 0), 0)}</div>
+                <div className="text-2xl font-bold">{(currentData.customer_growth || []).reduce((sum, d) => sum + (parseInt(d.new_customers) || 0), 0)}</div>
                 <p className="text-xs text-purple-600">Live data</p>
               </CardContent>
             </Card>
 
-            <Card className="animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+            <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Avg Service Value</CardTitle>
                 <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                  <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
                   <TrendingUp className="h-4 w-4 text-orange-500" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold animate-count-up">${totalServices > 0 ? (revenueData.reduce((sum, d) => sum + (parseFloat(d.revenue) || 0), 0) / totalServices).toFixed(0) : 0}</div>
+                <div className="text-2xl font-bold">${totalServices > 0 ? (revenueData.reduce((sum, d) => sum + (parseFloat(d.revenue) || 0), 0) / totalServices).toFixed(0) : 0}</div>
                 <p className="text-xs text-orange-600">Live data</p>
               </CardContent>
             </Card>
@@ -428,7 +429,7 @@ export default function Analytics() {
 
           {/* Revenue & Services Chart - Enhanced Line Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" key={`charts-${animationKey}`}>
-            <Card className="animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <BarChart3 className="mr-2 h-5 w-5" />
@@ -516,7 +517,7 @@ export default function Analytics() {
                               fill="#fff"
                               stroke="#3b82f6"
                               strokeWidth="3"
-                              className="hover:r-7 transition-all duration-200"
+                              className="hover:r-7"
                             />
                             <text
                               x={x}
@@ -553,7 +554,7 @@ export default function Analytics() {
               </CardContent>
             </Card>
 
-            <Card className="animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Activity className="mr-2 h-5 w-5" />
@@ -641,7 +642,7 @@ export default function Analytics() {
                                fill="#fff"
                                stroke="#10b981"
                                strokeWidth="3"
-                               className="hover:r-7 transition-all duration-200"
+                               className="hover:r-7"
                              />
                              <text
                                x={x}
@@ -717,7 +718,7 @@ export default function Analytics() {
                             strokeWidth="5"
                             strokeDasharray={strokeDasharray}
                             strokeDashoffset={-strokeDashoffset}
-                            className="transition-all duration-500 hover:stroke-width-17 drop-shadow-sm"
+                            className="hover:stroke-width-17 drop-shadow-sm"
                           />
                         )
                       })}
@@ -738,7 +739,7 @@ export default function Analytics() {
                     {serviceTypesData.map((item, index) => (
                       <div
                         key={index}
-                        className="flex items-center justify-between p-4 border-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700"
+                        className="flex items-center justify-between p-4 border-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                       >
                         <div className="flex items-center space-x-4">
                           <div
@@ -793,7 +794,7 @@ export default function Analytics() {
           </Card>
 
           {/* Customer Analytics with Enhanced Line Chart */}
-          <Card className="animate-fade-in-up" style={{ animationDelay: '0.7s' }}>
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Users className="mr-2 h-5 w-5" />
@@ -921,7 +922,7 @@ export default function Analytics() {
                             fill="#fff"
                             stroke="#3b82f6"
                             strokeWidth="3"
-                            className="hover:r-8 transition-all duration-200 drop-shadow-sm"
+                            className="hover:r-8 drop-shadow-sm"
                           />
                           <text
                             x={x}
@@ -951,7 +952,7 @@ export default function Analytics() {
                             fill="#fff"
                             stroke="#10b981"
                             strokeWidth="3"
-                            className="hover:r-8 transition-all duration-200 drop-shadow-sm"
+                            className="hover:r-8 drop-shadow-sm"
                           />
                           <text
                             x={x}
@@ -1029,7 +1030,7 @@ export default function Analytics() {
                   </div>
                   <div className="divide-y divide-gray-200 dark:divide-gray-700">
                     {(currentData.customer_growth || []).map((data, index) => (
-                      <div key={index} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200">
+                      <div key={index} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-4">
                             <div className="font-semibold text-lg text-gray-800 dark:text-gray-200 w-16">{data.period}</div>
@@ -1058,11 +1059,11 @@ export default function Analytics() {
                             <div className="w-32">
                               <div className="flex space-x-1 h-6 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
                                 <div
-                                  className="bg-blue-500 transition-all duration-300"
+                                  className="bg-blue-500"
                                   style={{ width: `${(data.new / (data.new + data.returning)) * 100}%` }}
                                 />
                                 <div
-                                  className="bg-green-500 transition-all duration-300"
+                                  className="bg-green-500"
                                   style={{ width: `${(data.returning / (data.new + data.returning)) * 100}%` }}
                                 />
                               </div>

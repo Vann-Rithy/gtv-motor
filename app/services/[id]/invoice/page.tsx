@@ -5,9 +5,8 @@ import { useParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Download, Printer, Loader2 } from "lucide-react"
-import { generateInvoicePDF, InvoiceData } from "@/lib/pdf-generator"
-import { useLanguage } from "@/lib/language-context"
 import { apiClient } from "@/lib/api-client"
+import { useLanguage } from "@/lib/language-context"
 
 interface ServiceInvoice {
   id: number
@@ -127,54 +126,8 @@ export default function ServiceInvoicePage() {
   }
 
   const handleDownload = () => {
-    if (!service) return
-
-    // Convert service data to InvoiceData format
-    const invoiceData: InvoiceData = {
-      serviceId: service.id,
-      invoiceNumber: service.invoice_number,
-      serviceDate: service.service_date,
-      serviceType: service.service_type_name,
-      serviceDetail: service.notes || 'Service performed',
-
-      // Customer Information
-      customerName: service.customer_name,
-      customerPhone: service.customer_phone,
-      customerEmail: service.customer_email || '',
-      customerAddress: service.customer_address || '',
-
-      // Vehicle Information
-      vehiclePlate: service.vehicle_plate,
-      vehicleModel: service.vehicle_model,
-      vehicleYear: service.vehicle_year,
-      vehicleVin: service.vehicle_vin_number,
-
-      // Service Items
-      serviceItems: service.service_items.map(item => ({
-        description: item.description,
-        quantity: item.quantity,
-        unitPrice: item.unit_price,
-        totalPrice: item.total_price,
-        itemType: item.item_type
-      })),
-
-      // Pricing
-      subtotal: service.total_amount,
-      discountAmount: 0, // You can add discount logic here
-      vatRate: 10, // Default VAT rate
-      vatAmount: Math.round(service.total_amount * 0.1 * 100) / 100,
-      totalAmount: Math.round(service.total_amount * 1.1 * 100) / 100,
-
-      // Payment Information
-      paymentMethod: service.payment_method,
-      paymentStatus: 'pending', // You can get this from service data
-
-      // Additional Information
-      notes: service.notes
-    }
-
-    // Generate and download PDF
-    generateInvoicePDF(invoiceData)
+    // In a real app, generate PDF here
+    alert("PDF download functionality would be implemented here")
   }
 
   if (loading) {

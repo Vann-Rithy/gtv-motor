@@ -12,7 +12,11 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, Search, Plus, Trash2, Loader2, Package, User, Car, X, DollarSign } from "lucide-react"
-import { generateInvoicePDF, InvoiceData } from "@/lib/pdf-generator"
+import { apiClient } from "@/lib/api-client"
+import { useSearchParams } from "next/navigation"
+import { toast } from "sonner"
+import BookingForm from "@/components/booking-form"
+import BookingSelector from "@/components/booking-selector"
 
 // Helper function to convert date strings to HTML date input format (YYYY-MM-DD)
 const formatDateForInput = (dateString: string | null | undefined): string => {
@@ -2049,61 +2053,15 @@ export default function NewService() {
                       <Button
                         size="lg"
                         onClick={() => {
-                          // Generate PDF invoice
-                          const invoiceData: InvoiceData = {
-                            serviceId: createdServiceId || 0,
-                            invoiceNumber: `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Date.now().toString().slice(-4)}`,
-                            serviceDate: new Date().toISOString().slice(0, 10),
-                            serviceType: serviceTypes.find(s => s.value === formData.serviceType)?.label || formData.serviceType,
-                            serviceDetail: formData.serviceDetail,
-
-                            // Customer Information
-                            customerName: formData.customerName,
-                            customerPhone: formData.phone,
-                            customerEmail: formData.email,
-                            customerAddress: formData.address,
-
-                            // Vehicle Information
-                            vehiclePlate: formData.plateNumber,
-                            vehicleModel: formData.model,
-                            vehicleYear: parseInt(formData.year) || 0,
-                            vehicleVin: formData.vinNumber,
-
-                            // Service Items
-                            serviceItems: serviceItems.map(item => ({
-                              description: item.description,
-                              quantity: item.quantity,
-                              unitPrice: item.unitPrice,
-                              totalPrice: item.total,
-                              itemType: item.itemType
-                            })),
-
-                            // Pricing
-                            subtotal: invoiceCalculations.subtotal,
-                            discountAmount: invoiceCalculations.discountAmount,
-                            vatRate: invoiceData.vatRate,
-                            vatAmount: invoiceCalculations.vatAmount,
-                            totalAmount: invoiceCalculations.total,
-
-                            // Payment Information
-                            paymentMethod: formData.paymentMethod,
-                            paymentStatus: 'pending',
-
-                            // Additional Information
-                            notes: formData.notes
-                          }
-
-                          // Generate and download PDF
-                          generateInvoicePDF(invoiceData)
-
-                          // Close modal and redirect
+                          // Here you would typically generate and download/print the invoice
+                          // For now, we'll just close the modal and redirect
                           setShowInvoiceModal(false)
                           router.push(`/services/${createdServiceId}`)
                         }}
                         className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200"
                       >
                         <DollarSign className="h-4 w-4 mr-2" />
-                        Generate Invoice PDF
+                        Generate Invoice
                       </Button>
                     </div>
                   </div>
