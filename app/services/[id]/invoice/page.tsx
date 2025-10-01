@@ -5,6 +5,8 @@ import { useParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Download, Printer, Loader2 } from "lucide-react"
+import { generateInvoicePDF, InvoiceData } from "@/lib/pdf-generator"
+import { useLanguage } from "@/lib/language-context"
 import { apiClient } from "@/lib/api-client"
 
 interface ServiceInvoice {
@@ -36,6 +38,7 @@ interface ServiceInvoice {
 export default function ServiceInvoicePage() {
   const params = useParams()
   const printRef = useRef<HTMLDivElement>(null)
+  const { t } = useLanguage()
   const [service, setService] = useState<ServiceInvoice | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -46,7 +49,41 @@ export default function ServiceInvoicePage() {
     const fetchService = async () => {
       try {
         setLoading(true)
-        const response = await apiClient.getServiceInvoice(serviceId)
+
+        // Try to get invoice data first
+        let response
+        try {
+          response = await apiClient.getServiceInvoice(serviceId)
+        } catch (invoiceError) {
+          console.log("Invoice endpoint not available, falling back to service data")
+          // Fallback: get service data and create invoice structure
+          response = await apiClient.getService(serviceId)
+
+          // Create invoice structure from service data
+          const serviceData = response.data || response
+          response = {
+            data: {
+              service: serviceData,
+              invoice: {
+                items: [
+                  {
+                    id: 1,
+                    description: serviceData.service_type_name || 'Service',
+                    quantity: 1,
+                    unit_price: serviceData.total_amount,
+                    total: serviceData.total_amount,
+                    item_type: 'service'
+                  }
+                ],
+                subtotal: serviceData.total_amount,
+                vat_rate: 10,
+                vat_amount: Math.round(serviceData.total_amount * 0.1 * 100) / 100,
+                total: Math.round(serviceData.total_amount * 1.1 * 100) / 100
+              }
+            }
+          }
+        }
+
         // Extract service data from the invoice response
         const serviceData = response.data?.service || response.data
         const invoiceData = response.data?.invoice
@@ -56,10 +93,10 @@ export default function ServiceInvoicePage() {
           serviceData.service_items = invoiceData.items.map((item: any, index: number) => ({
             id: index + 1,
             description: item.description,
-            quantity: item.quantity,
+            quantity: item.quantity || 1,
             unit_price: item.unit_price,
-            total_price: item.total,
-            item_type: 'service'
+            total_price: item.total || item.total_price,
+            item_type: item.item_type || 'service'
           }))
         }
 
@@ -90,8 +127,54 @@ export default function ServiceInvoicePage() {
   }
 
   const handleDownload = () => {
-    // In a real app, generate PDF here
-    alert("PDF download functionality would be implemented here")
+    if (!service) return
+
+    // Convert service data to InvoiceData format
+    const invoiceData: InvoiceData = {
+      serviceId: service.id,
+      invoiceNumber: service.invoice_number,
+      serviceDate: service.service_date,
+      serviceType: service.service_type_name,
+      serviceDetail: service.notes || 'Service performed',
+
+      // Customer Information
+      customerName: service.customer_name,
+      customerPhone: service.customer_phone,
+      customerEmail: service.customer_email || '',
+      customerAddress: service.customer_address || '',
+
+      // Vehicle Information
+      vehiclePlate: service.vehicle_plate,
+      vehicleModel: service.vehicle_model,
+      vehicleYear: service.vehicle_year,
+      vehicleVin: service.vehicle_vin_number,
+
+      // Service Items
+      serviceItems: service.service_items.map(item => ({
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unit_price,
+        totalPrice: item.total_price,
+        itemType: item.item_type
+      })),
+
+      // Pricing
+      subtotal: service.total_amount,
+      discountAmount: 0, // You can add discount logic here
+      vatRate: 10, // Default VAT rate
+      vatAmount: Math.round(service.total_amount * 0.1 * 100) / 100,
+      totalAmount: Math.round(service.total_amount * 1.1 * 100) / 100,
+
+      // Payment Information
+      paymentMethod: service.payment_method,
+      paymentStatus: 'pending', // You can get this from service data
+
+      // Additional Information
+      notes: service.notes
+    }
+
+    // Generate and download PDF
+    generateInvoicePDF(invoiceData)
   }
 
   if (loading) {
@@ -99,7 +182,7 @@ export default function ServiceInvoicePage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p>Loading invoice...</p>
+          <p>{t('common.loading', 'Loading invoice...')}</p>
         </div>
       </div>
     )
@@ -110,12 +193,12 @@ export default function ServiceInvoicePage() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">Error</h1>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">{error || "Service not found"}</p>
+            <h1 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">{t('common.error', 'Error')}</h1>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">{error || t('common.service_not_found', 'Service not found')}</p>
             <Link href="/services">
               <Button>
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Services
+                {t('invoice.back', 'Back to Services')}
               </Button>
             </Link>
           </div>
@@ -137,10 +220,10 @@ export default function ServiceInvoicePage() {
                   className="hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
                 >
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Service
+                  {t('invoice.back', 'Back to Service')}
                 </Button>
               </Link>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Invoice {service.invoice_number}</h1>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('invoice.title', 'Invoice')} {service.invoice_number}</h1>
             </div>
             <div className="flex space-x-2">
               <Button
@@ -149,11 +232,11 @@ export default function ServiceInvoicePage() {
                 className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 bg-transparent"
               >
                 <Download className="h-4 w-4 mr-2" />
-                Download PDF
+                {t('invoice.download_pdf', 'Download PDF')}
               </Button>
               <Button onClick={handlePrint} className="bg-blue-600 hover:bg-blue-700 transition-colors duration-200">
                 <Printer className="h-4 w-4 mr-2" />
-                Print
+                {t('invoice.print', 'Print')}
               </Button>
             </div>
           </div>

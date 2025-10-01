@@ -17,8 +17,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Search, Plus, Phone, Car, Calendar, Eye, Loader2, Edit, Trash2, MessageSquare, PhoneCall, Save, X, ChevronLeft, ChevronRight } from "lucide-react"
+import { useLanguage } from "@/lib/language-context"
 import Link from "next/link"
 import { apiClient } from "@/lib/api-client"
+import { formatKM, formatCurrency } from "@/lib/utils"
 
 interface Customer {
   id: string
@@ -37,6 +39,8 @@ interface Customer {
   total_spent: number
   latest_vehicle_plate?: string
   latest_vehicle_model?: string
+  latest_vehicle_model_name?: string
+  latest_vehicle_category?: string
   latest_warranty_end?: string
   pending_services: number
   in_progress_services: number
@@ -73,6 +77,10 @@ interface ServiceRecord {
   payment_status: string
   plate_number: string
   vehicle_model: string
+  vehicle_model_name?: string
+  vehicle_model_category?: string
+  vehicle_cc?: string
+  vehicle_engine_type?: string
   technician_name?: string
 }
 
@@ -92,6 +100,8 @@ interface Booking {
   status: string
   plate_number: string
   vehicle_model: string
+  vehicle_model_name?: string
+  vehicle_model_category?: string
   service_type_name: string
 }
 
@@ -99,6 +109,7 @@ export default function Customers() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const viewIdFromURL = searchParams.get("view")
+  const { t } = useLanguage()
 
   const [searchTerm, setSearchTerm] = useState("")
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -136,19 +147,32 @@ export default function Customers() {
       })
 
       if (response.data) {
-        const transformed = response.data.map((customer: any) => ({
-          ...customer,
-          id: customer.id.toString(),
-          total_spent: Number(customer.total_spent) || 0,
-          vehicle_count: Number(customer.vehicle_count) || 0,
-          service_count: Number(customer.service_count) || 0,
-          alert_count: Number(customer.alert_count) || 0,
-          booking_count: Number(customer.booking_count) || 0,
-          pending_services: Number(customer.pending_services) || 0,
-          in_progress_services: Number(customer.in_progress_services) || 0,
-          completed_services: Number(customer.completed_services) || 0,
-          pending_alerts: Number(customer.pending_alerts) || 0,
-        }))
+        console.log("Raw API response:", response.data.length, "customers")
+        const transformed = response.data
+          .filter((customer: any) => {
+            // Filter out customers with invalid IDs
+            const id = customer.id
+            const isValid = id !== null && id !== undefined && id !== 0 && id !== "0" && id !== ""
+            if (!isValid) {
+              console.log("Filtered out customer with invalid ID:", customer.name, "ID:", id)
+            }
+            return isValid
+          })
+          .map((customer: any) => ({
+            ...customer,
+            id: customer.id.toString(),
+            total_spent: Number(customer.total_spent) || 0,
+            vehicle_count: Number(customer.vehicle_count) || 0,
+            service_count: Number(customer.service_count) || 0,
+            alert_count: Number(customer.alert_count) || 0,
+            booking_count: Number(customer.booking_count) || 0,
+            pending_services: Number(customer.pending_services) || 0,
+            in_progress_services: Number(customer.in_progress_services) || 0,
+            completed_services: Number(customer.completed_services) || 0,
+            pending_alerts: Number(customer.pending_alerts) || 0,
+          }))
+
+        console.log("After filtering:", transformed.length, "valid customers")
 
         // Ensure we only display exactly 10 customers per page
         const limitedCustomers = transformed.slice(0, customersPerPage)
@@ -176,19 +200,41 @@ export default function Customers() {
   }
 
   const fetchCustomerDetails = async (customerId: string) => {
+    // Validate customer ID before fetching
+    if (!customerId || customerId === "0" || customerId === "null" || customerId === "undefined") {
+      setError("Invalid customer ID")
+      return
+    }
+
     setDetailsLoading(true)
     try {
-      const response = await apiClient.getCustomer(customerId)
-
-      if (response.data) {
-        const data = response.data
-        setSelectedCustomer({ ...data, id: data.id.toString() })
-      } else {
-        throw new Error("API returned no customer data")
+      // Fetch customer details
+      const customerResponse = await apiClient.getCustomer(customerId)
+      if (!customerResponse.success || !customerResponse.data) {
+        throw new Error(customerResponse.message || "Customer not found")
       }
+
+      // Fetch customer's vehicles
+      const vehiclesResponse = await apiClient.getVehicles({ customer_id: customerId })
+      const vehicles = vehiclesResponse.success ? (vehiclesResponse.data || []) : []
+
+      // Fetch customer's services
+      const servicesResponse = await apiClient.getServices({ customer_id: customerId })
+      const services = servicesResponse.success ? (servicesResponse.data || []) : []
+
+      // Combine all data
+      const customerData = {
+        ...customerResponse.data,
+        id: customerResponse.data.id.toString(),
+        vehicles: vehicles,
+        recent_services: services.slice(0, 10) // Limit to recent 10 services
+      }
+
+      setSelectedCustomer(customerData)
+      setError(null)
     } catch (e) {
       console.error("[v0] details error:", e)
-      setError("Failed to fetch customer details")
+      setError(e instanceof Error ? e.message : "Failed to fetch customer details")
     } finally {
       setDetailsLoading(false)
     }
@@ -303,23 +349,44 @@ export default function Customers() {
   }
 
   const getWarrantyStatus = (customer: Customer) => {
-    if (!customer.latest_warranty_end) return null
+    if (!customer.latest_warranty_end) {
+      return <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">Warranty Expired</Badge>
+    }
     const warrantyEnd = new Date(customer.latest_warranty_end)
     const today = new Date()
     const daysRemaining = Math.ceil((warrantyEnd.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
     if (daysRemaining > 0) {
       return <Badge className="bg-green-500 text-white hover:bg-green-600">Active Warranty</Badge>
     }
-    return null
+    return <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">Warranty Expired</Badge>
   }
 
   const getServiceDueStatus = (customer: Customer) => {
     if (customer.last_service_date) {
       const last = new Date(customer.last_service_date)
       const months = (Date.now() - last.getTime()) / (1000 * 60 * 60 * 24 * 30)
-      if (months > 6) return <Badge className="bg-red-500 text-white hover:bg-red-600">Service Due</Badge>
+      if (months > 6) {
+        return (
+          <Badge className="bg-red-500 text-white hover:bg-red-600 flex items-center gap-1">
+            <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            Service Due
+          </Badge>
+        )
+      }
     }
     return null
+  }
+
+  // Phone number formatting function
+  const formatPhoneNumber = (phone: string) => {
+    if (!phone) return "N/A"
+    const digitsOnly = phone.replace(/\D/g, '')
+    if (digitsOnly.length === 10) {
+      return `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3, 6)}-${digitsOnly.slice(6)}`
+    }
+    return phone // Return original if not 10 digits
   }
 
   const getNextServiceDate = (customer: Customer) => {
@@ -330,14 +397,6 @@ export default function Customers() {
       return next.toISOString().split("T")[0]
     }
     return null
-  }
-
-  const formatMoney = (n: number) => {
-    try {
-      return n.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 2 })
-    } catch {
-      return `$${Number(n).toFixed(2)}`
-    }
   }
 
   if (loading) {
@@ -368,15 +427,12 @@ export default function Customers() {
     <div className="p-4 lg:p-8 space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">Customer Management</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Page {currentPage} of {totalPages} • {totalCustomers} total customers
-          </p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">{t('nav.customers', 'Customer Management')}</h1>
         </div>
         <Link href="/customers/new">
           <Button className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700">
             <Plus className="h-4 w-4 mr-2" />
-            Add Customer
+            {t('customers.add', '+ Add Customer')}
           </Button>
         </Link>
       </div>
@@ -388,7 +444,7 @@ export default function Customers() {
             <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4 animate-spin" />
           )}
           <Input
-            placeholder="Search customers by name, phone, or plate number..."
+            placeholder={t('customers.search_placeholder', 'Search customers by name, phone, or plate number...')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 h-12"
@@ -399,129 +455,135 @@ export default function Customers() {
         </Button>
       </div>
 
-      {/* Customer Table */}
-      <Card className="relative">
+      {/* Customer Cards */}
+      <div className="space-y-4">
         {paginationLoading && (
-          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center">
+          <div className="flex items-center justify-center py-8">
             <div className="flex items-center space-x-2">
               <Loader2 className="h-4 w-4 animate-spin" />
               <span className="text-sm">Loading customers...</span>
             </div>
           </div>
         )}
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[200px]">Customer</TableHead>
-                <TableHead className="w-[150px]">Contact</TableHead>
-                <TableHead className="w-[120px]">Vehicle</TableHead>
-                <TableHead className="w-[100px]">Services</TableHead>
-                <TableHead className="w-[100px]">Total Spent</TableHead>
-                <TableHead className="w-[100px]">Last Service</TableHead>
-                <TableHead className="w-[100px]">Status</TableHead>
-                <TableHead className="w-[150px] text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredCustomers.map((customer) => (
-                <TableRow
-                  key={customer.id}
-                  className="hover:bg-muted/50 cursor-pointer"
-                  onClick={() => router.push(`/customers/${customer.id}`)}
-                >
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{customer.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        ID: {customer.id}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <div className="flex items-center text-sm">
-                        <Phone className="h-3 w-3 mr-1" />
-                        {customer.phone}
-                      </div>
-                      {customer.email && (
-                        <div className="text-sm text-muted-foreground">
-                          {customer.email}
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <div className="font-medium text-sm">
-                        {customer.latest_vehicle_plate || "No Vehicle"}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {customer.latest_vehicle_model || "N/A"}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      <div>Total: {customer.service_count}</div>
-                      <div className="text-xs text-muted-foreground">
-                        Completed: {customer.completed_services}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="font-medium">
-                      {formatMoney(customer.total_spent)}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      {customer.last_service_date
-                        ? new Date(customer.last_service_date).toLocaleDateString()
-                        : "Never"}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-1">
-                      {getWarrantyStatus(customer)}
-                      {getServiceDueStatus(customer)}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
+
+        {filteredCustomers.map((customer) => (
+          <Card key={customer.id} className="hover:shadow-md transition-shadow duration-200">
+            <CardContent className="p-6">
+              <div className="flex justify-between items-start">
+                {/* Customer Info */}
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      {customer.name}
+                    </h3>
+                    <div className="flex gap-2">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={async (e) => {
                           e.stopPropagation()
+                          // Validate customer ID before opening details
+                          if (!customer.id || customer.id === "0" || customer.id === "null" || customer.id === "undefined") {
+                            setError("Invalid customer ID")
+                            return
+                          }
                           await fetchCustomerDetails(customer.id)
                           setIsDetailsOpen(true)
                           const url = new URL(window.location.href)
                           url.searchParams.set("view", customer.id)
                           router.replace(url.pathname + "?" + url.searchParams.toString(), { scroll: false })
                         }}
+                        className="text-gray-600 dark:text-gray-400"
+                        disabled={!customer.id || customer.id === "0" || customer.id === "null" || customer.id === "undefined"}
                       >
-                        <Eye className="h-4 w-4 mr-1" />
-                        View
+                        <Eye className="h-4 w-4 mr-2" />
+                        View Details
                       </Button>
                       <Link href={`/services/new?customer=${customer.id}`}>
                         <Button
                           size="sm"
                           className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700"
                           onClick={(e) => e.stopPropagation()}
+                          disabled={!customer.id || customer.id === "0" || customer.id === "null" || customer.id === "undefined"}
                         >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Service
+                          <Plus className="h-4 w-4 mr-2" />
+                          New Service
                         </Button>
                       </Link>
                     </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                  </div>
+
+                  {/* Contact & Location */}
+                  <div className="space-y-2 mb-3">
+                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                      <Phone className="h-4 w-4 mr-2" />
+                      <span>{formatPhoneNumber(customer.phone)}</span>
+                    </div>
+                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                      <span className="font-medium">Email:</span>
+                      <span className="ml-2">{customer.email || "N/A"}</span>
+                    </div>
+                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                      <span className="font-medium">Address:</span>
+                      <span className="ml-2">{customer.address || "N/A"}</span>
+                    </div>
+                  </div>
+
+                  {/* Status Badges */}
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {getWarrantyStatus(customer)}
+                    {getServiceDueStatus(customer)}
+                  </div>
+
+                  {/* Vehicle Details */}
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-4">
+                    <div className="flex items-center text-sm text-gray-700 dark:text-gray-300 mb-2">
+                      <Car className="h-4 w-4 mr-2" />
+                      <span className="font-medium">
+                        {customer.latest_vehicle_plate || "No Vehicle"}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-400">
+                      <div>Model: {customer.latest_vehicle_model_name || customer.latest_vehicle_model || "N/A"}</div>
+                      {customer.latest_vehicle_category && (
+                        <div>Category: {customer.latest_vehicle_category}</div>
+                      )}
+                      <div>Vehicles: {customer.vehicle_count || 0}</div>
+                    </div>
+                  </div>
+
+                  {/* Service Summary */}
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center justify-between text-gray-600 dark:text-gray-400">
+                      <div>
+                        <span className="font-medium">Total Services:</span> {customer.service_count || 0}
+                        <span className="mx-2">•</span>
+                        <span className="font-medium">Completed:</span> {customer.completed_services || 0}
+                      </div>
+                      <div className="text-purple-600 dark:text-purple-400 font-semibold">
+                        {formatCurrency(customer.total_spent || 0)}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-gray-600 dark:text-gray-400">
+                      <div>
+                        <span className="font-medium">Last Service:</span> {customer.last_service_date
+                          ? new Date(customer.last_service_date).toLocaleDateString()
+                          : "Never"}
+                      </div>
+                      <div className="flex items-center">
+                        <Calendar className="h-4 w-4 mr-1" />
+                        <span className="font-medium">Next Service:</span> {customer.last_service_date
+                          ? new Date(new Date(customer.last_service_date).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()
+                          : "N/A"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
       {filteredCustomers.length === 0 && !loading && (
         <Card>
@@ -652,11 +714,11 @@ export default function Customers() {
             <div className="space-y-6">
               {/* Customer Statistics */}
               <section>
-                <h3 className="mb-3 text-sm font-semibold tracking-tight">Customer Overview</h3>
+                <h3 className="mb-3 text-sm font-semibold tracking-tight">{t('customers.customer_overview', 'Customer Overview')}</h3>
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                   <div className="rounded-lg border bg-muted/40 p-3 text-center">
                     <div className="text-lg font-bold text-blue-600">{selectedCustomer.vehicle_count}</div>
-                    <div className="text-xs text-muted-foreground">Vehicles</div>
+                    <div className="text-xs text-muted-foreground">{t('customers.vehicles', 'Vehicles')}</div>
                   </div>
                   <div className="rounded-lg border bg-muted/40 p-3 text-center">
                     <div className="text-lg font-bold text-green-600">{selectedCustomer.service_count}</div>
@@ -667,7 +729,7 @@ export default function Customers() {
                     <div className="text-xs text-muted-foreground">Alerts</div>
                   </div>
                   <div className="rounded-lg border bg-muted/40 p-3 text-center">
-                    <div className="text-lg font-bold text-purple-600">{formatMoney(selectedCustomer.total_spent)}</div>
+                    <div className="text-lg font-bold text-purple-600">{formatCurrency(selectedCustomer.total_spent)}</div>
                     <div className="text-xs text-muted-foreground">Total Spent</div>
                   </div>
                 </div>
@@ -675,7 +737,7 @@ export default function Customers() {
 
               {/* Contact Information */}
               <section>
-                <h3 className="mb-2 text-sm font-semibold tracking-tight">Contact Information</h3>
+                <h3 className="mb-2 text-sm font-semibold tracking-tight">{t('customers.contact_info', 'Contact Information')}</h3>
                 {!isEditing ? (
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm">
                     <div className="space-y-2">
@@ -747,7 +809,7 @@ export default function Customers() {
 
               {/* Vehicles */}
               <section>
-                <h3 className="mb-2 text-sm font-semibold tracking-tight">Vehicles ({selectedCustomer.vehicle_count})</h3>
+                <h3 className="mb-2 text-sm font-semibold tracking-tight">{t('customers.vehicles', 'Vehicles')} ({selectedCustomer.vehicle_count})</h3>
                 <div className="space-y-3">
                   {(selectedCustomer.vehicles ?? []).map((vehicle, index) => (
                     <div key={vehicle.id} className="rounded-lg border bg-muted/40 p-4">
@@ -800,7 +862,7 @@ export default function Customers() {
 
               {/* Service History */}
               <section>
-                <h3 className="mb-2 text-sm font-semibold tracking-tight">Recent Service History</h3>
+                <h3 className="mb-2 text-sm font-semibold tracking-tight">{t('customers.recent_services', 'Recent Service History')}</h3>
                 <div className="space-y-2">
                   {(selectedCustomer.recent_services ?? []).map((s) => (
                     <div
@@ -810,7 +872,8 @@ export default function Customers() {
                       <div className="min-w-0 flex-1">
                         <div className="font-medium truncate">{s.service_type_name}</div>
                         <div className="text-xs text-muted-foreground">
-                          {new Date(s.service_date).toLocaleDateString()} • {s.plate_number} • {s.vehicle_model}
+                          {new Date(s.service_date).toLocaleDateString()} • {s.plate_number} • {s.vehicle_model_name || s.vehicle_model}
+                          {s.vehicle_cc && ` (${s.vehicle_cc}CC)`}
                         </div>
                         {s.technician_name && (
                           <div className="text-xs text-muted-foreground">Technician: {s.technician_name}</div>
@@ -818,7 +881,7 @@ export default function Customers() {
                       </div>
                       <div className="flex items-center gap-3 pl-4">
                         <div className="text-sm font-semibold tabular-nums">
-                          {formatMoney(Number(s.total_amount || 0))}
+                          {formatCurrency(Number(s.total_amount || 0))}
                         </div>
                         <div className="flex flex-col gap-1">
                           <Badge
@@ -894,7 +957,8 @@ export default function Customers() {
                             {new Date(booking.booking_date).toLocaleDateString()} at {booking.booking_time}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {booking.plate_number} • {booking.vehicle_model}
+                            {booking.plate_number} • {booking.vehicle_model_name || booking.vehicle_model}
+                            {booking.vehicle_model_category && ` (${booking.vehicle_model_category})`}
                           </div>
                         </div>
                         <Badge

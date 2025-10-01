@@ -4,6 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/components/auth-provider"
+import { useLanguage } from "@/lib/language-context"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -54,21 +55,22 @@ type SidebarProps =
     }
 
 const navigation = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "Customers", href: "/customers", icon: Users },
-  { name: "Services", href: "/services", icon: Wrench },
-  { name: "Bookings", href: "/bookings", icon: Calendar },
-  { name: "Inventory", href: "/inventory", icon: Package },
-  { name: "Warranty", href: "/warranty", icon: Shield },
-  { name: "Alerts", href: "/alerts", icon: Bell },
-  { name: "Follow-ups", href: "/notifications", icon: MessageSquare },
-  { name: "Reports", href: "/reports", icon: FileText },
-  { name: "Analytics", href: "/analytics", icon: BarChart3 },
-  { name: "Settings", href: "/settings", icon: Settings },
+  { name: "Dashboard", href: "/", icon: LayoutDashboard, key: "nav.dashboard" },
+  { name: "Customers", href: "/customers", icon: Users, key: "nav.customers" },
+  { name: "Services", href: "/services", icon: Wrench, key: "nav.services" },
+  { name: "Bookings", href: "/bookings", icon: Calendar, key: "nav.bookings" },
+  { name: "Inventory", href: "/inventory", icon: Package, key: "nav.inventory" },
+  { name: "Warranty", href: "/warranty", icon: Shield, key: "nav.warranty" },
+  { name: "Alerts", href: "/alerts", icon: Bell, key: "nav.alerts" },
+  { name: "Follow-ups", href: "/notifications", icon: MessageSquare, key: "nav.followups" },
+  { name: "Reports", href: "/reports", icon: FileText, key: "nav.reports" },
+  { name: "Analytics", href: "/analytics", icon: BarChart3, key: "nav.analytics" },
+  { name: "Settings", href: "/settings", icon: Settings, key: "nav.settings" },
 ]
 
 export default function Sidebar(props: SidebarProps) {
   const pathname = usePathname()
+  const { t } = useLanguage()
 
   // Normalize props
   const open = "open" in props ? props.open : props.isOpen
@@ -113,8 +115,8 @@ export default function Sidebar(props: SidebarProps) {
             <div className="flex items-center space-x-2">
               <img src="/Logo%20GTV.png" alt="GTV" style={{ height: 32, width: "auto" }} />
               <div>
-                <h1 className="text-lg font-bold text-gray-900 dark:text-white">GTV Motor</h1>
-                <p className="text-gray-500 dark:text-gray-400">After Sales Management System</p>
+                <h1 className="text-lg font-bold text-gray-900 dark:text-white">{t('company.name', 'GTV Motor')}</h1>
+                <p className="text-gray-500 dark:text-gray-400">{t('company.tagline', 'After Sales Management System')}</p>
               </div>
             </div>
             <Button
@@ -150,7 +152,7 @@ export default function Sidebar(props: SidebarProps) {
                          <item.icon className="h-5 w-5" />
                        )}
                      </div>
-                    {item.name}
+                    {t(item.key, item.name)}
                   </Button>
                 </Link>
               )
@@ -167,12 +169,12 @@ export default function Sidebar(props: SidebarProps) {
               >
                 <a href="http://cghub.dev/" target="_blank" rel="noopener noreferrer">
                   <HelpCircle className="mr-3 h-5 w-5" />
-                  Support
+                  {t('support.title', 'Support')}
                 </a>
               </Button>
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
-              <p>Contact our team:</p>
+              <p>{t('support.contact', 'Contact our team:')}</p>
               <p>
                 <a
                   href="https://t.me/CG_RITHY"
@@ -180,7 +182,7 @@ export default function Sidebar(props: SidebarProps) {
                   rel="noopener noreferrer"
                   className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline transition-colors duration-200"
                 >
-                  Telegram: @CG_RITHY
+                  {t('support.telegram', 'Telegram: @CG_RITHY')}
                 </a>
               </p>
               <p>
@@ -190,7 +192,7 @@ export default function Sidebar(props: SidebarProps) {
                   rel="noopener noreferrer"
                   className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline transition-colors duration-200"
                 >
-                  Website: cghub.dev
+                  {t('support.website', 'Website: cghub.dev')}
                 </a>
               </p>
             </div>
@@ -205,27 +207,27 @@ export default function Sidebar(props: SidebarProps) {
                   className="w-full justify-start text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-200"
                 >
                   <LogOut className="mr-3 h-5 w-5" />
-                  Logout
+                  {t('nav.logout', 'Logout')}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                 <AlertDialogHeader>
                   <AlertDialogTitle className="text-gray-900 dark:text-white">
-                    Are you sure you want to logout?
+                    {t('common.confirm_logout', 'Are you sure you want to logout?')}
                   </AlertDialogTitle>
                   <AlertDialogDescription className="text-gray-600 dark:text-gray-400">
-                    You will be signed out of your account and redirected to the login page.
+                    {t('common.logout_description', 'You will be signed out of your account and redirected to the login page.')}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel className="hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200">
-                    Cancel
+                    {t('common.cancel', 'Cancel')}
                   </AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleLogout}
                     className="bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 transition-colors duration-200"
                   >
-                    Logout
+                    {t('nav.logout', 'Logout')}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>

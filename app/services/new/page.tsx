@@ -12,11 +12,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, Search, Plus, Trash2, Loader2, Package, User, Car, X, DollarSign } from "lucide-react"
-import { apiClient } from "@/lib/api-client"
-import { useSearchParams } from "next/navigation"
-import { toast } from "sonner"
-import BookingForm from "@/components/booking-form"
-import BookingSelector from "@/components/booking-selector"
+import { generateInvoicePDF, InvoiceData } from "@/lib/pdf-generator"
 
 // Helper function to convert date strings to HTML date input format (YYYY-MM-DD)
 const formatDateForInput = (dateString: string | null | undefined): string => {
@@ -51,9 +47,27 @@ interface Vehicle {
   id: number
   plate_number: string
   model: string
+  model_name?: string
+  model_category?: string
   vin_number: string
   year: number
   customer_id: number
+  purchase_date?: string
+  warranty_start_date?: string
+  warranty_end_date?: string
+  current_km?: number
+  model_base_price?: string
+  cc_displacement?: string
+  engine_type?: string
+  fuel_type?: string
+  transmission?: string
+  warranty_km_limit?: string
+  warranty_max_services?: string
+  service_count?: number
+  last_service_date?: string
+  total_service_amount?: string
+  completed_services?: number
+  pending_services?: number
 }
 
 interface InventoryItem {
@@ -181,9 +195,13 @@ export default function NewService() {
             setFormData(prev => ({
               ...prev,
               plateNumber: firstVehicle.plate_number || "",
-              model: firstVehicle.model || "",
+              model: firstVehicle.model_name || firstVehicle.model || "",
               year: firstVehicle.year?.toString() || "",
-              vinNumber: firstVehicle.vin_number || ""
+              vinNumber: firstVehicle.vin_number || "",
+              purchaseDate: formatDateForInput(firstVehicle.purchase_date),
+              warrantyStartDate: formatDateForInput(firstVehicle.warranty_start_date),
+              warrantyEndDate: formatDateForInput(firstVehicle.warranty_end_date),
+              kilometers: firstVehicle.current_km?.toString() || ""
             }))
           }
         } catch (vehicleError) {
@@ -840,30 +858,30 @@ export default function NewService() {
   async function findServiceTypeId(): Promise<number> {
     const wantedName = SLUG_TO_NAME[formData.serviceType] || formData.serviceType
     const res = await apiClient.getServiceTypes()
-    const list: Array<{ id: number; name: string; description?: string }> = res?.data || res || []
+    const list: Array<{ id: number; service_type_name: string; description?: string }> = res?.data || res || []
 
-    console.log("Available service types:", list.map(t => t.name))
+    console.log("Available service types:", list.map(t => t.service_type_name))
     console.log("Looking for service type:", wantedName)
 
     // First try exact match
-    let match = list.find((t) => t.name?.toLowerCase() === wantedName?.toLowerCase())
+    let match = list.find((t) => t.service_type_name?.toLowerCase() === wantedName?.toLowerCase())
 
     // If no exact match, try partial match
     if (!match) {
-      match = list.find((t) => t.name?.toLowerCase().includes(wantedName?.toLowerCase()))
+      match = list.find((t) => t.service_type_name?.toLowerCase().includes(wantedName?.toLowerCase()))
     }
 
     // If still no match, try reverse partial match (wanted name contains service type)
     if (!match) {
-      match = list.find((t) => wantedName?.toLowerCase().includes(t.name?.toLowerCase()))
+      match = list.find((t) => wantedName?.toLowerCase().includes(t.service_type_name?.toLowerCase()))
     }
 
     if (!match) {
-      const availableTypes = list.map(t => t.name).filter(Boolean).join(", ")
+      const availableTypes = list.map(t => t.service_type_name).filter(Boolean).join(", ")
       throw new Error(`Service type "${wantedName || "(not selected)"}" not found. Available types: ${availableTypes}`)
     }
 
-    console.log("Found service type:", match.name, "with ID:", match.id)
+    console.log("Found service type:", match.service_type_name, "with ID:", match.id)
     return match.id
   }
 
@@ -1221,6 +1239,39 @@ export default function NewService() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Vehicle Status Display */}
+              {selectedVehicle && (
+                <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center space-x-3 mb-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Car className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-blue-900">Vehicle Auto-Loaded</h4>
+                      <p className="text-sm text-blue-700">Existing vehicle data has been populated</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                    <div className="bg-white p-2 rounded border">
+                      <span className="text-gray-600">Model:</span>
+                      <div className="font-medium">{selectedVehicle.model_name || selectedVehicle.model}</div>
+                    </div>
+                    <div className="bg-white p-2 rounded border">
+                      <span className="text-gray-600">Category:</span>
+                      <div className="font-medium">{selectedVehicle.model_category}</div>
+                    </div>
+                    <div className="bg-white p-2 rounded border">
+                      <span className="text-gray-600">Engine:</span>
+                      <div className="font-medium">{selectedVehicle.engine_type}</div>
+                    </div>
+                    <div className="bg-white p-2 rounded border">
+                      <span className="text-gray-600">Services:</span>
+                      <div className="font-medium">{selectedVehicle.service_count} completed</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="plateNumber">Plate Number *</Label>
@@ -1231,6 +1282,7 @@ export default function NewService() {
                       onChange={(e) => handlePlateNumberChange(e.target.value)}
                       placeholder="2CD-7960"
                       required
+                      className={selectedVehicle ? "bg-green-50 border-green-300" : ""}
                     />
                     {searchingPlate && (
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -1240,10 +1292,10 @@ export default function NewService() {
                   </div>
                   {selectedVehicle && (
                     <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm text-green-700">
-                      ✓ Auto-completed: Found existing vehicle "{selectedVehicle.model}" ({selectedVehicle.plate_number})
+                      ✓ Auto-completed: Found existing vehicle "{selectedVehicle.model_name || selectedVehicle.model}" ({selectedVehicle.plate_number})
                       <br />
                       <span className="text-xs text-green-600">
-                        Vehicle and customer data have been automatically filled (new records will be created)
+                        Vehicle and customer data have been automatically filled
                       </span>
                     </div>
                   )}
@@ -1254,7 +1306,7 @@ export default function NewService() {
                     value={formData.model}
                     onValueChange={(value) => setFormData({ ...formData, model: value })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={selectedVehicle ? "bg-green-50 border-green-300" : ""}>
                       <SelectValue placeholder="Select model" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1273,56 +1325,98 @@ export default function NewService() {
                     value={formData.vinNumber}
                     onChange={(e) => setFormData({ ...formData, vinNumber: e.target.value })}
                     placeholder="LUYJB2G27SA009637"
+                    className={selectedVehicle ? "bg-green-50 border-green-300" : ""}
                   />
                 </div>
-                                 <div>
-                   <Label htmlFor="year">Year</Label>
-                   <Input
-                     id="year"
-                     type="number"
-                     value={formData.year}
-                     onChange={(e) => setFormData({ ...formData, year: e.target.value })}
-                     placeholder="2023"
-                   />
-                 </div>
-                 <div>
-                   <Label htmlFor="purchaseDate">Service Date</Label>
-                   <Input
-                     id="purchaseDate"
-                     type="date"
-                     value={formData.purchaseDate}
-                     onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
-                   />
-                 </div>
-                 <div>
-                   <Label htmlFor="warrantyStartDate">Warranty Start Date</Label>
-                   <Input
-                     id="warrantyStartDate"
-                     type="date"
-                     value={formData.warrantyStartDate}
-                     onChange={(e) => setFormData({ ...formData, warrantyStartDate: e.target.value })}
-                   />
-                 </div>
-                 <div>
-                   <Label htmlFor="warrantyEndDate">Warranty End Date</Label>
-                   <Input
-                     id="warrantyEndDate"
-                     type="date"
-                     value={formData.warrantyEndDate}
-                     onChange={(e) => setFormData({ ...formData, warrantyEndDate: e.target.value })}
-                   />
-                 </div>
-                 <div>
-                   <Label htmlFor="kilometers">Current Kilometers</Label>
-                   <Input
-                     id="kilometers"
-                     type="number"
-                     value={formData.kilometers}
-                     onChange={(e) => setFormData({ ...formData, kilometers: e.target.value })}
-                     placeholder="15000"
-                   />
-                 </div>
+                <div>
+                  <Label htmlFor="year">Year</Label>
+                  <Input
+                    id="year"
+                    type="number"
+                    value={formData.year}
+                    onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+                    placeholder="2023"
+                    className={selectedVehicle ? "bg-green-50 border-green-300" : ""}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="purchaseDate">Purchase Date</Label>
+                  <Input
+                    id="purchaseDate"
+                    type="date"
+                    value={formData.purchaseDate}
+                    onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
+                    className={selectedVehicle ? "bg-green-50 border-green-300" : ""}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="warrantyStartDate">Warranty Start Date</Label>
+                  <Input
+                    id="warrantyStartDate"
+                    type="date"
+                    value={formData.warrantyStartDate}
+                    onChange={(e) => setFormData({ ...formData, warrantyStartDate: e.target.value })}
+                    className={selectedVehicle ? "bg-green-50 border-green-300" : ""}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="warrantyEndDate">Warranty End Date</Label>
+                  <Input
+                    id="warrantyEndDate"
+                    type="date"
+                    value={formData.warrantyEndDate}
+                    onChange={(e) => setFormData({ ...formData, warrantyEndDate: e.target.value })}
+                    className={selectedVehicle ? "bg-green-50 border-green-300" : ""}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="kilometers">Current Kilometers</Label>
+                  <Input
+                    id="kilometers"
+                    type="number"
+                    value={formData.kilometers}
+                    onChange={(e) => setFormData({ ...formData, kilometers: e.target.value })}
+                    placeholder="15000"
+                    className={selectedVehicle ? "bg-green-50 border-green-300" : ""}
+                  />
+                </div>
               </div>
+
+              {/* Additional Vehicle Information */}
+              {selectedVehicle && (
+                <div className="mt-4 p-4 bg-gray-50 border rounded-lg">
+                  <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+                    <Car className="h-4 w-4 mr-2" />
+                    Additional Vehicle Details
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-600">Base Price:</span>
+                      <div className="font-medium">${selectedVehicle.model_base_price}</div>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Displacement:</span>
+                      <div className="font-medium">{selectedVehicle.cc_displacement}cc</div>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Fuel Type:</span>
+                      <div className="font-medium">{selectedVehicle.fuel_type}</div>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Transmission:</span>
+                      <div className="font-medium">{selectedVehicle.transmission}</div>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Warranty Limit:</span>
+                      <div className="font-medium">{selectedVehicle.warranty_km_limit} km</div>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Max Services:</span>
+                      <div className="font-medium">{selectedVehicle.warranty_max_services}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -1955,15 +2049,61 @@ export default function NewService() {
                       <Button
                         size="lg"
                         onClick={() => {
-                          // Here you would typically generate and download/print the invoice
-                          // For now, we'll just close the modal and redirect
+                          // Generate PDF invoice
+                          const invoiceData: InvoiceData = {
+                            serviceId: createdServiceId || 0,
+                            invoiceNumber: `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Date.now().toString().slice(-4)}`,
+                            serviceDate: new Date().toISOString().slice(0, 10),
+                            serviceType: serviceTypes.find(s => s.value === formData.serviceType)?.label || formData.serviceType,
+                            serviceDetail: formData.serviceDetail,
+
+                            // Customer Information
+                            customerName: formData.customerName,
+                            customerPhone: formData.phone,
+                            customerEmail: formData.email,
+                            customerAddress: formData.address,
+
+                            // Vehicle Information
+                            vehiclePlate: formData.plateNumber,
+                            vehicleModel: formData.model,
+                            vehicleYear: parseInt(formData.year) || 0,
+                            vehicleVin: formData.vinNumber,
+
+                            // Service Items
+                            serviceItems: serviceItems.map(item => ({
+                              description: item.description,
+                              quantity: item.quantity,
+                              unitPrice: item.unitPrice,
+                              totalPrice: item.total,
+                              itemType: item.itemType
+                            })),
+
+                            // Pricing
+                            subtotal: invoiceCalculations.subtotal,
+                            discountAmount: invoiceCalculations.discountAmount,
+                            vatRate: invoiceData.vatRate,
+                            vatAmount: invoiceCalculations.vatAmount,
+                            totalAmount: invoiceCalculations.total,
+
+                            // Payment Information
+                            paymentMethod: formData.paymentMethod,
+                            paymentStatus: 'pending',
+
+                            // Additional Information
+                            notes: formData.notes
+                          }
+
+                          // Generate and download PDF
+                          generateInvoicePDF(invoiceData)
+
+                          // Close modal and redirect
                           setShowInvoiceModal(false)
                           router.push(`/services/${createdServiceId}`)
                         }}
                         className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200"
                       >
                         <DollarSign className="h-4 w-4 mr-2" />
-                        Generate Invoice
+                        Generate Invoice PDF
                       </Button>
                     </div>
                   </div>

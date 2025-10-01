@@ -1,7 +1,7 @@
 <?php
 /**
- * Warranties API
- * GTV Motor PHP Backend - Updated for Token Authentication
+ * Warranties API - Ultra Simple Version
+ * GTV Motor PHP Backend
  */
 
 require_once __DIR__ . '/../config/config.php';
@@ -9,7 +9,6 @@ require_once __DIR__ . '/../includes/Request.php';
 require_once __DIR__ . '/../includes/Response.php';
 
 try {
-    // No authentication required - Developer Mode
     require_once __DIR__ . '/../config/database.php';
     $database = new Database();
     $db = $database->getConnection();
@@ -31,34 +30,7 @@ try {
 
         if ($warrantyId && is_numeric($warrantyId)) {
             // Get individual warranty by ID
-            $stmt = $db->prepare("
-                SELECT
-                    w.*,
-                    v.plate_number as vehicle_plate,
-                    v.model as vehicle_model,
-                    v.vin_number as vehicle_vin,
-                    v.year as vehicle_year,
-                    c.name as customer_name,
-                    c.phone as customer_phone,
-                    c.email as customer_email,
-                    c.address as customer_address,
-                    COUNT(DISTINCT ws.id) as services_used,
-                    MAX(ws.service_date) as last_service_date,
-                    COALESCE(SUM(ws.cost_covered), 0) as total_cost_covered,
-                    DATEDIFF(w.end_date, CURDATE()) as days_until_expiry,
-                    CASE
-                        WHEN w.end_date < CURDATE() THEN 'expired'
-                        WHEN w.end_date <= DATE_ADD(CURDATE(), INTERVAL 7 DAY) THEN 'expiring_soon'
-                        WHEN w.end_date <= DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 'expiring_month'
-                        ELSE 'active'
-                    END as expiry_status
-                FROM warranties w
-                LEFT JOIN vehicles v ON w.vehicle_id = v.id
-                LEFT JOIN customers c ON v.customer_id = c.id
-                LEFT JOIN warranty_services ws ON w.id = ws.warranty_id
-                WHERE w.id = ?
-                GROUP BY w.id
-            ");
+            $stmt = $db->prepare("SELECT * FROM warranties WHERE id = ?");
             $stmt->execute([$warrantyId]);
             $warranty = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -70,81 +42,24 @@ try {
             return;
         }
 
-        // Get warranties with pagination and search
+        // Get warranties with pagination
         $pagination = Request::getPagination();
-        $search = Request::getSearch();
-        $status = Request::query('status');
-        $vehicleId = Request::query('vehicle_id');
-        $expiringSoon = Request::query('expiring_soon') === 'true';
-
-        $where = [];
-        $params = [];
-
-        if (!empty($search['search'])) {
-            $where[] = "(c.name LIKE ? OR v.plate_number LIKE ? OR v.model LIKE ?)";
-            $searchTerm = '%' . $search['search'] . '%';
-            $params[] = $searchTerm;
-            $params[] = $searchTerm;
-            $params[] = $searchTerm;
-        }
-
-        if ($status) {
-            $where[] = "w.status = ?";
-            $params[] = $status;
-        }
-
-        if ($vehicleId) {
-            $where[] = "w.vehicle_id = ?";
-            $params[] = $vehicleId;
-        }
-
-        if ($expiringSoon) {
-            $where[] = "w.end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)";
-        }
-
-        $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
 
         $query = "
-            SELECT
-                w.*,
-                c.name as customer_name,
-                c.phone as customer_phone,
-                c.email as customer_email,
-                c.address as customer_address,
-                v.plate_number as vehicle_plate,
-                v.model as vehicle_model,
-                v.vin_number as vehicle_vin,
-                v.year as vehicle_year,
-                v.current_km,
-                COUNT(DISTINCT ws.id) as services_used,
-                MAX(ws.service_date) as last_service_date,
-                COALESCE(SUM(ws.cost_covered), 0) as total_cost_covered,
-                DATEDIFF(w.end_date, CURDATE()) as days_until_expiry
-            FROM warranties w
-            LEFT JOIN vehicles v ON w.vehicle_id = v.id
-            LEFT JOIN customers c ON v.customer_id = c.id
-            LEFT JOIN warranty_services ws ON w.id = ws.warranty_id
-            {$whereClause}
-            GROUP BY w.id
-            ORDER BY w.{$search['sortBy']} {$search['sortOrder']}
+            SELECT *
+            FROM warranties
+            ORDER BY created_at DESC
             LIMIT {$pagination['limit']} OFFSET {$pagination['offset']}
         ";
 
-        $warranties = $db->prepare($query);
-        $warranties->execute($params);
-        $warranties = $warranties->fetchAll(PDO::FETCH_ASSOC);
+        $stmt = $db->prepare($query);
+        $stmt->execute();
+        $warranties = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         // Get total count
-        $countQuery = "
-            SELECT COUNT(DISTINCT w.id) as total
-            FROM warranties w
-            LEFT JOIN vehicles v ON w.vehicle_id = v.id
-            LEFT JOIN customers c ON v.customer_id = c.id
-            {$whereClause}
-        ";
-
+        $countQuery = "SELECT COUNT(*) as total FROM warranties";
         $stmt = $db->prepare($countQuery);
-        $stmt->execute($params);
+        $stmt->execute();
         $total = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
 
         $paginationData = [
@@ -159,16 +74,15 @@ try {
     } elseif ($method === 'POST') {
         // Create new warranty
         $data = Request::body();
-        Request::validateRequired($data, ['vehicle_id', 'warranty_type', 'start_date', 'end_date']);
+        Request::validateRequired($data, ['vehicle_id', 'warranty_type']);
 
         $vehicleId = (int)$data['vehicle_id'];
         $warrantyType = Request::sanitize($data['warranty_type']);
-        $startDate = $data['start_date'];
+        $startDate = $data['start_date'] ?? date('Y-m-d');
         $endDate = $data['end_date'];
-        $kmLimit = !empty($data['km_limit']) ? (int)$data['km_limit'] : 100000;
-        $maxServices = !empty($data['max_services']) ? (int)$data['max_services'] : 10;
+        $kmLimit = isset($data['km_limit']) ? (int)$data['km_limit'] : 15000;
+        $maxServices = isset($data['max_services']) ? (int)$data['max_services'] : 2;
         $termsConditions = Request::sanitize($data['terms_conditions'] ?? '');
-        $status = $data['status'] ?? 'active';
 
         // Validate vehicle exists
         $stmt = $db->prepare("SELECT id FROM vehicles WHERE id = ?");
@@ -177,40 +91,21 @@ try {
             Response::error('Vehicle not found', 404);
         }
 
-        // Check if vehicle already has an active warranty
-        $stmt = $db->prepare("SELECT id FROM warranties WHERE vehicle_id = ? AND status = 'active'");
-        $stmt->execute([$vehicleId]);
-        if ($stmt->fetch()) {
-            Response::error('Vehicle already has an active warranty', 409);
-        }
-
         $stmt = $db->prepare("
             INSERT INTO warranties (
                 vehicle_id, warranty_type, start_date, end_date, km_limit,
-                max_services, terms_conditions, status, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+                max_services, terms_conditions, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
         ");
-
         $stmt->execute([
             $vehicleId, $warrantyType, $startDate, $endDate, $kmLimit,
-            $maxServices, $termsConditions, $status
+            $maxServices, $termsConditions
         ]);
 
         $warrantyId = $db->lastInsertId();
 
-        // Get created warranty with details
-        $stmt = $db->prepare("
-            SELECT
-                w.*,
-                c.name as customer_name,
-                c.phone as customer_phone,
-                v.plate_number as vehicle_plate,
-                v.model as vehicle_model
-            FROM warranties w
-            LEFT JOIN vehicles v ON w.vehicle_id = v.id
-            LEFT JOIN customers c ON v.customer_id = c.id
-            WHERE w.id = ?
-        ");
+        // Get the created warranty
+        $stmt = $db->prepare("SELECT * FROM warranties WHERE id = ?");
         $stmt->execute([$warrantyId]);
         $warranty = $stmt->fetch(PDO::FETCH_ASSOC);
 

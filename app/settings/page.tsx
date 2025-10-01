@@ -11,9 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Settings, User, Bell, Database, Save, Plus, Loader2 } from "lucide-react"
 import { useSettings } from "@/hooks/use-settings"
-import { StaffList } from "@/components/staff/staff-list"
+import { useLanguage } from "@/lib/language-context"
 
 export default function SettingsPage() {
+  const { t } = useLanguage()
   const {
     companySettings,
     systemConfig,
@@ -94,7 +95,7 @@ export default function SettingsPage() {
       <div className="p-4 lg:p-8 space-y-6">
         <div className="flex items-center space-x-4">
           <Settings className="h-8 w-8 text-blue-600" />
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">System Settings</h1>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">{t('nav.settings', 'System Settings')}</h1>
         </div>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600" />

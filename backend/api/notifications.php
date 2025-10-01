@@ -10,35 +10,41 @@ require_once __DIR__ . '/../includes/Response.php';
 
 try {
     // No authentication required - Developer Mode
+    require_once __DIR__ . '/../config/database.php';
+    $database = new Database();
+    $db = $database->getConnection();
 
     $method = Request::method();
 
     if ($method === 'GET') {
-        // Get notification counts - simplified for now
-        $notifications = [
+        // Return empty notifications (table doesn't exist yet)
+        Response::success([
+            'notifications' => [],
             'counts' => [
-                'total_alerts' => 0,
-                'pending_alerts' => 0,
-                'sent_alerts' => 0,
-                'completed_alerts' => 0,
-                'overdue_alerts' => 0,
-                'due_today_alerts' => 0,
-                'due_soon_alerts' => 0,
-                'service_due_alerts' => 0,
-                'warranty_alerts' => 0,
-                'follow_up_alerts' => 0
-            ],
-            'recent_alerts' => []
-        ];
+                'total' => 0,
+                'high_priority' => 0,
+                'medium_priority' => 0,
+                'low_priority' => 0,
+                'service_due' => 0,
+                'warranty_expiring' => 0,
+                'follow_up' => 0
+            ]
+        ], 'Notifications retrieved successfully');
 
-        Response::success($notifications, 'Notifications retrieved successfully');
+    } elseif ($method === 'POST') {
+        // Notifications table doesn't exist yet
+        Response::error('Notifications feature not implemented yet', 501);
+
+    } elseif ($method === 'PUT') {
+        // Notifications table doesn't exist yet
+        Response::error('Notifications feature not implemented yet', 501);
 
     } else {
         Response::error('Method not allowed', 405);
     }
 
 } catch (Exception $e) {
-    error_log("Notifications API error: " . $e->getMessage());
-    Response::error('Failed to process notifications request', 500);
+    error_log("Notifications API Error: " . $e->getMessage());
+    Response::error('Internal server error', 500);
 }
 ?>

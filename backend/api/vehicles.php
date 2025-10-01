@@ -38,6 +38,13 @@ try {
                     c.phone as customer_phone,
                     c.email as customer_email,
                     c.address as customer_address,
+                    vm.name as model_name,
+                    vm.category as model_category,
+                    vm.base_price as model_base_price,
+                    vm.cc_displacement,
+                    vm.engine_type,
+                    vm.fuel_type,
+                    vm.transmission,
                     COUNT(DISTINCT s.id) as service_count,
                     MAX(s.service_date) as last_service_date,
                     SUM(s.total_amount) as total_service_amount,
@@ -46,6 +53,7 @@ try {
                     SUM(CASE WHEN s.service_status = 'in_progress' THEN 1 ELSE 0 END) as in_progress_services
                 FROM vehicles v
                 LEFT JOIN customers c ON v.customer_id = c.id
+                LEFT JOIN vehicle_models vm ON v.vehicle_model_id = vm.id
                 LEFT JOIN services s ON v.id = s.vehicle_id
                 WHERE v.id = ?
                 GROUP BY v.id
@@ -92,6 +100,13 @@ try {
                 c.phone as customer_phone,
                 c.email as customer_email,
                 c.address as customer_address,
+                vm.name as model_name,
+                vm.category as model_category,
+                vm.base_price as model_base_price,
+                vm.cc_displacement,
+                vm.engine_type,
+                vm.fuel_type,
+                vm.transmission,
                 COUNT(DISTINCT s.id) as service_count,
                 MAX(s.service_date) as last_service_date,
                 SUM(s.total_amount) as total_service_amount,
@@ -99,6 +114,7 @@ try {
                 SUM(CASE WHEN s.service_status = 'pending' THEN 1 ELSE 0 END) as pending_services
             FROM vehicles v
             LEFT JOIN customers c ON v.customer_id = c.id
+            LEFT JOIN vehicle_models vm ON v.vehicle_model_id = vm.id
             LEFT JOIN services s ON v.id = s.vehicle_id
             {$whereClause}
             GROUP BY v.id
@@ -115,6 +131,7 @@ try {
             SELECT COUNT(DISTINCT v.id) as total
             FROM vehicles v
             LEFT JOIN customers c ON v.customer_id = c.id
+            LEFT JOIN vehicle_models vm ON v.vehicle_model_id = vm.id
             {$whereClause}
         ";
 
@@ -134,11 +151,11 @@ try {
     } elseif ($method === 'POST') {
         // Create new vehicle
         $data = Request::body();
-        Request::validateRequired($data, ['customer_id', 'plate_number', 'model']);
+        Request::validateRequired($data, ['customer_id', 'plate_number']);
 
         $customerId = (int)$data['customer_id'];
         $plateNumber = Request::sanitize($data['plate_number']);
-        $model = Request::sanitize($data['model']);
+        $model = Request::sanitize($data['model'] ?? '');
         $vinNumber = Request::sanitize($data['vin_number'] ?? '');
         $year = !empty($data['year']) ? (int)$data['year'] : null;
         $currentKm = !empty($data['current_km']) ? (int)$data['current_km'] : 0;
@@ -171,27 +188,57 @@ try {
             }
         }
 
-        $stmt = $db->prepare("
-            INSERT INTO vehicles (
-                customer_id, plate_number, model, vin_number, year, current_km,
-                purchase_date, warranty_start_date, warranty_end_date,
-                warranty_km_limit, warranty_max_services, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
-        ");
+        // Get vehicle_model_id from vehicle_models table (if model is provided)
+        $vehicleModelId = null;
+        if (!empty($model)) {
+            $stmt = $db->prepare("SELECT id FROM vehicle_models WHERE name = ?");
+            $stmt->execute([$model]);
+            $vehicleModel = $stmt->fetch(PDO::FETCH_ASSOC);
+            $vehicleModelId = $vehicleModel ? $vehicleModel['id'] : null;
+        }
 
-        $stmt->execute([
-            $customerId, $plateNumber, $model, $vinNumber ?: null, $year, $currentKm,
-            $purchaseDate, $warrantyStartDate, $warrantyEndDate,
-            $warrantyKmLimit, $warrantyMaxServices
-        ]);
+        // Try to insert without model column first
+        try {
+            $stmt = $db->prepare("
+                INSERT INTO vehicles (
+                    customer_id, plate_number, vehicle_model_id, vin_number, year, current_km,
+                    purchase_date, warranty_start_date, warranty_end_date,
+                    warranty_km_limit, warranty_max_services, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+            ");
+
+            $stmt->execute([
+                $customerId, $plateNumber, $vehicleModelId, $vinNumber ?: null, $year, $currentKm,
+                $purchaseDate, $warrantyStartDate, $warrantyEndDate,
+                $warrantyKmLimit, $warrantyMaxServices
+            ]);
+        } catch (Exception $e) {
+            // If that fails, try with model column
+            $stmt = $db->prepare("
+                INSERT INTO vehicles (
+                    customer_id, plate_number, model, vehicle_model_id, vin_number, year, current_km,
+                    purchase_date, warranty_start_date, warranty_end_date,
+                    warranty_km_limit, warranty_max_services, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+            ");
+
+            $stmt->execute([
+                $customerId, $plateNumber, $model, $vehicleModelId, $vinNumber ?: null, $year, $currentKm,
+                $purchaseDate, $warrantyStartDate, $warrantyEndDate,
+                $warrantyKmLimit, $warrantyMaxServices
+            ]);
+        }
 
         $vehicleId = $db->lastInsertId();
 
-        // Get created vehicle with customer info
+        // Get created vehicle with customer and model info
         $stmt = $db->prepare("
-            SELECT v.*, c.name as customer_name, c.phone as customer_phone
+            SELECT v.*, c.name as customer_name, c.phone as customer_phone,
+                   vm.name as model_name, vm.category as model_category, vm.base_price as model_base_price,
+                   vm.cc_displacement, vm.engine_type, vm.fuel_type, vm.transmission
             FROM vehicles v
             LEFT JOIN customers c ON v.customer_id = c.id
+            LEFT JOIN vehicle_models vm ON v.vehicle_model_id = vm.id
             WHERE v.id = ?
         ");
         $stmt->execute([$vehicleId]);

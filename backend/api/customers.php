@@ -1,7 +1,7 @@
 <?php
 /**
- * Customers API
- * GTV Motor PHP Backend - Updated for Token Authentication
+ * Customers API - Simplified Version
+ * GTV Motor PHP Backend
  */
 
 require_once __DIR__ . '/../config/config.php';
@@ -9,8 +9,6 @@ require_once __DIR__ . '/../includes/Request.php';
 require_once __DIR__ . '/../includes/Response.php';
 
 try {
-    // No authentication required - Developer Mode
-    // Get customers from database
     require_once __DIR__ . '/../config/database.php';
     $database = new Database();
     $db = $database->getConnection();
@@ -30,19 +28,19 @@ try {
             $customerId = $segments[2];
         }
 
-        if ($customerId && is_numeric($customerId)) {
+        if ($customerId && is_numeric($customerId) && $customerId > 0) {
             // Get individual customer by ID
             $stmt = $db->prepare("
                 SELECT
-                    id,
-                    name,
-                    phone,
-                    address,
-                    email,
-                    created_at,
-                    updated_at
-                FROM customers
-                WHERE id = ?
+                    c.id,
+                    c.name,
+                    c.phone,
+                    c.address,
+                    c.email,
+                    c.created_at,
+                    c.updated_at
+                FROM customers c
+                WHERE c.id = ? AND c.id > 0
             ");
             $stmt->execute([$customerId]);
             $customer = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -62,8 +60,11 @@ try {
         $where = [];
         $params = [];
 
+        // Always filter out customers with invalid IDs
+        $where[] = "c.id IS NOT NULL AND c.id > 0";
+
         if (!empty($search['search'])) {
-            $where[] = "(name LIKE ? OR phone LIKE ? OR email LIKE ?)";
+            $where[] = "(c.name LIKE ? OR c.phone LIKE ? OR c.email LIKE ?)";
             $searchTerm = '%' . $search['search'] . '%';
             $params[] = $searchTerm;
             $params[] = $searchTerm;
@@ -72,29 +73,30 @@ try {
 
         $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
 
+        // Simplified query - just get customers first
         $query = "
             SELECT
-                id,
-                name,
-                phone,
-                address,
-                email,
-                created_at,
-                updated_at
-            FROM customers
+                c.id,
+                c.name,
+                c.phone,
+                c.address,
+                c.email,
+                c.created_at,
+                c.updated_at
+            FROM customers c
             {$whereClause}
             ORDER BY {$search['sortBy']} {$search['sortOrder']}
             LIMIT {$pagination['limit']} OFFSET {$pagination['offset']}
         ";
 
-        $customers = $db->prepare($query);
-        $customers->execute($params);
-        $customers = $customers->fetchAll(PDO::FETCH_ASSOC);
+        $stmt = $db->prepare($query);
+        $stmt->execute($params);
+        $customers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         // Get total count
         $countQuery = "
-            SELECT COUNT(id) as total
-            FROM customers
+            SELECT COUNT(*) as total
+            FROM customers c
             {$whereClause}
         ";
 
@@ -116,55 +118,36 @@ try {
         $data = Request::body();
         Request::validateRequired($data, ['name', 'phone']);
 
-        $stmt = $db->prepare("
-            INSERT INTO customers (name, phone, address, email)
-            VALUES (?, ?, ?, ?)
-        ");
-        $stmt->execute([
-            $data['name'],
-            $data['phone'],
-            $data['address'] ?? null,
-            $data['email'] ?? null
-        ]);
+        $name = Request::sanitize($data['name']);
+        $phone = Request::sanitize($data['phone']);
+        $email = Request::sanitize($data['email'] ?? '');
+        $address = Request::sanitize($data['address'] ?? '');
 
-        Response::success(['id' => $db->lastInsertId()], 'Customer created successfully', 201);
-
-    } elseif ($method === 'PUT') {
-        // Update customer
-        $customerId = Request::segment(2);
-        if (!$customerId) {
-            Response::error('Customer ID is required', 400);
+        // Check if customer with same phone already exists
+        $stmt = $db->prepare("SELECT id FROM customers WHERE phone = ?");
+        $stmt->execute([$phone]);
+        if ($stmt->fetch()) {
+            Response::error('Customer with this phone number already exists', 409);
         }
 
-        $data = Request::body();
-        Request::validateRequired($data, ['name', 'phone']);
-
         $stmt = $db->prepare("
-            UPDATE customers
-            SET name = ?, phone = ?, address = ?, email = ?
+            INSERT INTO customers (name, phone, email, address, created_at, updated_at)
+            VALUES (?, ?, ?, ?, NOW(), NOW())
+        ");
+        $stmt->execute([$name, $phone, $email, $address]);
+
+        $customerId = $db->lastInsertId();
+
+        // Get the created customer
+        $stmt = $db->prepare("
+            SELECT id, name, phone, email, address, created_at, updated_at
+            FROM customers
             WHERE id = ?
         ");
-        $stmt->execute([
-            $data['name'],
-            $data['phone'],
-            $data['address'] ?? null,
-            $data['email'] ?? null,
-            $customerId
-        ]);
-
-        Response::success(null, 'Customer updated successfully');
-
-    } elseif ($method === 'DELETE') {
-        // Delete customer
-        $customerId = Request::segment(2);
-        if (!$customerId) {
-            Response::error('Customer ID is required', 400);
-        }
-
-        $stmt = $db->prepare("DELETE FROM customers WHERE id = ?");
         $stmt->execute([$customerId]);
+        $customer = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        Response::success(null, 'Customer deleted successfully');
+        Response::created($customer, 'Customer created successfully');
 
     } else {
         Response::error('Method not allowed', 405);

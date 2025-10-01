@@ -27,7 +27,23 @@ echo "All cookies: <pre>" . print_r($_COOKIE, true) . "</pre>";
 // Test 3: Check headers
 echo "<h3>3. Headers Test</h3>";
 echo "Authorization header: " . ($_SERVER['HTTP_AUTHORIZATION'] ?? 'NOT SET') . "<br>";
-echo "All headers: <pre>" . print_r(getallheaders(), true) . "</pre>";
+echo "Content-Type header: " . ($_SERVER['CONTENT_TYPE'] ?? 'NOT SET') . "<br>";
+echo "Request method: " . ($_SERVER['REQUEST_METHOD'] ?? 'NOT SET') . "<br>";
+
+// Get headers safely
+$headers = [];
+if (function_exists('getallheaders')) {
+    $headers = getallheaders();
+} else {
+    // Fallback for servers without getallheaders
+    foreach ($_SERVER as $key => $value) {
+        if (strpos($key, 'HTTP_') === 0) {
+            $headerName = str_replace('_', '-', substr($key, 5));
+            $headers[$headerName] = $value;
+        }
+    }
+}
+echo "All headers: <pre>" . print_r($headers, true) . "</pre>";
 
 // Test 4: Test Auth class getCurrentUser method
 echo "<h3>4. Auth getCurrentUser Test</h3>";

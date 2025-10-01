@@ -44,18 +44,9 @@ try {
 
     // Mock request body
     $testData = [
-        'email' => 'gtv@gmail.com',
+        'email' => 'admin@rhtower.com',
         'password' => 'test123'
     ];
-
-    // Override file_get_contents for testing
-    function mockFileGetContents($filename) {
-        global $testData;
-        if ($filename === 'php://input') {
-            return json_encode($testData);
-        }
-        return file_get_contents($filename);
-    }
 
     echo "✅ Login test setup complete<br>";
 
@@ -65,6 +56,23 @@ try {
 
     // Test database connection through Auth
     echo "✅ Auth database connection working<br>";
+    
+    // Test actual login functionality
+    echo "<h3>4. Testing Actual Login</h3>";
+    try {
+        // Test login with mock data
+        $result = $auth->login($testData['email'], $testData['password']);
+        
+        if ($result && isset($result['success']) && $result['success']) {
+            echo "✅ Login successful<br>";
+            echo "User: " . htmlspecialchars($result['data']['user']['email'] ?? 'N/A') . "<br>";
+        } else {
+            echo "❌ Login failed<br>";
+            echo "Response: " . htmlspecialchars(json_encode($result)) . "<br>";
+        }
+    } catch (Exception $e) {
+        echo "❌ Login test error: " . $e->getMessage() . "<br>";
+    }
 
 } catch (Exception $e) {
     echo "❌ Login test error: " . $e->getMessage() . "<br>";

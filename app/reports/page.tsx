@@ -24,7 +24,7 @@ import {
   Activity
 } from "lucide-react"
 import Link from "next/link"
-import { exportToCSV, exportToExcel, exportToPDF, formatDataForExport } from "@/lib/export-utils"
+import { useLanguage } from "@/lib/language-context"
 
 interface SummaryData {
   totalRevenue: number
@@ -164,6 +164,7 @@ interface InventoryData {
 }
 
 export default function Reports() {
+  const { t } = useLanguage()
   const [dateRange, setDateRange] = useState({
     from: new Date(new Date().getFullYear(), 0, 1).toISOString().split("T")[0],
     to: new Date().toISOString().split("T")[0],
@@ -182,7 +183,8 @@ export default function Reports() {
       // Fetch summary report
       const summaryResponse = await fetch(`/api/reports/summary?from=${dateRange.from}&to=${dateRange.to}`)
       if (summaryResponse.ok) {
-        const summary = await summaryResponse.json()
+        const response = await summaryResponse.json()
+        const summary = response.data // Extract data from API response
         // Ensure all required properties exist with default values
         const safeSummary = {
           totalRevenue: summary.totalRevenue || 0,
@@ -203,7 +205,8 @@ export default function Reports() {
       // Fetch warranty report
       const warrantyResponse = await fetch(`/api/reports/warranty?from=${dateRange.from}&to=${dateRange.to}`)
       if (warrantyResponse.ok) {
-        const warranty = await warrantyResponse.json()
+        const response = await warrantyResponse.json()
+        const warranty = response.data // Extract data from API response
         // Ensure all required properties exist with default values
         const safeWarranty = {
           summary: {
@@ -223,7 +226,8 @@ export default function Reports() {
       // Fetch customer report
       const customerResponse = await fetch(`/api/reports/customer?from=${dateRange.from}&to=${dateRange.to}`)
       if (customerResponse.ok) {
-        const customer = await customerResponse.json()
+        const response = await customerResponse.json()
+        const customer = response.data // Extract data from API response
         // Ensure all required properties exist with default values
         const safeCustomer = {
           summary: {
@@ -244,13 +248,15 @@ export default function Reports() {
       // Fetch inventory report
       const inventoryResponse = await fetch(`/api/reports/inventory?from=${dateRange.from}&to=${dateRange.to}`)
       if (inventoryResponse.ok) {
-        const inventory = await inventoryResponse.json()
+        const response = await inventoryResponse.json()
+        const inventory = response.data // Extract data from API response
         // Ensure all required properties exist with default values
         const safeInventory = {
           summary: {
             totalItems: inventory.summary?.totalItems || 0,
-            lowStockItems: inventory.summary?.lowStockItems || 0,
-            totalValue: inventory.summary?.totalValue || 0
+            totalQuantity: inventory.summary?.totalQuantity || 0,
+            totalValue: inventory.summary?.totalValue || 0,
+            lowStockItems: inventory.summary?.lowStockItems || 0
           },
           lowStock: inventory.lowStock || []
         }
@@ -346,7 +352,7 @@ export default function Reports() {
                   Back
                 </Button>
               </Link>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Reports & Analytics</h1>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('nav.reports', 'Reports & Analytics')}</h1>
             </div>
             <Button onClick={fetchReportData} disabled={loading}>
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />

@@ -38,7 +38,7 @@ export default function SidebarNotificationBadge() {
   if (loading) {
     return (
       <div className="relative">
-        <Bell className="h-5 w-5 text-gray-600" />
+        <Bell className="h-5 w-5 text-gray-700 dark:text-gray-200" />
       </div>
     )
   }
@@ -46,15 +46,15 @@ export default function SidebarNotificationBadge() {
   if (notificationCount === 0) {
     return (
       <div className="relative">
-        <Bell className="h-5 w-5 text-gray-600" />
+        <Bell className="h-5 w-5 text-gray-700 dark:text-gray-200" />
       </div>
     )
   }
 
   return (
     <div className="relative">
-      <Bell className="h-5 w-5 text-gray-600" />
-      <div className="absolute -top-2 -right-2 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center shadow-sm">
+      <Bell className="h-5 w-5 text-gray-700 dark:text-gray-200" />
+      <div className="absolute -top-2 -right-2 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center shadow-sm border border-white dark:border-gray-800">
         <span className="text-white text-[10px] font-bold leading-none">
           {notificationCount > 99 ? "99+" : notificationCount}
         </span>

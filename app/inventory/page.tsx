@@ -25,7 +25,7 @@ import {
   ChevronRight
 } from "lucide-react"
 import Link from "next/link"
-import { apiClient } from "@/lib/api-client"
+import { useLanguage } from "@/lib/language-context"
 import { toast } from "sonner"
 
 interface InventoryItem {
@@ -62,6 +62,7 @@ interface PaginationInfo {
 }
 
 export default function Inventory() {
+  const { t } = useLanguage()
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
@@ -328,7 +329,7 @@ export default function Inventory() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Inventory Management</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t('nav.inventory', 'Inventory Management')}</h1>
           <p className="text-muted-foreground">
             Manage parts, track stock levels, and handle restocking
           </p>

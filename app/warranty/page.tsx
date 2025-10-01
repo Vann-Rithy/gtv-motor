@@ -8,9 +8,10 @@ import { Badge } from "@/components/ui/badge"
 import { Search, Shield, AlertTriangle, Phone, Car, RefreshCw, Calendar } from "lucide-react"
 import { WarrantyWithDetails } from "@/lib/types"
 import { calculateWarrantyStatus, getWarrantyStatusColor, getWarrantyTypeDisplayName } from "@/lib/warranty-utils"
-import { toast } from "sonner"
+import { useLanguage } from "@/lib/language-context"
 
 export default function WarrantyPage() {
+  const { t } = useLanguage()
   const [warranties, setWarranties] = useState<WarrantyWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
@@ -95,7 +96,7 @@ export default function WarrantyPage() {
       <div className="p-4 lg:p-8 space-y-6">
         <div className="flex items-center space-x-4">
           <Shield className="h-8 w-8 text-blue-600" />
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">Warranty Management</h1>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">{t('nav.warranty', 'Warranty Management')}</h1>
         </div>
         <div className="flex items-center justify-center py-12">
           <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
@@ -110,7 +111,7 @@ export default function WarrantyPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Shield className="h-8 w-8 text-blue-600" />
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">Warranty Management</h1>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">{t('nav.warranty', 'Warranty Management')}</h1>
         </div>
                  <div className="flex space-x-2">
            <Button

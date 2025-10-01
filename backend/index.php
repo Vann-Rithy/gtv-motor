@@ -147,6 +147,11 @@ try {
                 require_once __DIR__ . '/api/vehicles.php';
                 break;
 
+            case (strpos($apiPath, 'vehicle-models') === 0):
+                // Handle vehicle models requests (both /api/vehicle-models and /api/vehicle-models/1)
+                require_once __DIR__ . '/api/vehicle-models.php';
+                break;
+
             case (strpos($apiPath, 'services') === 0):
                 // Handle services requests (both /api/services and /api/services/1)
                 require_once __DIR__ . '/api/services.php';
@@ -163,6 +168,10 @@ try {
 
             case 'inventory':
                 require_once __DIR__ . '/api/inventory.php';
+                break;
+
+            case 'inventory/categories':
+                require_once __DIR__ . '/api/inventory-categories.php';
                 break;
 
             case 'staff':
@@ -233,6 +242,22 @@ try {
             case 'dashboard/revenue':
                 if ($requestMethod === 'GET') {
                     require_once __DIR__ . '/api/dashboard/revenue.php';
+                } else {
+                    Response::error('Method not allowed', 405);
+                }
+                break;
+
+            case 'dashboard/alerts':
+                if ($requestMethod === 'GET') {
+                    require_once __DIR__ . '/api/dashboard/alerts.php';
+                } else {
+                    Response::error('Method not allowed', 405);
+                }
+                break;
+
+            case 'notifications':
+                if ($requestMethod === 'GET') {
+                    require_once __DIR__ . '/api/notifications.php';
                 } else {
                     Response::error('Method not allowed', 405);
                 }

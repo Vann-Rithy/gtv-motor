@@ -71,19 +71,23 @@ export default function CustomerDetailPage() {
 
         // Fetch customer details
         const customerResponse = await apiClient.getCustomer(customerId)
-        setCustomer(customerResponse.data)
+        if (customerResponse.success && customerResponse.data) {
+          setCustomer(customerResponse.data)
+        } else {
+          throw new Error(customerResponse.message || "Customer not found")
+        }
 
         // Fetch customer's vehicles
         const vehiclesResponse = await apiClient.getVehicles({ customer_id: customerId })
-        setVehicles(vehiclesResponse.data || [])
+        setVehicles(vehiclesResponse.success ? (vehiclesResponse.data || []) : [])
 
         // Fetch customer's services
         const servicesResponse = await apiClient.getServices({ customer_id: customerId })
-        setServices(servicesResponse.data || [])
+        setServices(servicesResponse.success ? (servicesResponse.data || []) : [])
 
         // Fetch customer's bookings
         const bookingsResponse = await apiClient.getBookings({ customer_id: customerId })
-        setBookings(bookingsResponse.data || [])
+        setBookings(bookingsResponse.success ? (bookingsResponse.data || []) : [])
 
         setError(null)
       } catch (err: any) {

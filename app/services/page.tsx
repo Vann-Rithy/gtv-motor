@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, Plus, Search, Eye, DollarSign, Calendar, User, Car, Phone, ChevronLeft, ChevronRight, ArrowUpDown, CreditCard } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
+import { useLanguage } from "@/lib/language-context"
 import { toast } from "sonner"
 
 type ServiceRow = {
@@ -23,10 +24,13 @@ type ServiceRow = {
   service_status: "pending" | "in_progress" | "completed" | string
   payment_status: "pending" | "paid" | "cancelled" | string
   payment_method?: string | null
-  service_type_name: string
+  service_type_name?: string
   service_detail?: string | null
-  plate_number: string
-  vehicle_model: string
+  plate_number?: string
+  vehicle_plate?: string
+  vehicle_model?: string
+  vehicle_model_name?: string
+  vehicle_model_category?: string
   vehicle_year?: number | null
   customer_name?: string
   customer_phone?: string | null
@@ -54,6 +58,7 @@ function toMoney(n: number | string | null | undefined) {
 
 export default function ServicesPage() {
   const router = useRouter()
+  const { t } = useLanguage()
   const [search, setSearch] = useState("")
   const [status, setStatus] = useState("")
   const [loading, setLoading] = useState(true)
@@ -64,7 +69,7 @@ export default function ServicesPage() {
   const [totalServices, setTotalServices] = useState(0)
   const [sortBy, setSortBy] = useState("service_date")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
-  const servicesPerPage = 10
+  const servicesPerPage = 12
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null)
   const [selectedPaymentStatus, setSelectedPaymentStatus] = useState<string>("")
@@ -79,6 +84,7 @@ export default function ServicesPage() {
         limit: servicesPerPage,
         page: page,
       })
+
       setRows((res?.data || []) as ServiceRow[])
       setError(null)
 
@@ -102,6 +108,7 @@ export default function ServicesPage() {
     fetchData(currentPage)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, sortBy, sortOrder])
+
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -175,11 +182,11 @@ export default function ServicesPage() {
       <Link href="/services/new">
         <Button className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700">
           <Plus className="h-4 w-4 mr-2" />
-          New Service
+          {t('services.new', 'New Service')}
         </Button>
       </Link>
     ),
-    [],
+    [t],
   )
 
   return (
@@ -187,9 +194,9 @@ export default function ServicesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between gap-3">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">Service Management</h1>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">{t('services.title', 'Service Management')}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Page {currentPage} of {totalPages} • {totalServices} total services
+            {t('common.page', 'Page')} {currentPage} {t('common.of', 'of')} {totalPages} • {totalServices} {t('services.total', 'total services')}
           </p>
         </div>
         {headerRight}
@@ -202,7 +209,7 @@ export default function ServicesPage() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by customer, invoice, or vehicle..."
+            placeholder={t('services.search', 'Search by customer, invoice, or vehicle...')}
             className="pl-10 h-11"
           />
         </div>
@@ -210,284 +217,198 @@ export default function ServicesPage() {
           value={status}
           onChange={(e) => setStatus(e.target.value)}
           className="h-11 rounded-md border bg-background px-3 text-sm"
-          aria-label="Filter by status"
+          aria-label={t('services.filter_status', 'Filter by status')}
         >
-          <option value="">All Status</option>
-          <option value="completed">Completed</option>
-          <option value="in_progress">In Progress</option>
-          <option value="pending">Pending</option>
+          <option value="">{t('services.status.all', 'All Status')}</option>
+          <option value="completed">{t('services.status.completed', 'Completed')}</option>
+          <option value="in_progress">{t('services.status.in_progress', 'In Progress')}</option>
+          <option value="pending">{t('services.status.pending', 'Pending')}</option>
         </select>
       </div>
 
-      {/* Services Table */}
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[120px]">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSort("invoice_number")}
-                    className="h-auto p-0 font-semibold"
-                  >
-                    Invoice
-                    {sortBy === "invoice_number" && (
-                      <span className="ml-1 text-xs">
-                        {sortOrder === "asc" ? "↑" : "↓"}
-                      </span>
-                    )}
-                    {sortBy !== "invoice_number" && <ArrowUpDown className="ml-2 h-4 w-4" />}
-                  </Button>
-                </TableHead>
-                <TableHead className="w-[180px]">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSort("customer_name")}
-                    className="h-auto p-0 font-semibold"
-                  >
-                    Customer
-                    {sortBy === "customer_name" && (
-                      <span className="ml-1 text-xs">
-                        {sortOrder === "asc" ? "↑" : "↓"}
-                      </span>
-                    )}
-                    {sortBy !== "customer_name" && <ArrowUpDown className="ml-2 h-4 w-4" />}
-                  </Button>
-                </TableHead>
-                <TableHead className="w-[120px]">Phone</TableHead>
-                <TableHead className="w-[150px]">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSort("vehicle_model")}
-                    className="h-auto p-0 font-semibold"
-                  >
-                    Vehicle
-                    {sortBy === "vehicle_model" && (
-                      <span className="ml-1 text-xs">
-                        {sortOrder === "asc" ? "↑" : "↓"}
-                      </span>
-                    )}
-                    {sortBy !== "vehicle_model" && <ArrowUpDown className="ml-2 h-4 w-4" />}
-                  </Button>
-                </TableHead>
-                <TableHead className="w-[80px]">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSort("vehicle_year")}
-                    className="h-auto p-0 font-semibold"
-                  >
-                    Year
-                    {sortBy === "vehicle_year" && (
-                      <span className="ml-1 text-xs">
-                        {sortOrder === "asc" ? "↑" : "↓"}
-                      </span>
-                    )}
-                    {sortBy !== "vehicle_year" && <ArrowUpDown className="ml-2 h-4 w-4" />}
-                  </Button>
-                </TableHead>
-                <TableHead className="w-[120px]">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSort("service_date")}
-                    className="h-auto p-0 font-semibold"
-                  >
-                    Service Date
-                    {sortBy === "service_date" && (
-                      <span className="ml-1 text-xs">
-                        {sortOrder === "asc" ? "↑" : "↓"}
-                      </span>
-                    )}
-                    {sortBy !== "service_date" && <ArrowUpDown className="ml-2 h-4 w-4" />}
-                  </Button>
-                </TableHead>
-                <TableHead className="w-[120px]">Service Type</TableHead>
-                <TableHead className="w-[200px]">Service Detail</TableHead>
-                <TableHead className="w-[100px]">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSort("total_amount")}
-                    className="h-auto p-0 font-semibold"
-                  >
-                    Amount
-                    {sortBy === "total_amount" && (
-                      <span className="ml-1 text-xs">
-                        {sortOrder === "asc" ? "↑" : "↓"}
-                      </span>
-                    )}
-                    {sortBy !== "total_amount" && <ArrowUpDown className="ml-2 h-4 w-4" />}
-                  </Button>
-                </TableHead>
-                <TableHead className="w-[100px]">Status</TableHead>
-                <TableHead className="w-[100px]">Payment</TableHead>
-                <TableHead className="w-[120px]">Technician</TableHead>
-                <TableHead className="w-[150px] text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={13} className="text-center py-12">
-                    <div className="flex items-center justify-center">
-                      <Loader2 className="h-6 w-6 animate-spin" />
-                      <span className="ml-2">Loading services...</span>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : error ? (
-                <TableRow>
-                  <TableCell colSpan={13} className="text-center py-12 text-red-600 dark:text-red-400">
-                    {error}
-                  </TableCell>
-                </TableRow>
-              ) : rows.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={13} className="text-center py-12 text-muted-foreground">
-                    No services found.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                rows.map((s) => {
-                  const statusTone =
-                    s.service_status === "completed" ? "green" : s.service_status === "in_progress" ? "blue" : "yellow"
-                  const payTone = s.payment_status === "paid" ? "green" : s.payment_status === "cancelled" ? "red" : "yellow"
+       {/* Services Cards */}
+       {loading ? (
+         <div className="flex items-center justify-center py-12">
+           <div className="text-center">
+             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+             <div className="text-gray-600 dark:text-gray-400">{t('services.loading', 'Loading services...')}</div>
+           </div>
+         </div>
+       ) : error ? (
+         <div className="flex items-center justify-center py-12">
+           <div className="text-center text-red-600 dark:text-red-400">
+             {error}
+           </div>
+         </div>
+       ) : rows.length === 0 ? (
+         <div className="flex items-center justify-center py-12">
+           <div className="text-center text-muted-foreground">
+             {t('services.no_services', 'No services found.')}
+           </div>
+         </div>
+       ) : (
+         <div className="space-y-3">
+           {rows.map((s) => (
+             <Card key={s.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200">
+               <CardContent className="p-4">
+                 {/* Header Row */}
+                 <div className="flex justify-between items-center mb-3">
+                   <div className="flex items-center space-x-3">
+                     <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded-md">
+                       <Car className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                     </div>
+                     <div>
+                       <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                         {s.invoice_number}
+                       </h3>
+                     </div>
+                   </div>
+                   <div className="flex gap-2">
+                     <Badge
+                       className={
+                         s.service_status === "completed"
+                           ? "bg-green-500 text-white px-2 py-1 text-xs"
+                           : s.service_status === "in_progress"
+                             ? "bg-blue-500 text-white px-2 py-1 text-xs"
+                             : "bg-yellow-500 text-white px-2 py-1 text-xs"
+                       }
+                     >
+                       {STATUS_LABELS[s.service_status] || s.service_status}
+                     </Badge>
+                     <Badge
+                       className={
+                         s.payment_status === "paid"
+                           ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200 px-2 py-1 text-xs"
+                           : s.payment_status === "cancelled"
+                             ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200 px-2 py-1 text-xs"
+                             : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200 px-2 py-1 text-xs"
+                       }
+                     >
+                       {PAYMENT_LABELS[s.payment_status] || s.payment_status}
+                     </Badge>
+                   </div>
+                 </div>
 
-                  return (
-                    <TableRow
-                      key={s.id}
-                      className="hover:bg-muted/50 cursor-pointer"
-                      onClick={() => router.push(`/services/${s.id}`)}
-                    >
-                      <TableCell>
-                        <div className="font-medium">{s.invoice_number}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center">
-                          <User className="h-4 w-4 mr-2 text-muted-foreground" />
-                          <span className="truncate">{s.customer_name || "—"}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center">
-                          <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
-                          <span className="text-sm">{s.customer_phone || "—"}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center">
-                          <Car className="h-4 w-4 mr-2 text-muted-foreground" />
-                          <div>
-                            <div className="font-medium text-sm">{s.vehicle_model}</div>
-                            <div className="text-xs text-muted-foreground">{s.plate_number}</div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm font-medium">{s.vehicle_year || "—"}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center">
-                          <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                          <span className="text-sm">
-                            {s.service_date ? new Date(s.service_date).toLocaleDateString() : "—"}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">{s.service_type_name || "—"}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm text-gray-700 dark:text-gray-300 max-w-[200px] truncate" title={s.service_detail || ""}>
-                          {s.service_detail || "—"}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">{toMoney(s.total_amount)}</div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            s.service_status === "completed"
-                              ? "default"
-                              : s.service_status === "in_progress"
-                                ? "secondary"
-                                : "outline"
-                          }
-                          className={
-                            s.service_status === "completed"
-                              ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-900/50"
-                              : s.service_status === "in_progress"
-                                ? "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-900/50"
-                                : "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 hover:bg-yellow-200 dark:hover:bg-yellow-900/50"
-                          }
-                        >
-                          {STATUS_LABELS[s.service_status] || s.service_status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            s.payment_status === "paid"
-                              ? "default"
-                              : s.payment_status === "cancelled"
-                                ? "destructive"
-                                : "outline"
-                          }
-                          className={
-                            s.payment_status === "paid"
-                              ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-900/50"
-                              : s.payment_status === "cancelled"
-                                ? "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 hover:bg-red-200 dark:hover:bg-red-900/50"
-                                : "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 hover:bg-yellow-200 dark:hover:bg-yellow-900/50"
-                          }
-                        >
-                          {PAYMENT_LABELS[s.payment_status] || s.payment_status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          {s.technician_name || (s.technician_id ? `Tech #${s.technician_id}` : "—")}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Link href={`/services/${s.id}`}>
-                            <Button variant="outline" size="sm">
-                              <Eye className="h-4 w-4 mr-1" />
-                              View
-                            </Button>
-                          </Link>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleChangePayment(s.id, s.payment_status)}
-                            className="bg-yellow-50 hover:bg-yellow-100 dark:bg-yellow-900/20 dark:hover:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200"
-                          >
-                            <CreditCard className="h-4 w-4 mr-1" />
-                            Change Payment
-                          </Button>
-                          <Link href={`/services/${s.id}/invoice`}>
-                            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700">
-                              <DollarSign className="h-4 w-4 mr-1" />
-                              Invoice
-                            </Button>
-                          </Link>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                 {/* Customer & Vehicle Info */}
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                   <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-md">
+                     <div className="flex items-center mb-1">
+                       <User className="h-3 w-3 text-gray-500 mr-1" />
+                       <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Customer</span>
+                     </div>
+                     <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                       {s.customer_name || "—"}
+                     </p>
+                     <p className="text-xs text-gray-500 dark:text-gray-400">
+                       {s.customer_phone || "No phone"}
+                     </p>
+                   </div>
+
+                   <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-md">
+                     <div className="flex items-center mb-1">
+                       <Car className="h-3 w-3 text-gray-500 mr-1" />
+                       <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Vehicle</span>
+                     </div>
+                     <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                       {s.vehicle_plate || s.plate_number}
+                     </p>
+                     <p className="text-xs text-gray-500 dark:text-gray-400">
+                       {s.vehicle_model_name || s.vehicle_model} {s.vehicle_model_category ? `(${s.vehicle_model_category})` : ""}
+                     </p>
+                   </div>
+
+                   <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-md">
+                     <div className="flex items-center mb-1">
+                       <Calendar className="h-3 w-3 text-gray-500 mr-1" />
+                       <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Date</span>
+                     </div>
+                     <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                       {s.service_date ? new Date(s.service_date).toLocaleDateString() : "—"}
+                     </p>
+                   </div>
+                 </div>
+
+                 {/* Service Details */}
+                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
+                   <div className="text-center p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+                     <div className="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">Service Type</div>
+                     <div className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                       {s.service_type_name || "—"}
+                     </div>
+                   </div>
+
+                   <div className="text-center p-2 bg-green-50 dark:bg-green-900/20 rounded-md">
+                     <div className="text-xs text-green-600 dark:text-green-400 font-medium mb-1">Amount</div>
+                     <div className="text-lg font-bold text-green-600 dark:text-green-400">
+                       {toMoney(s.total_amount)}
+                     </div>
+                   </div>
+
+                   <div className="text-center p-2 bg-purple-50 dark:bg-purple-900/20 rounded-md">
+                     <div className="text-xs text-purple-600 dark:text-purple-400 font-medium mb-1">Payment</div>
+                     <div className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                       {s.payment_method || "—"}
+                     </div>
+                   </div>
+
+                   <div className="text-center p-2 bg-orange-50 dark:bg-orange-900/20 rounded-md">
+                     <div className="text-xs text-orange-600 dark:text-orange-400 font-medium mb-1">Technician</div>
+                     <div className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                       {s.technician_name || (s.technician_id ? `Tech #${s.technician_id}` : "—")}
+                     </div>
+                   </div>
+                 </div>
+
+                 {/* Notes Section */}
+                 {s.notes && (
+                   <div className="mb-3">
+                     <div className="bg-yellow-50 dark:bg-yellow-900/20 border-l-2 border-yellow-400 p-2 rounded-r-md">
+                       <div className="flex items-start">
+                         <div className="flex-shrink-0">
+                           <div className="h-3 w-3 text-yellow-400">📝</div>
+                         </div>
+                         <div className="ml-2">
+                           <h4 className="text-xs font-medium text-yellow-800 dark:text-yellow-200">
+                             Notes
+                           </h4>
+                           <p className="mt-0.5 text-xs text-yellow-700 dark:text-yellow-300">
+                             {s.notes}
+                           </p>
+                         </div>
+                       </div>
+                     </div>
+                   </div>
+                 )}
+
+                 {/* Action Buttons */}
+                 <div className="flex justify-end gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                   <Link href={`/services/${s.id}`}>
+                     <Button variant="outline" size="sm" className="px-3 text-xs">
+                       <Eye className="h-3 w-3 mr-1" />
+                       View
+                     </Button>
+                   </Link>
+                   <Button
+                     variant="outline"
+                     size="sm"
+                     onClick={() => handleChangePayment(s.id, s.payment_status)}
+                     className="px-3 text-xs border-yellow-300 text-yellow-700 hover:bg-yellow-50 dark:border-yellow-600 dark:text-yellow-300 dark:hover:bg-yellow-900/20"
+                   >
+                     <CreditCard className="h-3 w-3 mr-1" />
+                     Payment
+                   </Button>
+                   <Link href={`/services/${s.id}/invoice`}>
+                     <Button size="sm" className="px-3 text-xs bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700">
+                       <DollarSign className="h-3 w-3 mr-1" />
+                       Invoice
+                     </Button>
+                   </Link>
+                 </div>
+               </CardContent>
+             </Card>
+           ))}
+         </div>
+       )}
 
       {/* Pagination Controls */}
       {rows.length > 0 && (
@@ -529,7 +450,7 @@ export default function ServicesPage() {
 
       {/* Payment Change Modal */}
       {showPaymentModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
           <Card className="w-full max-w-md mx-4">
             <CardContent className="p-6">
               <h3 className="text-lg font-semibold mb-4">Change Payment Status</h3>

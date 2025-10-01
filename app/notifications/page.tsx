@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Bell, MessageSquare, Mail, Phone, Plus, User, Calendar, Send } from "lucide-react"
+import { useLanguage } from "@/lib/language-context"
 
 interface Notification {
   id: string
@@ -38,6 +38,7 @@ interface FollowUpRecord {
 }
 
 export default function NotificationsPage() {
+  const { t } = useLanguage()
   const [notifications] = useState<Notification[]>([
     {
       id: "1",
@@ -220,7 +221,7 @@ export default function NotificationsPage() {
     <div className="p-4 lg:p-8 space-y-6">
       <div className="flex items-center space-x-4">
         <Bell className="h-8 w-8 text-blue-600" />
-        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">Customer Follow-up System</h1>
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">{t('nav.followups', 'Customer Follow-up System')}</h1>
       </div>
 
       {/* Summary Cards */}
@@ -491,7 +492,7 @@ export default function NotificationsPage() {
             {notifications.map((notification) => (
               <div
                 key={notification.id}
-                className="flex flex-col lg:flex-row lg:items-center justify-between p-4 border rounded-lg hover:bg-gray-50 space-y-4 lg:space-y-0"
+                className="flex flex-col lg:flex-row lg:items-center justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 space-y-4 lg:space-y-0 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               >
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-2">
@@ -553,7 +554,7 @@ export default function NotificationsPage() {
             {followUps.map((followUp) => (
               <div
                 key={followUp.id}
-                className="flex flex-col lg:flex-row lg:items-start justify-between p-4 border rounded-lg hover:bg-gray-50 space-y-4 lg:space-y-0"
+                className="flex flex-col lg:flex-row lg:items-start justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 space-y-4 lg:space-y-0 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               >
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-2">
@@ -590,25 +591,25 @@ export default function NotificationsPage() {
 
                   <div className="space-y-2 text-sm">
                     <div>
-                      <span className="font-medium text-gray-700">Reason:</span>
-                      <p className="text-gray-600">{followUp.reason}</p>
+                      <span className="font-medium text-gray-700 dark:text-gray-300">Reason:</span>
+                      <p className="text-gray-600 dark:text-gray-400">{followUp.reason}</p>
                     </div>
                     {followUp.issues && (
                       <div>
-                        <span className="font-medium text-gray-700">Issues:</span>
-                        <p className="text-gray-600">{followUp.issues}</p>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">Issues:</span>
+                        <p className="text-gray-600 dark:text-gray-400">{followUp.issues}</p>
                       </div>
                     )}
                     {followUp.resolution && (
                       <div>
-                        <span className="font-medium text-gray-700">Resolution:</span>
-                        <p className="text-gray-600">{followUp.resolution}</p>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">Resolution:</span>
+                        <p className="text-gray-600 dark:text-gray-400">{followUp.resolution}</p>
                       </div>
                     )}
                     {followUp.notes && (
                       <div>
-                        <span className="font-medium text-gray-700">Notes:</span>
-                        <p className="text-gray-600">{followUp.notes}</p>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">Notes:</span>
+                        <p className="text-gray-600 dark:text-gray-400">{followUp.notes}</p>
                       </div>
                     )}
                   </div>
@@ -636,7 +637,7 @@ export default function NotificationsPage() {
           {followUps.length === 0 && (
             <div className="text-center py-12">
               <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No follow-up records found.</p>
+              <p className="text-gray-500 dark:text-gray-400">No follow-up records found.</p>
             </div>
           )}
         </CardContent>

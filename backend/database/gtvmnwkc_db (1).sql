@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Sep 26, 2025 at 12:53 AM
+-- Generation Time: Oct 01, 2025 at 02:06 PM
 -- Server version: 11.4.8-MariaDB-cll-lve
 -- PHP Version: 8.3.25
 
@@ -33,6 +33,7 @@ CREATE TABLE `bookings` (
   `customer_data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`customer_data`)),
   `vehicle_data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`vehicle_data`)),
   `service_type_id` int(11) NOT NULL,
+  `vehicle_model_id` int(11) DEFAULT NULL,
   `booking_date` date NOT NULL,
   `booking_time` time NOT NULL,
   `status` enum('confirmed','in_progress','completed','cancelled','no_show') DEFAULT 'confirmed',
@@ -45,16 +46,16 @@ CREATE TABLE `bookings` (
 -- Dumping data for table `bookings`
 --
 
-INSERT INTO `bookings` (`id`, `phone`, `customer_data`, `vehicle_data`, `service_type_id`, `booking_date`, `booking_time`, `status`, `notes`, `created_at`, `updated_at`) VALUES
-(2, '0123456789', '{\"name\":\"Test Customer\",\"phone\":\"0123456789\",\"email\":\"test@example.com\",\"address\":\"Test Address\"}', '{\"plate_number\":\"TEST-123\",\"model\":\"SOBEN\",\"vin_number\":\"TEST123456789\",\"year\":2024}', 1, '2024-08-30', '10:00:00', 'in_progress', 'Test booking for API testing', '2025-08-29 11:24:11', '2025-08-29 11:38:58'),
-(3, '0969686484', '{\"name\":\"Koemly\",\"phone\":\"0969686484\",\"email\":\"\",\"address\":\"\"}', '{\"plate_number\":\"SOBEN 2AD-4965\",\"model\":\"SOBEN\",\"vin_number\":\"\",\"year\":2025}', 7, '2025-08-30', '11:30:00', 'completed', 'ffgg', '2025-08-29 11:34:12', '2025-08-29 15:58:39'),
-(4, '0123456789', '{\"name\":\"Sok Dara\",\"phone\":\"0123456789\",\"email\":\"sok.dara@example.com\",\"address\":\"456 Street 123, Phnom Penh\"}', '{\"plate_number\":\"SOBEN 2CD-7960\",\"model\":\"SOBEN\",\"vin_number\":\"VIN987654321\",\"year\":2024}', 1, '2024-08-30', '14:00:00', 'in_progress', 'Customer needs oil change and basic check up', '2025-08-29 16:03:23', '2025-08-29 16:04:17'),
-(5, '', '{\"name\": \"Sok Channtrea\", \"phone\": \"012345678\"}', '{\"plate_number\": \"ABC-1234\", \"model\": \"Toyota Camry\"}', 1, '2025-09-01', '09:00:00', 'in_progress', 'Regular oil change', '2025-08-31 09:30:45', '2025-09-13 08:31:53'),
-(6, '', '{\"name\": \"Yem Kunthea\", \"phone\": \"012345679\"}', '{\"plate_number\": \"XYZ-5678\", \"model\": \"Honda Civic\"}', 2, '2025-09-02', '10:00:00', 'in_progress', 'Brake service', '2025-08-31 09:30:45', '2025-09-13 10:41:15'),
-(7, '', '{\"name\": \"Sok Chea\", \"phone\": \"012345680\"}', '{\"plate_number\": \"DEF-9012\", \"model\": \"Ford Ranger\"}', 3, '2025-09-03', '11:00:00', 'in_progress', 'Engine tune-up', '2025-08-31 09:30:45', '2025-09-13 16:33:23'),
-(8, '096 852 2285', '{\"name\":\"fgg\",\"phone\":\"096 852 2285\",\"email\":\"\",\"address\":\"\"}', '{\"plate_number\":\"2AD-4965\",\"model\":\"SOBEN\",\"vin_number\":\"\",\"year\":2025}', 4, '2025-09-02', '11:00:00', 'in_progress', 'dg', '2025-09-01 14:02:39', '2025-09-01 17:14:43'),
-(9, '0969686484', '{\"name\":\"fgg\",\"phone\":\"0969686484\",\"email\":\"\",\"address\":\"\"}', '{\"plate_number\":\"2AD-4968\",\"model\":\"SOBEN\",\"vin_number\":\"\",\"year\":2025}', 2, '2025-09-13', '11:00:00', 'in_progress', NULL, '2025-09-13 08:13:05', '2025-09-13 08:13:18'),
-(10, 'e20180325', '{\"name\":\"Lyy- លី\",\"phone\":\"e20180325\",\"email\":\"\",\"address\":\"\"}', '{\"plate_number\":\"98778\",\"model\":\"KOUPREY\",\"vin_number\":\"\",\"year\":2025}', 13, '2025-09-13', '11:00:00', 'in_progress', NULL, '2025-09-13 08:46:16', '2025-09-13 08:46:24');
+INSERT INTO `bookings` (`id`, `phone`, `customer_data`, `vehicle_data`, `service_type_id`, `vehicle_model_id`, `booking_date`, `booking_time`, `status`, `notes`, `created_at`, `updated_at`) VALUES
+(2, '0123456789', '{\"name\":\"Test Customer\",\"phone\":\"0123456789\",\"email\":\"test@example.com\",\"address\":\"Test Address\"}', '{\"plate_number\":\"TEST-123\",\"model\":\"SOBEN\",\"vin_number\":\"TEST123456789\",\"year\":2024}', 1, 1, '2024-08-30', '10:00:00', 'in_progress', 'Test booking for API testing', '2025-08-29 11:24:11', '2025-09-30 18:40:14'),
+(3, '0969686484', '{\"name\":\"Koemly\",\"phone\":\"0969686484\",\"email\":\"\",\"address\":\"\"}', '{\"plate_number\":\"SOBEN 2AD-4965\",\"model\":\"SOBEN\",\"vin_number\":\"\",\"year\":2025}', 7, 1, '2025-08-30', '11:30:00', 'completed', 'ffgg', '2025-08-29 11:34:12', '2025-09-30 18:40:14'),
+(4, '0123456789', '{\"name\":\"Sok Dara\",\"phone\":\"0123456789\",\"email\":\"sok.dara@example.com\",\"address\":\"456 Street 123, Phnom Penh\"}', '{\"plate_number\":\"SOBEN 2CD-7960\",\"model\":\"SOBEN\",\"vin_number\":\"VIN987654321\",\"year\":\"2024\",\"current_km\":\"0\"}', 1, 1, '2024-08-30', '14:00:00', 'in_progress', 'Customer needs oil change and basic check up', '2025-08-29 16:03:23', '2025-09-30 18:40:14'),
+(5, '', '{\"name\": \"Sok Channtrea\", \"phone\": \"012345678\"}', '{\"plate_number\": \"ABC-1234\", \"model\": \"Toyota Camry\"}', 1, NULL, '2025-09-01', '09:00:00', 'in_progress', 'Regular oil change', '2025-08-31 09:30:45', '2025-09-13 08:31:53'),
+(6, '', '{\"name\": \"Yem Kunthea\", \"phone\": \"012345679\"}', '{\"plate_number\": \"XYZ-5678\", \"model\": \"Honda Civic\"}', 2, NULL, '2025-09-02', '10:00:00', 'in_progress', 'Brake service', '2025-08-31 09:30:45', '2025-09-13 10:41:15'),
+(7, '', '{\"name\":\"San Channoeun\",\"phone\":\"10993436\",\"email\":\"sanchannoeun@email.com\",\"address\":\"Phnom Penh\"}', '{\"plate_number\":\"DEF-9012\",\"model\":\"Ford Ranger\",\"vin_number\":\"3VWDX7AJ5DM123456\",\"year\":\"2021\",\"current_km\":\"50000\"}', 3, NULL, '2025-09-03', '11:00:00', 'in_progress', 'Engine tune-up', '2025-08-31 09:30:45', '2025-09-26 08:47:03'),
+(8, '096 852 2285', '{\"name\":\"fgg\",\"phone\":\"096 852 2285\",\"email\":\"\",\"address\":\"\"}', '{\"plate_number\":\"2AD-4965\",\"model\":\"SOBEN\",\"vin_number\":\"\",\"year\":2025}', 4, 1, '2025-09-02', '11:00:00', 'in_progress', 'dg', '2025-09-01 14:02:39', '2025-09-30 18:40:14'),
+(9, '0969686484', '{\"name\":\"fgg\",\"phone\":\"0969686484\",\"email\":\"\",\"address\":\"\"}', '{\"plate_number\":\"2AD-4968\",\"model\":\"SOBEN\",\"vin_number\":\"\",\"year\":2025}', 2, 1, '2025-09-13', '11:00:00', 'in_progress', NULL, '2025-09-13 08:13:05', '2025-09-30 18:40:14'),
+(10, 'e20180325', '{\"name\":\"koemly\",\"phone\":\"e20180325\",\"email\":\"admin@gmail.com\",\"address\":\"pp\"}', '{\"plate_number\":\"BTB 2BA-5456\",\"model\":\"KOUPREY\",\"vin_number\":\"LYUI8679THY567t\",\"year\":\"2023\",\"current_km\":\"0\"}', 13, 3, '2025-09-13', '12:00:00', 'in_progress', 'Test update', '2025-09-13 08:46:16', '2025-09-30 18:40:14');
 
 -- --------------------------------------------------------
 
@@ -127,9 +128,11 @@ INSERT INTO `customers` (`id`, `name`, `phone`, `address`, `email`, `created_at`
 (44, 'Ly Ly', '015526898', 'St2004', 'fr@gmail.com', '2025-09-01 17:43:55', '2025-09-01 17:43:55', 'Unknown Customer', 'customer@example.com', 'Address not provided'),
 (45, 'Sok Sopheap', '085 523 656', 'Toul Kork, Phnom Penh', 'sopheap@gmail.com', '2025-09-03 13:42:23', '2025-09-03 13:42:23', 'Unknown Customer', 'customer@example.com', 'Address not provided'),
 (46, 'Kim Thida', '087 57 65 78', 'Phnom Penh, Cambodia', 'thida123@gmail', '2025-09-03 14:09:08', '2025-09-03 14:09:08', 'Unknown Customer', 'customer@example.com', 'Address not provided'),
-(47, 'Lyy- លី', '5566', 'St2004', NULL, '2025-09-06 09:55:33', '2025-09-06 09:55:33', 'Unknown Customer', 'customer@example.com', 'Address not provided'),
+(47, 'Test', '123', NULL, NULL, '2025-09-06 09:55:33', '2025-09-26 10:47:39', 'Unknown Customer', 'customer@example.com', 'Address not provided'),
 (48, 'Hon Sovanna', '0965869874', 'Kompong Speu, Cambodia', 'vanna15@gmail.com', '2025-09-07 15:19:32', '2025-09-07 15:19:32', 'Unknown Customer', 'customer@example.com', 'Address not provided'),
-(49, 'Hon Sovanna', '095586247', 'Kompong Speu, Cambodia', 'vanna15@gmail.com', '2025-09-07 15:32:17', '2025-09-07 15:32:17', 'Unknown Customer', 'customer@example.com', 'Address not provided');
+(49, 'Hon Sovanna', '095586247', 'Kompong Speu, Cambodia', 'vanna15@gmail.com', '2025-09-07 15:32:17', '2025-09-07 15:32:17', 'Unknown Customer', 'customer@example.com', 'Address not provided'),
+(50, 'VANN RITHY', '0967448655', 'Kompong Speu, Cambodia dddd', 'ahpea88@gmail.com', '2025-09-30 18:11:39', '2025-09-30 18:14:02', 'Unknown Customer', 'customer@example.com', 'Address not provided'),
+(51, 'Test Customer', '0123456789', 'Test Address', 'test@example.com', '2025-09-30 19:24:40', '2025-09-30 19:24:40', 'Unknown Customer', 'customer@example.com', 'Address not provided');
 
 -- --------------------------------------------------------
 
@@ -227,6 +230,7 @@ INSERT INTO `inventory_categories` (`id`, `name`, `description`, `created_at`) V
 CREATE TABLE `inventory_items` (
   `id` int(11) NOT NULL,
   `category_id` int(11) NOT NULL,
+  `vehicle_model_id` int(11) DEFAULT NULL,
   `name` varchar(255) NOT NULL,
   `sku` varchar(50) DEFAULT NULL,
   `current_stock` int(11) NOT NULL DEFAULT 0,
@@ -243,26 +247,26 @@ CREATE TABLE `inventory_items` (
 -- Dumping data for table `inventory_items`
 --
 
-INSERT INTO `inventory_items` (`id`, `category_id`, `name`, `sku`, `current_stock`, `min_stock`, `max_stock`, `unit_price`, `supplier`, `last_restocked`, `created_at`, `updated_at`) VALUES
-(1, 1, 'Engine Oil 5W-30 (SOBEN)', 'OIL-5W30-SOB', 25, 10, 50, 15.00, 'GTV Parts Supply', '2025-07-01', '2025-08-25 16:27:30', '2025-08-25 16:27:30'),
-(2, 1, 'Engine Oil 0W-20 (KAIN)', 'OIL-0W20-KAI', 8, 10, 40, 18.00, 'GTV Parts Supply', '2025-06-28', '2025-08-25 16:27:30', '2025-08-25 16:27:30'),
-(3, 1, 'Engine Oil 5W-40 (KOUPREY)', 'OIL-5W40-KOU', 5, 8, 35, 16.50, 'GTV Parts Supply', '2025-07-02', '2025-08-25 16:27:30', '2025-08-31 09:30:45'),
-(4, 2, 'Oil Filter (Universal)', 'FILT-OIL-UNI', 12, 6, 30, 8.50, 'Auto Parts Co.', '2025-07-05', '2025-08-25 16:27:30', '2025-08-31 09:30:45'),
-(5, 2, 'Air Filter (SOBEN)', 'FILT-AIR-SOB', 18, 5, 20, 12.00, 'Auto Parts Co.', '2025-08-28', '2025-08-25 16:27:30', '2025-08-31 09:30:45'),
-(6, 2, 'Air Filter (KAIN)', 'FILT-AIR-KAI', 6, 5, 20, 14.00, 'Auto Parts Co.', '2025-06-25', '2025-08-25 16:27:30', '2025-09-07 15:32:19'),
-(7, 3, 'Brake Pads (Front)', 'BRAKE-PAD-F', 13, 4, 16, 45.00, 'Brake Systems Ltd.', '2025-08-28', '2025-08-25 16:27:30', '2025-09-07 15:19:35'),
-(8, 3, 'Brake Pads (Rear)', 'BRAKE-PAD-R', 5, 4, 16, 40.00, 'Brake Systems Ltd.', '2025-06-18', '2025-08-25 16:27:30', '2025-09-03 13:13:33'),
-(9, 3, 'Brake Fluid DOT 4', 'BRAKE-FLUID', 12, 6, 24, 8.00, 'Chemical Supply Co.', '2025-07-01', '2025-08-25 16:27:30', '2025-08-25 16:27:30'),
-(10, 5, 'Coolant Fluid', 'COOLANT-STD', 11, 8, 25, 6.50, 'Chemical Supply Co.', '2025-07-03', '2025-08-25 16:27:30', '2025-09-01 17:53:04'),
-(11, 5, 'Engine Cleaner', 'CLEAN-ENG', 8, 5, 20, 4.50, 'Chemical Supply Co.', '2025-06-30', '2025-08-25 16:27:30', '2025-08-25 16:27:30'),
-(12, 1, 'Oil Change System', 'SKU1259J', 18, 5, 50, 50.00, 'GTV Supplier', NULL, '2025-08-28 14:29:50', '2025-09-03 14:09:14'),
-(13, 1, 'Spark Plugs Set', 'SP-001', 85, 20, 100, 25.00, 'Auto Parts Co.', '2025-09-03', '2025-08-31 09:30:45', '2025-09-03 14:24:20'),
-(14, 2, 'Brake Pads Front', 'BP-F001', 8, 15, 50, 45.00, 'Brake Systems Ltd.', NULL, '2025-08-31 09:30:45', '2025-08-31 09:30:45'),
-(15, 2, 'Brake Pads Rear', 'BP-R001', 32, 15, 50, 40.00, 'Brake Systems Ltd.', '2025-09-02', '2025-08-31 09:30:45', '2025-09-01 17:13:39'),
-(16, 3, 'Motor Oil 5W-30', 'MO-001', 11, 25, 200, 15.00, 'Oil Suppliers Inc.', NULL, '2025-08-31 09:30:45', '2025-09-01 17:53:04'),
-(17, 4, 'Oil Filter', 'OF-001', 18, 30, 150, 8.00, 'Filter World', NULL, '2025-08-31 09:30:45', '2025-08-31 09:30:45'),
-(18, 5, 'Tire 205/55R16', 'T-001', 6, 10, 40, 120.00, 'Tire Center', NULL, '2025-08-31 09:30:45', '2025-08-31 09:30:45'),
-(19, 11, 'Oil Machine', 'SKU1259JMR', 5, 1, 50, 20.00, 'GTV Supplier', NULL, '2025-09-01 17:14:26', '2025-09-01 17:14:26');
+INSERT INTO `inventory_items` (`id`, `category_id`, `vehicle_model_id`, `name`, `sku`, `current_stock`, `min_stock`, `max_stock`, `unit_price`, `supplier`, `last_restocked`, `created_at`, `updated_at`) VALUES
+(1, 1, 1, 'Engine Oil 5W-30 (SOBEN)', 'OIL-5W30-SOB', 25, 10, 50, 15.00, 'GTV Parts Supply', '2025-07-01', '2025-08-25 16:27:30', '2025-09-30 18:40:14'),
+(2, 1, 2, 'Engine Oil 0W-20 (KAIN)', 'OIL-0W20-KAI', 8, 10, 40, 18.00, 'GTV Parts Supply', '2025-06-28', '2025-08-25 16:27:30', '2025-09-30 18:40:14'),
+(3, 1, 3, 'Engine Oil 5W-40 (KOUPREY)', 'OIL-5W40-KOU', 5, 8, 35, 16.50, 'GTV Parts Supply', '2025-07-02', '2025-08-25 16:27:30', '2025-09-30 18:40:14'),
+(4, 2, NULL, 'Oil Filter (Universal)', 'FILT-OIL-UNI', 12, 6, 30, 8.50, 'Auto Parts Co.', '2025-07-05', '2025-08-25 16:27:30', '2025-08-31 09:30:45'),
+(5, 2, 1, 'Air Filter (SOBEN)', 'FILT-AIR-SOB', 18, 5, 20, 12.00, 'Auto Parts Co.', '2025-08-28', '2025-08-25 16:27:30', '2025-09-30 18:40:14'),
+(6, 2, 2, 'Air Filter (KAIN)', 'FILT-AIR-KAI', 6, 5, 20, 14.00, 'Auto Parts Co.', '2025-06-25', '2025-08-25 16:27:30', '2025-09-30 18:40:14'),
+(7, 3, NULL, 'Brake Pads (Front)', 'BRAKE-PAD-F', 13, 4, 16, 45.00, 'Brake Systems Ltd.', '2025-08-28', '2025-08-25 16:27:30', '2025-09-07 15:19:35'),
+(8, 3, NULL, 'Brake Pads (Rear)', 'BRAKE-PAD-R', 5, 4, 16, 40.00, 'Brake Systems Ltd.', '2025-06-18', '2025-08-25 16:27:30', '2025-09-03 13:13:33'),
+(9, 3, NULL, 'Brake Fluid DOT 4', 'BRAKE-FLUID', 12, 6, 24, 8.00, 'Chemical Supply Co.', '2025-07-01', '2025-08-25 16:27:30', '2025-08-25 16:27:30'),
+(10, 5, NULL, 'Coolant Fluid', 'COOLANT-STD', 11, 8, 25, 6.50, 'Chemical Supply Co.', '2025-07-03', '2025-08-25 16:27:30', '2025-09-01 17:53:04'),
+(11, 5, NULL, 'Engine Cleaner', 'CLEAN-ENG', 8, 5, 20, 4.50, 'Chemical Supply Co.', '2025-06-30', '2025-08-25 16:27:30', '2025-08-25 16:27:30'),
+(12, 1, NULL, 'Oil Change System', 'SKU1259J', 18, 5, 50, 50.00, 'GTV Supplier', NULL, '2025-08-28 14:29:50', '2025-09-03 14:09:14'),
+(13, 1, NULL, 'Spark Plugs Set', 'SP-001', 85, 20, 100, 25.00, 'Auto Parts Co.', '2025-09-03', '2025-08-31 09:30:45', '2025-09-03 14:24:20'),
+(14, 2, NULL, 'Brake Pads Front', 'BP-F001', 8, 15, 50, 45.00, 'Brake Systems Ltd.', NULL, '2025-08-31 09:30:45', '2025-08-31 09:30:45'),
+(15, 2, NULL, 'Brake Pads Rear', 'BP-R001', 32, 15, 50, 40.00, 'Brake Systems Ltd.', '2025-09-02', '2025-08-31 09:30:45', '2025-09-01 17:13:39'),
+(16, 3, NULL, 'Motor Oil 5W-30', 'MO-001', 11, 25, 200, 15.00, 'Oil Suppliers Inc.', NULL, '2025-08-31 09:30:45', '2025-09-01 17:53:04'),
+(17, 4, NULL, 'Oil Filter', 'OF-001', 18, 30, 150, 8.00, 'Filter World', NULL, '2025-08-31 09:30:45', '2025-08-31 09:30:45'),
+(18, 5, NULL, 'Tire 205/55R16', 'T-001', 6, 10, 40, 120.00, 'Tire Center', NULL, '2025-08-31 09:30:45', '2025-08-31 09:30:45'),
+(19, 11, NULL, 'Oil Machine', 'SKU1259JMR', 5, 1, 50, 20.00, 'GTV Supplier', NULL, '2025-09-01 17:14:26', '2025-09-01 17:14:26');
 
 -- --------------------------------------------------------
 
@@ -398,7 +402,56 @@ INSERT INTO `login_attempts` (`id`, `email`, `ip_address`, `success`, `attempted
 (0, 'admin@rhtower.com', '175.100.10.154', 0, '2025-09-24 19:02:33', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'),
 (0, 'admin@rhtower.com', '175.100.10.154', 0, '2025-09-24 19:03:01', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'),
 (0, '0', '175.100.10.154', 1, '2025-09-24 19:03:57', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'),
-(0, '8', '103.206.70.79', 1, '2025-09-26 04:17:41', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36');
+(0, '8', '103.206.70.79', 1, '2025-09-26 04:17:41', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:01:20', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'),
+(0, '0', '103.206.70.79', 1, '2025-09-26 05:03:11', 'unknown'),
+(0, '0', '103.206.70.79', 1, '2025-09-26 05:03:11', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:06:26', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:06:27', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:09:16', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:09:17', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:10:24', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:10:25', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:11:44', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:11:45', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:14:30', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:14:31', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:17:28', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:17:29', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:19:31', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:19:32', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:21:16', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:21:17', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:22:08', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:22:09', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:23:20', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:23:21', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:29:35', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:29:36', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:45:51', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:45:52', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:50:24', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:50:25', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:52:00', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:52:01', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:52:34', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:52:35', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:53:05', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 05:53:06', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 06:15:52', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 06:15:53', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 06:16:19', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'),
+(0, 'ahpea88@gmail.com', '103.206.70.79', 0, '2025-09-26 06:18:10', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 06:18:46', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 06:19:08', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 06:22:25', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 06:26:33', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 06:30:02', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 06:31:57', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 06:34:44', 'unknown'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 06:37:17', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 06:42:38', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'),
+(0, '8', '103.206.70.79', 1, '2025-09-26 06:43:06', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36');
 
 -- --------------------------------------------------------
 
@@ -442,6 +495,7 @@ CREATE TABLE `services` (
   `customer_type` enum('booking','walking') DEFAULT 'walking',
   `booking_id` int(11) DEFAULT NULL,
   `vehicle_id` int(11) NOT NULL,
+  `vehicle_model_id` int(11) DEFAULT NULL,
   `service_type_id` int(11) NOT NULL,
   `service_date` date NOT NULL,
   `current_km` int(11) DEFAULT NULL,
@@ -464,35 +518,36 @@ CREATE TABLE `services` (
 -- Dumping data for table `services`
 --
 
-INSERT INTO `services` (`id`, `invoice_number`, `customer_id`, `customer_type`, `booking_id`, `vehicle_id`, `service_type_id`, `service_date`, `current_km`, `next_service_km`, `next_service_date`, `total_amount`, `payment_method`, `payment_status`, `service_status`, `notes`, `service_detail`, `technician_id`, `sales_rep_id`, `created_at`, `updated_at`, `service_cost`) VALUES
-(1, 'SR25-0207', 1, 'walking', NULL, 1, 1, '2025-07-10', 15000, 20000, '2025-10-10', 450.00, 'aba', 'paid', 'completed', 'Oil change service completed', NULL, 3, 2, '2025-08-25 16:27:30', '2025-08-25 16:27:30', 100.00),
-(2, 'SR25-0206', 2, 'walking', NULL, 2, 2, '2025-06-17', 8000, 15000, '2025-09-17', 95.00, 'cash', 'paid', 'completed', 'Check sensor and tire pressure', NULL, 4, 1, '2025-08-25 16:27:30', '2025-08-25 16:27:30', 100.00),
-(3, 'SR25-0205', 3, 'walking', NULL, 3, 3, '2025-06-28', 25000, 30000, '2025-09-28', 280.00, 'aba', 'paid', 'completed', 'Comprehensive maintenance service', NULL, 5, 2, '2025-08-25 16:27:30', '2025-08-25 16:27:30', 100.00),
-(4, 'SR25-0204', 4, 'walking', NULL, 4, 1, '2025-07-07', 5000, 10000, '2025-10-07', 450.00, 'aba', 'paid', 'completed', 'Oil change and basic check', NULL, 6, 1, '2025-08-25 16:27:30', '2025-08-25 16:27:30', 100.00),
-(5, 'SR25-0203', 5, 'walking', NULL, 5, 8, '2025-06-09', 18000, 23000, '2025-09-09', 180.00, 'aba', 'paid', 'completed', 'Brake system repair', NULL, 4, 2, '2025-08-25 16:27:30', '2025-08-25 16:27:30', 100.00),
-(6, 'SR25-0202', 6, 'walking', NULL, 6, 7, '2025-07-07', 44000, 49000, '2025-10-07', 250.00, 'aba', 'paid', 'completed', 'Engine diagnostic and repair', NULL, 5, 1, '2025-08-25 16:27:30', '2025-08-25 16:27:30', 100.00),
-(7, 'SR25-0201', 7, 'walking', NULL, 7, 1, '2025-06-10', 300, 5000, '2025-09-10', 450.00, 'cash', 'paid', 'completed', 'First service - oil change', NULL, 6, 2, '2025-08-25 16:27:30', '2025-08-25 16:27:30', 100.00),
-(13, 'INV-001', 1, 'walking', NULL, 1, 1, '2025-08-31', 50000, NULL, NULL, 25.00, 'cash', 'paid', 'completed', 'Regular maintenance', NULL, NULL, NULL, '2025-08-31 09:30:45', '2025-08-31 09:30:45', 100.00),
-(14, 'INV-002', 2, 'walking', NULL, 2, 2, '2025-08-31', 45000, NULL, NULL, 150.00, 'aba', 'paid', 'completed', 'Brake service completed', NULL, NULL, NULL, '2025-08-31 09:30:45', '2025-08-31 09:30:45', 100.00),
-(15, 'INV-003', 3, 'walking', NULL, 3, 3, '2025-08-31', 30000, NULL, NULL, 200.00, 'card', 'paid', 'completed', 'Engine tune-up', NULL, NULL, NULL, '2025-08-31 09:30:45', '2025-08-31 09:30:45', 100.00),
-(16, 'INV-004', 4, 'walking', NULL, 4, 4, '2025-08-30', 60000, NULL, NULL, 300.00, 'bank_transfer', 'paid', 'completed', 'AC repair', NULL, NULL, NULL, '2025-08-31 09:30:45', '2025-08-31 09:30:45', 100.00),
-(17, 'INV-005', 5, 'walking', NULL, 5, 5, '2025-08-29', 25000, NULL, NULL, 40.00, 'cash', 'paid', 'completed', 'Tire rotation', NULL, NULL, NULL, '2025-08-31 09:30:45', '2025-08-31 09:30:45', 100.00),
-(18, 'INV-006', 1, 'walking', NULL, 1, 6, '2025-08-28', 52000, NULL, NULL, 120.00, 'aba', 'paid', 'completed', 'Battery replacement', NULL, NULL, NULL, '2025-08-31 09:30:45', '2025-08-31 09:30:45', 100.00),
-(19, 'INV-007', 2, 'walking', NULL, 2, 1, '2025-08-27', 47000, NULL, NULL, 25.00, 'cash', 'paid', 'completed', 'Oil change', NULL, NULL, NULL, '2025-08-31 09:30:45', '2025-08-31 09:30:45', 100.00),
-(20, 'INV-008', 3, 'walking', NULL, 3, 2, '2025-08-26', 32000, NULL, NULL, 150.00, 'card', 'pending', 'pending', 'Brake service scheduled', NULL, NULL, NULL, '2025-08-31 09:30:45', '2025-08-31 09:30:45', 100.00),
-(21, 'INV-009', 4, 'walking', NULL, 4, 3, '2025-08-25', 62000, NULL, NULL, 200.00, 'bank_transfer', 'pending', 'in_progress', 'Engine work in progress', NULL, NULL, NULL, '2025-08-31 09:30:45', '2025-08-31 09:30:45', 100.00),
-(22, 'INV-010', 5, 'walking', NULL, 5, 4, '2025-08-24', 27000, NULL, NULL, 300.00, 'aba', 'pending', 'pending', 'AC service scheduled', NULL, NULL, NULL, '2025-08-31 09:30:45', '2025-08-31 09:30:45', 100.00),
-(23, 'INV-011', 1, 'walking', NULL, 1, 1, '2025-08-21', 53000, NULL, NULL, 25.00, 'cash', 'pending', 'pending', 'Overdue oil change', NULL, NULL, NULL, '2025-08-31 09:30:45', '2025-08-31 09:30:45', 100.00),
-(24, 'INV-012', 2, 'walking', NULL, 2, 2, '2025-08-16', 48000, NULL, NULL, 150.00, 'aba', 'pending', 'pending', 'Overdue brake service', NULL, NULL, NULL, '2025-08-31 09:30:45', '2025-08-31 09:30:45', 100.00),
-(27, 'INV-20250902-3334', 44, 'walking', NULL, 46, 14, '2025-09-01', 14998, 25000, '2025-12-31', 21.50, 'aba', 'pending', 'pending', NULL, NULL, 4, 1, '2025-09-01 17:53:00', '2025-09-01 17:53:00', 100.00),
-(28, 'INV-20250902-6349', 42, 'walking', NULL, 47, 14, '2025-09-01', 158000, 50000, '2025-11-30', 100.00, 'aba', 'pending', 'pending', NULL, NULL, 7, 8, '2025-09-01 18:03:11', '2025-09-01 18:03:11', 100.00),
-(29, 'INV-20250903-4247', 11, 'walking', NULL, 11, 14, '2025-09-03', 18000, 25000, '2025-10-03', 90.00, 'aba', 'pending', 'pending', NULL, NULL, 4, 3, '2025-09-03 13:13:32', '2025-09-03 13:13:32', 100.00),
-(30, 'INV-20250903-7277', 46, 'walking', NULL, 48, 14, '2025-09-03', 10000, 15000, '2025-11-03', 200.00, 'aba', 'pending', 'pending', '-Add more fix to the part as mention above', NULL, 4, 8, '2025-09-03 14:09:11', '2025-09-03 14:09:11', 100.00),
-(31, 'INV-20250906-2478', 47, 'walking', NULL, 49, 14, '2025-09-06', NULL, NULL, NULL, 50.00, 'cash', 'pending', 'pending', NULL, '45566', NULL, NULL, '2025-09-06 09:55:34', '2025-09-06 09:55:34', 100.00),
-(32, 'INV-20250906-7760', 11, 'walking', NULL, 50, 1, '2025-09-06', NULL, NULL, NULL, 20.00, 'cash', 'pending', 'pending', NULL, 'rtty', NULL, NULL, '2025-09-06 09:59:44', '2025-09-06 09:59:44', 100.00),
-(33, 'INV-20250906-1495', 43, 'walking', NULL, 51, 1, '2025-09-06', NULL, NULL, NULL, 20.00, 'cash', 'pending', 'pending', NULL, 'ggh', NULL, NULL, '2025-09-06 10:00:58', '2025-09-06 10:00:58', 100.00),
-(34, 'INV-20250907-1175', 48, 'walking', NULL, 52, 1, '2025-09-07', 15800, 25000, '2025-11-07', 65.00, 'aba', 'paid', 'completed', 'Change as the above for customer', '-Check oil and Change as customer wants', 4, 2, '2025-09-07 15:19:33', '2025-09-09 14:41:29', 100.00),
-(35, 'INV-20250907-9420', 49, 'walking', NULL, 53, 1, '2025-09-07', 16000, 25000, '2025-10-21', 34.00, 'aba', 'paid', 'completed', 'Add like it the above', 'Change Oil and Add Oil', 7, 8, '2025-09-07 15:32:18', '2025-09-07 15:53:30', 100.00);
+INSERT INTO `services` (`id`, `invoice_number`, `customer_id`, `customer_type`, `booking_id`, `vehicle_id`, `vehicle_model_id`, `service_type_id`, `service_date`, `current_km`, `next_service_km`, `next_service_date`, `total_amount`, `payment_method`, `payment_status`, `service_status`, `notes`, `service_detail`, `technician_id`, `sales_rep_id`, `created_at`, `updated_at`, `service_cost`) VALUES
+(1, 'SR25-0207', 1, 'walking', NULL, 1, 1, 1, '2025-07-10', 15000, 20000, '2025-10-10', 450.00, 'aba', 'paid', 'completed', 'Oil change service completed', NULL, 3, 2, '2025-08-25 16:27:30', '2025-09-30 18:40:14', 100.00),
+(2, 'SR25-0206', 2, 'walking', NULL, 2, 1, 2, '2025-06-17', 8000, 15000, '2025-09-17', 95.00, 'cash', 'paid', 'completed', 'Check sensor and tire pressure', NULL, 4, 1, '2025-08-25 16:27:30', '2025-09-30 18:40:14', 100.00),
+(3, 'SR25-0205', 3, 'walking', NULL, 3, 1, 3, '2025-06-28', 25000, 30000, '2025-09-28', 280.00, 'aba', 'paid', 'completed', 'Comprehensive maintenance service', NULL, 5, 2, '2025-08-25 16:27:30', '2025-09-30 18:40:14', 100.00),
+(4, 'SR25-0204', 4, 'walking', NULL, 4, 1, 1, '2025-07-07', 5000, 10000, '2025-10-07', 450.00, 'aba', 'paid', 'completed', 'Oil change and basic check', NULL, 6, 1, '2025-08-25 16:27:30', '2025-09-30 18:40:14', 100.00),
+(5, 'SR25-0203', 5, 'walking', NULL, 5, 1, 8, '2025-06-09', 18000, 23000, '2025-09-09', 180.00, 'aba', 'paid', 'completed', 'Brake system repair', NULL, 4, 2, '2025-08-25 16:27:30', '2025-09-30 18:40:14', 100.00),
+(6, 'SR25-0202', 6, 'walking', NULL, 6, 4, 7, '2025-07-07', 44000, 49000, '2025-10-07', 250.00, 'aba', 'paid', 'completed', 'Engine diagnostic and repair', NULL, 5, 1, '2025-08-25 16:27:30', '2025-09-30 18:40:14', 100.00),
+(7, 'SR25-0201', 7, 'walking', NULL, 7, 1, 1, '2025-06-10', 300, 5000, '2025-09-10', 450.00, 'cash', 'paid', 'completed', 'First service - oil change', NULL, 6, 2, '2025-08-25 16:27:30', '2025-09-30 18:40:14', 100.00),
+(13, 'INV-001', 1, 'walking', NULL, 1, 1, 1, '2025-08-31', 50000, NULL, NULL, 25.00, 'cash', 'paid', 'completed', 'Regular maintenance', NULL, NULL, NULL, '2025-08-31 09:30:45', '2025-09-30 18:40:14', 100.00),
+(14, 'INV-002', 2, 'walking', NULL, 2, 1, 2, '2025-08-31', 45000, NULL, NULL, 150.00, 'aba', 'paid', 'completed', 'Brake service completed', NULL, NULL, NULL, '2025-08-31 09:30:45', '2025-09-30 18:40:14', 100.00),
+(15, 'INV-003', 3, 'walking', NULL, 3, 1, 3, '2025-08-31', 30000, NULL, NULL, 200.00, 'card', 'paid', 'completed', 'Engine tune-up', NULL, NULL, NULL, '2025-08-31 09:30:45', '2025-09-30 18:40:14', 100.00),
+(16, 'INV-004', 4, 'walking', NULL, 4, 1, 4, '2025-08-30', 60000, NULL, NULL, 300.00, 'bank_transfer', 'paid', 'completed', 'AC repair', NULL, NULL, NULL, '2025-08-31 09:30:45', '2025-09-30 18:40:14', 100.00),
+(17, 'INV-005', 5, 'walking', NULL, 5, 1, 5, '2025-08-29', 25000, NULL, NULL, 40.00, 'cash', 'paid', 'completed', 'Tire rotation', NULL, NULL, NULL, '2025-08-31 09:30:45', '2025-09-30 18:40:14', 100.00),
+(18, 'INV-006', 1, 'walking', NULL, 1, 1, 6, '2025-08-28', 52000, NULL, NULL, 120.00, 'aba', 'paid', 'completed', 'Battery replacement', NULL, NULL, NULL, '2025-08-31 09:30:45', '2025-09-30 18:40:14', 100.00),
+(19, 'INV-007', 2, 'walking', NULL, 2, 1, 1, '2025-08-27', 47000, NULL, NULL, 25.00, 'cash', 'paid', 'completed', 'Oil change', NULL, NULL, NULL, '2025-08-31 09:30:45', '2025-09-30 18:40:14', 100.00),
+(20, 'INV-008', 3, 'walking', NULL, 3, 1, 2, '2025-08-26', 32000, NULL, NULL, 150.00, 'card', 'pending', 'pending', 'Brake service scheduled', NULL, NULL, NULL, '2025-08-31 09:30:45', '2025-09-30 18:40:14', 100.00),
+(21, 'INV-009', 4, 'walking', NULL, 4, 1, 3, '2025-08-25', 62000, NULL, NULL, 200.00, 'bank_transfer', 'pending', 'in_progress', 'Engine work in progress', NULL, NULL, NULL, '2025-08-31 09:30:45', '2025-09-30 18:40:14', 100.00),
+(22, 'INV-010', 5, 'walking', NULL, 5, 1, 4, '2025-08-24', 27000, NULL, NULL, 300.00, 'aba', 'pending', 'pending', 'AC service scheduled', NULL, NULL, NULL, '2025-08-31 09:30:45', '2025-09-30 18:40:14', 100.00),
+(23, 'INV-011', 1, 'walking', NULL, 1, 1, 1, '2025-08-21', 53000, NULL, NULL, 25.00, 'cash', 'pending', 'pending', 'Overdue oil change', NULL, NULL, NULL, '2025-08-31 09:30:45', '2025-09-30 18:40:14', 100.00),
+(24, 'INV-012', 2, 'walking', NULL, 2, 1, 2, '2025-08-16', 48000, NULL, NULL, 150.00, 'aba', 'pending', 'pending', 'Overdue brake service', NULL, NULL, NULL, '2025-08-31 09:30:45', '2025-09-30 18:40:14', 100.00),
+(27, 'INV-20250902-3334', 44, 'walking', NULL, 46, 3, 14, '2025-09-01', 14998, 25000, '2025-12-31', 21.50, 'aba', 'pending', 'pending', NULL, NULL, 4, 1, '2025-09-01 17:53:00', '2025-09-30 18:40:14', 100.00),
+(28, 'INV-20250902-6349', 42, 'walking', NULL, 47, 3, 14, '2025-09-01', 158000, 50000, '2025-11-30', 100.00, 'aba', 'pending', 'pending', NULL, NULL, 7, 8, '2025-09-01 18:03:11', '2025-09-30 18:40:14', 100.00),
+(29, 'INV-20250903-4247', 11, 'walking', NULL, 11, 3, 14, '2025-09-03', 18000, 25000, '2025-10-03', 90.00, 'aba', 'pending', 'pending', NULL, NULL, 4, 3, '2025-09-03 13:13:32', '2025-09-30 18:40:14', 100.00),
+(30, 'INV-20250903-7277', 46, 'walking', NULL, 48, 4, 14, '2025-09-03', 10000, 15000, '2025-11-03', 200.00, 'aba', 'pending', 'pending', '-Add more fix to the part as mention above', NULL, 4, 8, '2025-09-03 14:09:11', '2025-09-30 18:40:14', 100.00),
+(31, 'INV-20250906-2478', 47, 'walking', NULL, 49, 2, 14, '2025-09-06', NULL, NULL, NULL, 50.00, 'cash', 'pending', 'pending', NULL, '45566', NULL, NULL, '2025-09-06 09:55:34', '2025-09-30 18:40:14', 100.00),
+(32, 'INV-20250906-7760', 11, 'walking', NULL, 50, NULL, 1, '2025-09-06', NULL, NULL, NULL, 20.00, 'cash', 'pending', 'pending', NULL, 'rtty', NULL, NULL, '2025-09-06 09:59:44', '2025-09-30 18:40:14', 100.00),
+(33, 'INV-20250906-1495', 43, 'walking', NULL, 51, NULL, 1, '2025-09-06', NULL, NULL, NULL, 20.00, 'cash', 'pending', 'pending', NULL, 'ggh', NULL, NULL, '2025-09-06 10:00:58', '2025-09-30 18:40:14', 100.00),
+(34, 'INV-20250907-1175', 48, 'walking', NULL, 52, 2, 1, '2025-09-07', 15800, 25000, '2025-11-07', 65.00, 'aba', 'paid', 'completed', 'Change as the above for customer', '-Check oil and Change as customer wants', 4, 2, '2025-09-07 15:19:33', '2025-09-30 18:40:14', 100.00),
+(35, 'INV-20250907-9420', 49, 'walking', NULL, 53, 3, 1, '2025-09-07', NULL, NULL, NULL, 50.00, 'cash', 'paid', 'completed', 'Updated service', 'Change Oil and Add Oil', NULL, NULL, '2025-09-07 15:32:18', '2025-09-30 18:40:14', 50.00),
+(0, 'INV-251001-5864', 51, 'walking', NULL, 101, NULL, 1, '2025-10-01', NULL, NULL, NULL, 75.00, 'cash', 'paid', 'completed', 'Regular oil change service', '', NULL, NULL, '2025-09-30 19:35:01', '2025-09-30 19:35:01', 100.00);
 
 -- --------------------------------------------------------
 
@@ -577,9 +632,7 @@ INSERT INTO `service_items` (`id`, `service_id`, `description`, `quantity`, `uni
 (28, 32, 'Change Oil', 1, 20.00, 20.00, 'service', '2025-09-06 09:59:45'),
 (29, 33, 'Change Oil', 1, 20.00, 20.00, 'service', '2025-09-06 10:00:58'),
 (30, 34, 'Change Oil', 1, 20.00, 20.00, 'service', '2025-09-07 15:19:34'),
-(31, 34, 'Brake Pads (Front)', 1, 45.00, 45.00, 'part', '2025-09-07 15:19:34'),
-(32, 35, 'Change Oil', 1, 20.00, 20.00, 'service', '2025-09-07 15:32:19'),
-(33, 35, 'Air Filter (KAIN)', 1, 14.00, 14.00, 'part', '2025-09-07 15:32:19');
+(31, 34, 'Brake Pads (Front)', 1, 45.00, 45.00, 'part', '2025-09-07 15:19:34');
 
 -- --------------------------------------------------------
 
@@ -768,8 +821,9 @@ INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `full_name`, `r
 (5, 'GTV Admin', 'gtv@gmail.com', '$2a$12$VDghFTldBC1JLSX3WESBoOq/DZQvqdyGrq8m8Z5JPYzjOG1eqVBTS', 'GTV Motor', 'admin', NULL, 1, '2025-09-13 07:31:04', NULL, NULL, '2025-08-26 10:31:47', '2025-09-13 07:31:04'),
 (6, 'Chantrea', 'chantreagtv@gmail.com', '$2a$12$VciHRNe.68d4gERVIY3ypOsk/q8an.nnVnR6pBopF6mzcROqnnWy6', 'Sok Chantrea', 'manager', NULL, 1, NULL, NULL, NULL, '2025-08-31 09:56:46', '2025-08-31 09:56:46'),
 (7, 'new1', 'new@gmail.com', '$2a$12$WlH.4Zgu6Xj1UFDC5ZtxfOHq0PCAFEYLPRCMdjMmkuZRh7sxT77vS', 'new', 'technician', NULL, 1, '2025-08-31 10:03:10', NULL, NULL, '2025-08-31 10:02:41', '2025-08-31 10:03:10'),
-(8, 'CG', 'ahpea88@gmail.com', '$2a$12$XjRrJ/IlxYNg4.fyFZ.W1uVX6lX4sx7STrS0ALkyoyGcrwdyi7gy.', 'VANN RITHY', 'admin', 3, 1, '2025-09-26 04:17:41', NULL, NULL, '2025-09-15 14:19:31', '2025-09-26 04:17:41'),
-(0, 'ddd', 'admin@rhtower.com', '$2y$10$jxiuxHYKZ6iM1b5qtasMnewQH.cM9XwZsuPzVN4Vio55L6Y22LOEW', 'VANN RITHY', 'technician', NULL, 1, '2025-09-24 19:03:57', NULL, NULL, '2025-09-24 19:03:49', '2025-09-24 19:03:57');
+(8, 'CG', 'ahpea88@gmail.com', '$2a$12$XjRrJ/IlxYNg4.fyFZ.W1uVX6lX4sx7STrS0ALkyoyGcrwdyi7gy.', 'VANN RITHY', 'admin', 3, 1, '2025-09-26 14:19:34', NULL, NULL, '2025-09-15 14:19:31', '2025-09-26 14:19:34'),
+(0, 'ddd', 'admin@rhtower.com', '$2y$10$jxiuxHYKZ6iM1b5qtasMnewQH.cM9XwZsuPzVN4Vio55L6Y22LOEW', 'VANN RITHY', 'technician', NULL, 1, '2025-09-27 06:43:57', NULL, NULL, '2025-09-24 19:03:49', '2025-09-27 06:43:57'),
+(0, 'GTV', 'admin@gtvcambodia.com', '$2y$10$TGMNSuxdVsKjhG3BCCgikeYw9fy4xAcBEn8Qi.bM50Ee6d6AznU.e', 'Admin', 'admin', NULL, 1, '2025-09-27 06:43:57', NULL, NULL, '2025-09-26 15:03:55', '2025-09-27 06:43:57');
 
 -- --------------------------------------------------------
 
@@ -817,7 +871,55 @@ INSERT INTO `user_sessions` (`id`, `user_id`, `expires_at`, `created_at`, `updat
 ('e2f36fd0c9f675b1dd0f12ea4b583c35f2c5bcf1bad5d42058cc209152aa7d9be3282e8aa0405285feebb25453bcc5cc6f6e4c8e0fc0692f810e60bc5d469a18', 5, '2025-09-03 14:41:07', '2025-08-27 14:41:07', '2025-08-27 14:41:07'),
 ('f89b11b41e3b3ba0048e45946dbf0a3920fdff8b3381e70c02e323d6dd658449bb9e290d8f149d9aaaff67ee7aa430a3eaf0ba828ed59fab0bfc947dcf4aeb20', 8, '2025-09-22 14:19:40', '2025-09-15 14:19:40', '2025-09-15 14:19:40'),
 ('b6fc35c038a28968833a8af6467512fd1bd282e5c36dabf1a81c7a5a3a170ad5', 0, '2025-10-02 06:03:57', '2025-09-24 19:03:57', '2025-09-24 19:03:57'),
-('8990cacf2ec222f91e175c3f75d6ebde45a3a8ee84f824717d1669f1286dd2ec', 8, '2025-10-03 15:17:41', '2025-09-26 04:17:41', '2025-09-26 04:17:41');
+('8990cacf2ec222f91e175c3f75d6ebde45a3a8ee84f824717d1669f1286dd2ec', 8, '2025-10-03 15:17:41', '2025-09-26 04:17:41', '2025-09-26 04:17:41'),
+('3d2efcd8d16452916bc396b8fea2afd961d82765e427ae92b52d3f3eaa62ff13', 8, '2025-10-03 16:01:20', '2025-09-26 05:01:20', '2025-09-26 05:01:20'),
+('2e966e6a6bde6dff1b29b9077164ba60a098a92ec3abb5fbf4297851743090dc', 0, '2025-10-03 16:03:11', '2025-09-26 05:03:11', '2025-09-26 05:03:11'),
+('a9b00367f0d320b5bbfcfdb7ea41815b4f9011fa8f74721988e26fbccb073d58', 0, '2025-10-03 16:03:11', '2025-09-26 05:03:11', '2025-09-26 05:03:11'),
+('6d19aba8f78d031b51bf19b1bb627eacb76a30836dcd059b5830483375e6c6f3', 8, '2025-10-03 16:06:26', '2025-09-26 05:06:26', '2025-09-26 05:06:26'),
+('08c77292faa851710f81eb50c2a57f4c627bcf7c3d64a495464609eeba5f5f12', 8, '2025-10-03 16:06:27', '2025-09-26 05:06:27', '2025-09-26 05:06:27'),
+('fa2999d54de5676d2370d6c47e86e85c278f0f95cbcb607d3a25ea2cf7e3ffec', 8, '2025-10-03 16:09:16', '2025-09-26 05:09:16', '2025-09-26 05:09:16'),
+('add064ef29671ec26f090e226560d3f174d8186d5ca91ff54362531f81706b70', 8, '2025-10-03 16:09:17', '2025-09-26 05:09:17', '2025-09-26 05:09:17'),
+('636fa9f4841c6bd70f663139331aea881c72ced2e4074d6a4bf5801ef3df73aa', 8, '2025-10-03 16:10:24', '2025-09-26 05:10:24', '2025-09-26 05:10:24'),
+('8570230c233700c2ec82ee3690802ddfca7735681b8a2365fd2c9bdf70b2ed8d', 8, '2025-10-03 16:10:25', '2025-09-26 05:10:25', '2025-09-26 05:10:25'),
+('6d69c337a6b5fa6cba6f10a9acca54b407d19edc9584c5697b5e8ad911bbd41a', 8, '2025-10-03 16:11:44', '2025-09-26 05:11:44', '2025-09-26 05:11:44'),
+('fa2dc93f1843d5b56b884cd31e6ed28e096c8fe0f300cf9c0753873f92be0149', 8, '2025-10-03 16:11:45', '2025-09-26 05:11:45', '2025-09-26 05:11:45'),
+('786b06ec1322e6d9db707fbcb06eb599d6069567c700edbb35462a119c17d78f', 8, '2025-10-03 16:14:30', '2025-09-26 05:14:30', '2025-09-26 05:14:30'),
+('1d4fa8f19f45561dea52327734b53c682261cb98b39ba097b6229cbfd3a53794', 8, '2025-10-03 16:14:31', '2025-09-26 05:14:31', '2025-09-26 05:14:31'),
+('503215a055d15d865aea934f3ff05b9d4f02c385cd76fc7b52a720dd25547d3f', 8, '2025-10-03 16:17:28', '2025-09-26 05:17:28', '2025-09-26 05:17:28'),
+('58aff1e6c8489806de07dbfee03ec9951c4bed1b16eb5cff2755f53ed71e1fac', 8, '2025-10-03 16:17:29', '2025-09-26 05:17:29', '2025-09-26 05:17:29'),
+('a51760ca5aea2488d046f94db78359add463de7f8f6886dd82404ee39ad0aad6', 8, '2025-10-03 16:19:31', '2025-09-26 05:19:31', '2025-09-26 05:19:31'),
+('28a8b1d42c1f5ae3f0962fcd74cbbb061275eacb537ba0d4161d15b953d979f8', 8, '2025-10-03 16:19:32', '2025-09-26 05:19:32', '2025-09-26 05:19:32'),
+('87fcb0770e9d2e1a221bf9032d3e8933f462f71fb9c6bc1c343f131d3204f86a', 8, '2025-10-03 16:21:16', '2025-09-26 05:21:16', '2025-09-26 05:21:16'),
+('0993043b72b3c2122836fffe791fa336333f128132f3bddf013cd17b435d232c', 8, '2025-10-03 16:21:17', '2025-09-26 05:21:17', '2025-09-26 05:21:17'),
+('f6e74db171d1ce71909ea14537d0be6e4799145a299ee029c8f74cd77c2cf271', 8, '2025-10-03 16:22:08', '2025-09-26 05:22:08', '2025-09-26 05:22:08'),
+('419743a76b4bf43ea7887d598d5208a84fbed499c816cee51d5b8864a71b7e44', 8, '2025-10-03 16:22:09', '2025-09-26 05:22:09', '2025-09-26 05:22:09'),
+('24a191b5bea76f434742efffbcbcc4c9d4cbbfe9c5e41494d98c7d61499c72a6', 8, '2025-10-03 16:23:20', '2025-09-26 05:23:20', '2025-09-26 05:23:20'),
+('02ebe09afcf505274e00be15eb11eeaff2947d3b203844dcf149d6c73c9e0b9f', 8, '2025-10-03 16:23:21', '2025-09-26 05:23:21', '2025-09-26 05:23:21'),
+('7eec52a06753cb5fc030a4a8cc7d8d44e030f5bb76aa90630c9875db39df4552', 8, '2025-10-03 16:29:35', '2025-09-26 05:29:35', '2025-09-26 05:29:35'),
+('e6de62737a3354875bd83a970866f247316ba8c6af9f0a39300d9e76f78af5bc', 8, '2025-10-03 16:29:36', '2025-09-26 05:29:36', '2025-09-26 05:29:36'),
+('5a4c5c1bd18352f50cc2d46e7df416b093b5fe3af74272faeeb091cd311de1ab', 8, '2025-10-03 16:45:51', '2025-09-26 05:45:51', '2025-09-26 05:45:51'),
+('8f7c60ca81502826d65fcf1b7e3048a8239579f090b6c3bd5b048c80fdc3a545', 8, '2025-10-03 16:45:52', '2025-09-26 05:45:52', '2025-09-26 05:45:52'),
+('6844da60d9d3d2731b9c700f3342bfc014c75e1a793b685206d4815f0f208eb0', 8, '2025-10-03 16:50:24', '2025-09-26 05:50:24', '2025-09-26 05:50:24'),
+('32e1ae903a193fbf60264ffba41597b564b33f90327241cd16928cb47c9c7bb5', 8, '2025-10-03 16:50:25', '2025-09-26 05:50:25', '2025-09-26 05:50:25'),
+('c1dfad073b34f71115af1c2e21df66f235e61bc4042a79241f6d3fbf2fdafb8c', 8, '2025-10-03 16:52:00', '2025-09-26 05:52:00', '2025-09-26 05:52:00'),
+('b2e7d0162d329a872b8a37800e17cfe8db8018e25a77134a7ffd1d9eeb119680', 8, '2025-10-03 16:52:01', '2025-09-26 05:52:01', '2025-09-26 05:52:01'),
+('ae5b1418bb21f31ce2d7637c3a3c54448e0acbded48add3f9630a942a86f7eca', 8, '2025-10-03 16:52:34', '2025-09-26 05:52:34', '2025-09-26 05:52:34'),
+('315f0834f7894ddbf10c768f32eca5afe2d657ed29d9a12d5d9dd8489fd7b5ec', 8, '2025-10-03 16:52:35', '2025-09-26 05:52:35', '2025-09-26 05:52:35'),
+('d55630283206a109a276f57b1cab5bacc0ef70db63f21f5c673c8d68b29e9493', 8, '2025-10-03 16:53:05', '2025-09-26 05:53:05', '2025-09-26 05:53:05'),
+('8e65fe2d49150196237fab2a60b7aaed0d77f6e784ca6c94f4391fad2b0caf65', 8, '2025-10-03 16:53:06', '2025-09-26 05:53:06', '2025-09-26 05:53:06'),
+('f201cba570d4657b19e8d5e4053bc1cc53ee31ca933a0660fa97c327ed400a1b', 8, '2025-10-03 17:15:52', '2025-09-26 06:15:52', '2025-09-26 06:15:52'),
+('0ca1e2dcb30c51ab85b0637b6d2a9488d2392e7ddffaa3572ece841235ad2701', 8, '2025-10-03 17:15:53', '2025-09-26 06:15:53', '2025-09-26 06:15:53'),
+('e4fccdef145a91ef4d0b8ae047fab7345fa0a84a97a4a3107a77894a0eb652e3', 8, '2025-10-03 17:16:19', '2025-09-26 06:16:19', '2025-09-26 06:16:19'),
+('4073da70e3d5a36d7aba3bb8aca019e5cda6ed34fec178b7f95bb84f107d867b', 8, '2025-10-03 17:18:46', '2025-09-26 06:18:46', '2025-09-26 06:18:46'),
+('1a033143be8ea2ba80c315186df205e5aaa5a4eb506d2f7e05b3858660bd0cb8', 8, '2025-10-03 17:19:08', '2025-09-26 06:19:08', '2025-09-26 06:19:08'),
+('41090abd1ac1a21909180211f2ca14d1d3cf75f2ecde469e0591f6ee01f45083', 8, '2025-10-03 17:22:25', '2025-09-26 06:22:25', '2025-09-26 06:22:25'),
+('62314544b178061b06290d40108a35ce4869454f68fee1aac6ff96418376d467', 8, '2025-10-03 17:26:33', '2025-09-26 06:26:33', '2025-09-26 06:26:33'),
+('388f1dd5d159d859fcb79b6d4c5a28a26ad182481bcf487d17b35dc58c39914a', 8, '2025-10-03 17:30:02', '2025-09-26 06:30:02', '2025-09-26 06:30:02'),
+('8385e18a26cd54f0a5da3825abc5204928f7e7f3e9add983183a60d03c4d6690', 8, '2025-10-03 17:31:57', '2025-09-26 06:31:57', '2025-09-26 06:31:57'),
+('2353c5fe7714ff14a6ce0f62c797ee0de0bb41e806dc8acb79e694ebaadaaed1', 8, '2025-10-03 17:34:44', '2025-09-26 06:34:44', '2025-09-26 06:34:44'),
+('ae1af0fd4c45a0c63f91f84597948bc5a4d3dfdcbdd0924b933029fbab25ef71', 8, '2025-10-03 17:37:17', '2025-09-26 06:37:17', '2025-09-26 06:37:17'),
+('a7f6558f31e205ab563929ab6800f52121b90178e0d7dd541d857eb6e3f039e6', 8, '2025-10-03 17:42:38', '2025-09-26 06:42:38', '2025-09-26 06:42:38'),
+('e18317628c35854688d0f904254b1adda5b7dfa965922588020a0a616fb790af', 8, '2025-10-03 17:43:06', '2025-09-26 06:43:06', '2025-09-26 06:43:06');
 
 -- --------------------------------------------------------
 
@@ -829,7 +931,7 @@ CREATE TABLE `vehicles` (
   `id` int(11) NOT NULL,
   `customer_id` int(11) NOT NULL,
   `plate_number` varchar(20) NOT NULL,
-  `model` varchar(50) NOT NULL,
+  `vehicle_model_id` int(11) DEFAULT NULL,
   `vin_number` varchar(50) DEFAULT NULL,
   `year` int(11) DEFAULT NULL,
   `purchase_date` date DEFAULT NULL,
@@ -848,35 +950,77 @@ CREATE TABLE `vehicles` (
 -- Dumping data for table `vehicles`
 --
 
-INSERT INTO `vehicles` (`id`, `customer_id`, `plate_number`, `model`, `vin_number`, `year`, `purchase_date`, `warranty_start_date`, `warranty_end_date`, `warranty_km_limit`, `warranty_service_count`, `warranty_max_services`, `created_at`, `updated_at`, `vehicle_plate`, `current_km`) VALUES
-(1, 1, '2CD-7960', 'SOBEN', 'LUYJB2G27SA009637', 2023, '2023-01-15', '2023-01-15', '2026-01-15', 15000, 1, 2, '2025-08-25 16:27:30', '2025-08-30 17:13:47', 'PLATE001', 50000),
-(2, 2, '2CF-6609', 'SOBEN', 'LUYJB2G23SA009764', 2023, '2023-02-20', '2023-02-20', '2026-02-20', 15000, 1, 2, '2025-08-25 16:27:30', '2025-08-30 17:13:47', 'PLATE002', 50000),
-(3, 3, '2CD-3436', 'SOBEN', 'LUYJB2G25SA003013', 2022, '2022-08-10', '2022-08-10', '2025-08-10', 15000, 1, 2, '2025-08-25 16:27:30', '2025-08-30 17:13:47', 'PLATE003', 50000),
-(4, 4, '2CB-5461', 'SOBEN', 'LUYJB2G29SA003080', 2023, '2023-03-05', '2023-03-05', '2026-03-05', 15000, 1, 2, '2025-08-25 16:27:30', '2025-08-30 17:13:47', 'PLATE004', 50000),
-(5, 5, '2CD-7401', 'SOBEN', 'LUYJB2G22SA005317', 2023, '2023-04-12', '2023-04-12', '2026-04-12', 15000, 1, 2, '2025-08-25 16:27:30', '2025-08-30 17:13:47', 'PLATE005', 50000),
-(6, 6, '2BZ-8649', 'KRUSAR', 'L3AZ1CK36RYA90027', 2022, '2022-11-30', '2022-11-30', '2025-11-30', 15000, 1, 2, '2025-08-25 16:27:30', '2025-08-30 17:13:47', 'PLATE006', 50000),
-(7, 7, '2BY-0284', 'SOBEN', 'LUYJB2G25RA007895', 2023, '2023-05-18', '2023-05-18', '2026-05-18', 15000, 1, 2, '2025-08-25 16:27:30', '2025-08-30 17:13:47', 'PLATE007', 50000),
-(8, 8, '2D-0646', 'KESSOR', 'LJ12EKS33R4714414', 2022, '2022-09-25', '2022-09-25', '2025-09-25', 15000, 0, 2, '2025-08-25 16:27:30', '2025-08-30 17:13:47', 'PLATE008', 50000),
-(9, 9, '2BC-3456', 'KAIN', 'ghhjju', 2023, '2025-08-26', NULL, NULL, 15000, 0, 2, '2025-08-26 09:11:48', '2025-08-30 17:13:47', 'PLATE009', 50000),
-(11, 11, 'BTB 2BA-5456', 'KOUPREY', 'LYUI8679THY', 2020, NULL, NULL, NULL, 15000, 0, 2, '2025-08-27 15:51:32', '2025-08-30 17:13:47', 'PLATE011', 50000),
-(15, 15, 'KRUSAR BTB 2CD-3537', 'KRUSAR', 'LYUI8679THY', 2025, '2025-08-28', '2025-08-28', '2025-12-28', 15000, 0, 2, '2025-08-28 16:15:52', '2025-08-30 17:13:47', 'PLATE015', 50000),
-(17, 1, 'ABC-1234', 'Toyota Camry', '1HGBH41JXMN109186', 2020, '2020-03-15', NULL, NULL, 15000, 0, 2, '2025-08-31 09:27:46', '2025-09-01 16:30:11', 'ABC-1234', 50000),
-(18, 2, 'XYZ-5678', 'Honda Civic', '2T1BURHE0JC123456', 2019, '2019-07-22', NULL, NULL, 15000, 0, 2, '2025-08-31 09:27:46', '2025-09-01 16:30:11', 'XYZ-5678', 50000),
-(19, 3, 'DEF-9012', 'Ford Ranger', '3VWDX7AJ5DM123456', 2021, '2021-01-10', NULL, NULL, 15000, 0, 2, '2025-08-31 09:27:46', '2025-09-01 16:30:11', 'DEF-9012', 50000),
-(20, 4, 'GHI-3456', 'Nissan X-Trail', '4T1B11HK5JU123456', 2018, '2018-11-05', NULL, NULL, 15000, 0, 2, '2025-08-31 09:27:46', '2025-09-01 16:30:11', 'GHI-3456', 50000),
-(21, 5, 'JKL-7890', 'Mazda CX-5', '5YJSA1E47HF123456', 2022, '2022-05-20', NULL, NULL, 15000, 0, 2, '2025-08-31 09:27:46', '2025-09-01 16:30:11', 'JKL-7890', 50000),
-(42, 42, '2AD-4968', 'KOUPREY', 'LYUI8679THY567', 2025, '2025-09-01', '2025-09-01', '2025-10-01', 15000, 0, 2, '2025-09-01 14:20:27', '2025-09-01 16:30:11', '2AD-4968', 0),
-(43, 42, '2AD-4960', 'KOUPREY', 'LYUI8679THY567', 2023, '2025-09-01', '2025-10-01', '2025-10-31', 15000, 0, 2, '2025-09-01 14:50:41', '2025-09-01 16:30:11', '2AD-4960', 0),
-(44, 11, '2BD-5678', 'KESSOR', 'LYUI8679THY567', 2023, '2025-09-02', '2025-09-02', '2025-10-02', 15000, 0, 2, '2025-09-01 17:29:55', '2025-09-01 17:29:55', 'UNKNOWN', 0),
-(45, 44, '2CF-4567', 'KOUPREY', 'LYUI8679THY567t', 2005, '2025-09-02', '2025-09-02', '2025-12-02', 15000, 0, 2, '2025-09-01 17:43:56', '2025-09-01 17:43:56', 'UNKNOWN', 0),
-(46, 44, '156458', 'KOUPREY', 'LYUI8679THY567t', 2005, '2025-09-02', '2025-09-02', '2025-12-02', 15000, 0, 2, '2025-09-01 17:52:58', '2025-09-01 17:52:58', 'UNKNOWN', 0),
-(47, 42, 'BTB 2BA-5456', 'KOUPREY', 'LYUI8679THY567t', 2023, '2025-09-18', '2025-09-17', '2025-11-29', 15000, 0, 2, '2025-09-01 18:03:11', '2025-09-01 18:03:11', 'UNKNOWN', 0),
-(48, 46, '2BD-0987', 'KRUSAR', 'LYUI8679THY786RT', 2024, '2025-09-03', '2025-09-04', '2026-09-03', 15000, 0, 2, '2025-09-03 14:09:09', '2025-09-03 14:09:09', 'UNKNOWN', 0),
-(49, 47, 'BTB 2BA-5456', 'KAIN', 'LYUI8679THY', 2023, '2025-09-06', NULL, NULL, 15000, 0, 2, '2025-09-06 09:55:33', '2025-09-06 09:55:33', 'UNKNOWN', 0),
-(50, 11, '1T-2392', 'KESSOR', 'LYUI8679THY', 2018, '2025-09-06', NULL, NULL, 15000, 0, 2, '2025-09-06 09:59:43', '2025-09-06 09:59:43', 'UNKNOWN', 0),
-(51, 43, 'SOBEN 2AD-4965', 'KESSOR', NULL, NULL, NULL, NULL, NULL, 15000, 0, 2, '2025-09-06 10:00:58', '2025-09-06 10:00:58', 'UNKNOWN', 0),
-(52, 48, '2BH-4578', 'KAIN', 'KLT0976LJ76', 2024, '2025-09-08', '2025-09-08', '2025-10-08', 15000, 0, 2, '2025-09-07 15:19:33', '2025-09-07 15:19:33', 'UNKNOWN', 0),
-(53, 49, '2BH-4578', 'KOUPREY', 'KLT0976LJ76', 2024, '2025-09-08', '2025-09-08', '2025-10-08', 15000, 0, 2, '2025-09-07 15:32:18', '2025-09-07 15:32:18', 'UNKNOWN', 0);
+INSERT INTO `vehicles` (`id`, `customer_id`, `plate_number`, `vehicle_model_id`, `vin_number`, `year`, `purchase_date`, `warranty_start_date`, `warranty_end_date`, `warranty_km_limit`, `warranty_service_count`, `warranty_max_services`, `created_at`, `updated_at`, `vehicle_plate`, `current_km`) VALUES
+(1, 1, '2CD-7960', 1, 'LUYJB2G27SA009637', 2023, '2023-01-15', '2023-01-15', '2026-01-15', 15000, 1, 2, '2025-08-25 16:27:30', '2025-09-30 18:40:14', 'PLATE001', 50000),
+(2, 2, '2CF-6609', 1, 'LUYJB2G23SA009764', 2023, '2023-02-20', '2023-02-20', '2026-02-20', 15000, 1, 2, '2025-08-25 16:27:30', '2025-09-30 18:40:14', 'PLATE002', 50000),
+(3, 3, '2CD-3436', 1, 'LUYJB2G25SA003013', 2022, '2022-08-10', '2022-08-10', '2025-08-10', 15000, 1, 2, '2025-08-25 16:27:30', '2025-09-30 18:40:14', 'PLATE003', 50000),
+(4, 4, '2CB-5461', 1, 'LUYJB2G29SA003080', 2023, '2023-03-05', '2023-03-05', '2026-03-05', 15000, 1, 2, '2025-08-25 16:27:30', '2025-09-30 18:40:14', 'PLATE004', 50000),
+(5, 5, '2CD-7401', 1, 'LUYJB2G22SA005317', 2023, '2023-04-12', '2023-04-12', '2026-04-12', 15000, 1, 2, '2025-08-25 16:27:30', '2025-09-30 18:40:14', 'PLATE005', 50000),
+(6, 6, '2BZ-8649', 4, 'L3AZ1CK36RYA90027', 2022, '2022-11-30', '2022-11-30', '2025-11-30', 15000, 1, 2, '2025-08-25 16:27:30', '2025-09-30 18:40:14', 'PLATE006', 50000),
+(7, 7, '2BY-0284', 1, 'LUYJB2G25RA007895', 2023, '2023-05-18', '2023-05-18', '2026-05-18', 15000, 1, 2, '2025-08-25 16:27:30', '2025-09-30 18:40:14', 'PLATE007', 50000),
+(8, 8, '2D-0646', NULL, 'LJ12EKS33R4714414', 2022, '2022-09-25', '2022-09-25', '2025-09-25', 15000, 0, 2, '2025-08-25 16:27:30', '2025-09-30 18:40:14', 'PLATE008', 50000),
+(9, 9, '2BC-3456', 2, 'ghhjju', 2023, '2025-08-26', NULL, NULL, 15000, 0, 2, '2025-08-26 09:11:48', '2025-09-30 18:40:14', 'PLATE009', 50000),
+(11, 11, 'BTB 2BA-5456', 3, 'LYUI8679THY', 2020, NULL, NULL, NULL, 15000, 0, 2, '2025-08-27 15:51:32', '2025-09-30 18:40:14', 'PLATE011', 50000),
+(15, 15, 'KRUSAR BTB 2CD-3537', 4, 'LYUI8679THY', 2025, '2025-08-28', '2025-08-28', '2025-12-28', 15000, 0, 2, '2025-08-28 16:15:52', '2025-09-30 18:40:14', 'PLATE015', 50000),
+(17, 1, 'ABC-1234', NULL, '1HGBH41JXMN109186', 2020, '2020-03-15', NULL, NULL, 15000, 0, 2, '2025-08-31 09:27:46', '2025-09-01 16:30:11', 'ABC-1234', 50000),
+(18, 2, 'XYZ-5678', NULL, '2T1BURHE0JC123456', 2019, '2019-07-22', NULL, NULL, 15000, 0, 2, '2025-08-31 09:27:46', '2025-09-01 16:30:11', 'XYZ-5678', 50000),
+(19, 3, 'DEF-9012', NULL, '3VWDX7AJ5DM123456', 2021, '2021-01-10', NULL, NULL, 15000, 0, 2, '2025-08-31 09:27:46', '2025-09-01 16:30:11', 'DEF-9012', 50000),
+(20, 4, 'GHI-3456', NULL, '4T1B11HK5JU123456', 2018, '2018-11-05', NULL, NULL, 15000, 0, 2, '2025-08-31 09:27:46', '2025-09-01 16:30:11', 'GHI-3456', 50000),
+(21, 5, 'JKL-7890', NULL, '5YJSA1E47HF123456', 2022, '2022-05-20', NULL, NULL, 15000, 0, 2, '2025-08-31 09:27:46', '2025-09-01 16:30:11', 'JKL-7890', 50000),
+(42, 42, '2AD-4968', 3, 'LYUI8679THY567', 2025, '2025-09-01', '2025-09-01', '2025-10-01', 15000, 0, 2, '2025-09-01 14:20:27', '2025-09-30 18:40:14', '2AD-4968', 0),
+(43, 42, '2AD-4960', 3, 'LYUI8679THY567', 2023, '2025-09-01', '2025-10-01', '2025-10-31', 15000, 0, 2, '2025-09-01 14:50:41', '2025-09-30 18:40:14', '2AD-4960', 0),
+(44, 11, '2BD-5678', NULL, 'LYUI8679THY567', 2023, '2025-09-02', '2025-09-02', '2025-10-02', 15000, 0, 2, '2025-09-01 17:29:55', '2025-09-30 18:40:14', 'UNKNOWN', 0),
+(45, 44, '2CF-4567', 3, 'LYUI8679THY567t', 2005, '2025-09-02', '2025-09-02', '2025-12-02', 15000, 0, 2, '2025-09-01 17:43:56', '2025-09-30 18:40:14', 'UNKNOWN', 0),
+(46, 44, '156458', 3, 'LYUI8679THY567t', 2005, '2025-09-02', '2025-09-02', '2025-12-02', 15000, 0, 2, '2025-09-01 17:52:58', '2025-09-30 18:40:14', 'UNKNOWN', 0),
+(47, 42, 'BTB 2BA-5456', 3, 'LYUI8679THY567t', 2023, '2025-09-18', '2025-09-17', '2025-11-29', 15000, 0, 2, '2025-09-01 18:03:11', '2025-09-30 18:40:14', 'UNKNOWN', 0),
+(48, 46, '2BD-0987', 4, 'LYUI8679THY786RT', 2024, '2025-09-03', '2025-09-04', '2026-09-03', 15000, 0, 2, '2025-09-03 14:09:09', '2025-09-30 18:40:14', 'UNKNOWN', 0),
+(49, 47, 'BTB 2BA-5456', 2, 'LYUI8679THY', 2023, '2025-09-06', NULL, NULL, 15000, 0, 2, '2025-09-06 09:55:33', '2025-09-30 18:40:14', 'UNKNOWN', 0),
+(50, 11, '1T-2392', NULL, 'LYUI8679THY', 2018, '2025-09-06', NULL, NULL, 15000, 0, 2, '2025-09-06 09:59:43', '2025-09-30 18:40:14', 'UNKNOWN', 0),
+(51, 43, 'SOBEN 2AD-4965', NULL, NULL, NULL, NULL, NULL, NULL, 15000, 0, 2, '2025-09-06 10:00:58', '2025-09-30 18:40:14', 'UNKNOWN', 0),
+(52, 48, '2BH-4578', 2, 'KLT0976LJ76', 2024, '2025-09-08', '2025-09-08', '2025-10-08', 15000, 0, 2, '2025-09-07 15:19:33', '2025-09-30 18:40:14', 'UNKNOWN', 0),
+(53, 49, '2BH-4578', 3, 'KLT0976LJ76', 2024, '2025-09-08', '2025-09-08', '2025-10-08', 15000, 0, 2, '2025-09-07 15:32:18', '2025-09-30 18:40:14', 'UNKNOWN', 0),
+(100, 50, '2BV-25228', 2, 'SFASFS3234234', 2023, '2025-10-01', NULL, NULL, 100000, 0, 10, '2025-09-30 18:11:39', '2025-09-30 18:40:14', 'UNKNOWN', 0),
+(101, 51, 'TEST-789', 1, NULL, 2024, NULL, '2025-10-01', '2026-10-01', 15000, 0, 2, '2025-09-30 19:25:52', '2025-09-30 19:35:10', 'UNKNOWN', 0);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `vehicle_models`
+--
+
+CREATE TABLE `vehicle_models` (
+  `id` int(11) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `description` text DEFAULT NULL,
+  `category` varchar(50) DEFAULT 'Motorcycle',
+  `base_price` decimal(10,2) DEFAULT 0.00,
+  `estimated_duration` int(11) DEFAULT 60 COMMENT 'Service duration in minutes',
+  `warranty_km_limit` int(11) DEFAULT 15000 COMMENT 'Default warranty kilometers',
+  `warranty_max_services` int(11) DEFAULT 2 COMMENT 'Maximum warranty services',
+  `engine_type` varchar(50) DEFAULT '4-Stroke',
+  `cc_displacement` int(11) DEFAULT NULL COMMENT 'Engine displacement in CC',
+  `fuel_type` varchar(20) DEFAULT 'Gasoline',
+  `transmission` varchar(20) DEFAULT 'Manual',
+  `color_options` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Available colors as JSON array' CHECK (json_valid(`color_options`)),
+  `year_range` varchar(20) DEFAULT NULL COMMENT 'Model year range (e.g., 2020-2025)',
+  `specifications` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Technical specifications as JSON' CHECK (json_valid(`specifications`)),
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `vehicle_models`
+--
+
+INSERT INTO `vehicle_models` (`id`, `name`, `description`, `category`, `base_price`, `estimated_duration`, `warranty_km_limit`, `warranty_max_services`, `engine_type`, `cc_displacement`, `fuel_type`, `transmission`, `color_options`, `year_range`, `specifications`, `is_active`, `created_at`, `updated_at`) VALUES
+(1, 'SOBEN', 'Compact Entry SUV - Modern design with safety features, SUV styled for modernity', 'Compact SUV', 19999.00, 60, 15000, 2, '1.5L Petrol', 1500, 'Petrol', 'CVT', '[\"Black\", \"White\", \"Silver\", \"Blue\", \"Red\"]', '2020-2025', '{\"dimensions\": \"4,400 × 1,831 × 1,653 mm\", \"seating_capacity\": \"5 seats\", \"segment\": \"Compact Entry SUV\", \"features\": \"Modern design, safety features, SUV styled for modernity\", \"engine\": \"1.5L petrol with CVT transmission\", \"price_usd\": 19999, \"weight\": \"Approx. 1,400 kg\", \"fuel_capacity\": \"50L\", \"ground_clearance\": \"180mm\"}', 1, '2025-09-30 18:30:51', '2025-09-30 19:07:51'),
+(2, 'KAIN', 'Premium SUV - Flagship model with luxury features, bigger size and capacity', 'Premium SUV', 34950.00, 90, 20000, 3, '1.5T / 2.0T Turbo', 1500, 'Petrol', 'Automatic', '[\"Black\", \"White\", \"Silver\", \"Gold\", \"Blue\", \"Red\"]', '2020-2025', '{\"dimensions\": \"Larger than Soben and Caesar\", \"seating_capacity\": \"7 seats\", \"segment\": \"Premium SUV\", \"features\": \"Flagship SUV, higher luxury/equipment, bigger size and capacity\", \"engine_options\": \"1.5T (US$34,950) and 2.0T (US$37,950) turbo engines\", \"price_usd_15t\": 34950, \"price_usd_20t\": 37950, \"weight\": \"Approx. 1,800 kg\", \"fuel_capacity\": \"70L\", \"ground_clearance\": \"220mm\", \"luxury_features\": \"Premium interior, advanced safety, luxury equipment\"}', 1, '2025-09-30 18:30:51', '2025-09-30 19:07:51'),
+(3, 'KOUPREY', 'KOUPREY heavy-duty model', 'Heavy Duty', 2500.00, 90, 20000, 3, '4-Stroke', 250, 'Gasoline', 'Manual', '[\"Black\", \"White\", \"Green\"]', '2020-2025', '{\"weight\": \"180kg\", \"max_speed\": \"140 km/h\", \"fuel_capacity\": \"18L\", \"brakes\": \"Disc\", \"suspension\": \"Telescopic\"}', 1, '2025-09-30 18:30:51', '2025-09-30 18:30:51'),
+(4, 'KRUSAR', 'Dual-cab Pick-up Truck - Utility vehicle with offroad features, rebadged from VGV VX7', 'Pick-up Truck', 27999.00, 75, 18000, 3, '2.0T Turbo', 2000, 'Petrol', 'Manual/Automatic', '[\"Black\", \"White\", \"Silver\", \"Green\", \"Red\", \"Blue\"]', '2020-2025', '{\"dimensions\": \"Standard dual-cab pick-up truck size\", \"seating_capacity\": \"5 seats\", \"segment\": \"Dual-cab Pick-up Truck\", \"features\": \"Rebadged from VGV VX7, offroad/utility features, trim levels differ in equipment\", \"engine\": \"2.0T turbo petrol\", \"trim_options\": \"Half option (US$27,999) and Full option (US$29,999)\", \"price_usd_half\": 27999, \"price_usd_full\": 29999, \"weight\": \"Approx. 1,700 kg\", \"fuel_capacity\": \"65L\", \"ground_clearance\": \"250mm\", \"bed_capacity\": \"Standard pick-up bed\", \"offroad_features\": \"4WD capability, offroad suspension\"}', 1, '2025-09-30 18:30:51', '2025-09-30 19:07:51'),
+(6, 'TEST_MODEL_UPDATED', 'Updated test vehicle model', 'Test Updated', 600.00, 35, 12000, 2, '4-Stroke', 75, 'Gasoline', 'Automatic', '[\"Green\",\"Yellow\"]', '2024-2026', '{\"fuel_capacity\":\"6L\",\"weight\":\"85kg\",\"max_speed\":\"90 km\\/h\"}', 0, '2025-09-30 18:35:53', '2025-09-30 18:36:10'),
+(8, 'CAESAR', 'Mid-level SUV - Caesar and Caesar-Pro variants with higher equipment levels', 'Mid-level SUV', 26999.00, 70, 17000, 3, '1.5L Turbo', 1500, 'Petrol', 'Automatic', '[\"Black\", \"White\", \"Silver\", \"Blue\", \"Red\", \"Gold\"]', '2020-2025', '{\"dimensions\": \"Mid-size SUV dimensions\", \"seating_capacity\": \"5 seats\", \"segment\": \"Mid-level SUV\", \"features\": \"Options: half/full trim differences, higher equipment levels in Full\", \"engine\": \"1.5L Turbo (1.5T)\", \"variants\": \"Caesar 1.5T (US$26,999), Caesar Pro Half (US$29,999), Caesar Pro Full (US$32,999)\", \"price_usd_base\": 26999, \"price_usd_pro_half\": 29999, \"price_usd_pro_full\": 32999, \"weight\": \"Approx. 1,600 kg\", \"fuel_capacity\": \"60L\", \"ground_clearance\": \"200mm\"}', 1, '2025-09-30 18:58:30', '2025-09-30 19:07:51'),
+(11, 'SOBEN-P', 'MPV Multi-purpose Vehicle - Family van variant based on Soben platform', 'MPV', 21999.00, 65, 16000, 2, '1.5L Petrol', 1500, 'Petrol', 'CVT', '[\"Black\", \"White\", \"Silver\", \"Blue\", \"Red\", \"Green\"]', '2020-2025', '{\"dimensions\": \"MPV dimensions (larger than Soben)\", \"seating_capacity\": \"7-8 seats\", \"segment\": \"MPV Multi-purpose Vehicle\", \"features\": \"Family van, multi-purpose vehicle, based on Soben platform\", \"engine\": \"1.5L petrol with CVT transmission\", \"price_usd\": 21999, \"weight\": \"Approx. 1,500 kg\", \"fuel_capacity\": \"55L\", \"ground_clearance\": \"180mm\", \"family_features\": \"Flexible seating, large cargo space, family-oriented design\"}', 1, '2025-09-30 18:58:30', '2025-09-30 19:07:51');
 
 -- --------------------------------------------------------
 
@@ -924,7 +1068,8 @@ INSERT INTO `warranties` (`id`, `vehicle_id`, `warranty_type`, `start_date`, `en
 (22, 7, 'standard', '2023-05-18', '2026-05-18', 15000, 2, NULL, 'active', '2025-08-29 16:33:12', '2025-08-30 17:13:47', '2025-08-31', '2026-08-31', 500.00),
 (23, 8, 'standard', '2022-09-25', '2025-09-25', 15000, 2, NULL, 'active', '2025-08-29 16:33:12', '2025-08-30 17:13:47', '2025-08-31', '2026-08-31', 500.00),
 (24, 9, 'standard', '2025-08-26', '2028-08-26', 15000, 2, NULL, 'active', '2025-08-29 16:33:12', '2025-08-30 17:13:47', '2025-08-31', '2026-08-31', 500.00),
-(26, 15, 'standard', '2025-08-28', '2025-12-28', 15000, 2, NULL, 'active', '2025-08-29 16:33:12', '2025-08-30 17:13:47', '2025-08-31', '2026-08-31', 500.00);
+(26, 15, 'standard', '2025-08-28', '2025-12-28', 15000, 2, NULL, 'active', '2025-08-29 16:33:12', '2025-08-30 17:13:47', '2025-08-31', '2026-08-31', 500.00),
+(0, 101, 'standard', '2025-10-01', '2026-10-01', 15000, 2, 'Standard warranty coverage', 'active', '2025-09-30 19:35:10', '2025-09-30 19:35:10', '2025-09-30', '2026-09-30', 0.00);
 
 --
 -- Triggers `warranties`
@@ -975,6 +1120,7 @@ CREATE TABLE `warranty_services` (
   `id` int(11) NOT NULL,
   `warranty_id` int(11) NOT NULL,
   `service_id` int(11) NOT NULL,
+  `vehicle_model_id` int(11) DEFAULT NULL,
   `service_date` date NOT NULL,
   `km_at_service` int(11) NOT NULL,
   `service_type` varchar(100) NOT NULL,
@@ -987,14 +1133,14 @@ CREATE TABLE `warranty_services` (
 -- Dumping data for table `warranty_services`
 --
 
-INSERT INTO `warranty_services` (`id`, `warranty_id`, `service_id`, `service_date`, `km_at_service`, `service_type`, `cost_covered`, `notes`, `created_at`) VALUES
-(1, 1, 1, '2025-07-10', 15000, 'Oil Change - SOBEN', 450.00, NULL, '2025-08-29 16:25:33'),
-(2, 2, 2, '2025-06-17', 8000, 'Oil Change - KAIN', 95.00, NULL, '2025-08-29 16:25:33'),
-(3, 3, 3, '2025-06-28', 25000, 'Oil Change - KOUPREY', 280.00, NULL, '2025-08-29 16:25:33'),
-(4, 4, 4, '2025-07-07', 5000, 'Oil Change - SOBEN', 450.00, NULL, '2025-08-29 16:25:33'),
-(5, 5, 5, '2025-06-09', 18000, 'Brake System Repair', 180.00, NULL, '2025-08-29 16:25:33'),
-(6, 6, 6, '2025-07-07', 44000, 'Engine Repair', 250.00, NULL, '2025-08-29 16:25:33'),
-(7, 7, 7, '2025-06-10', 300, 'Oil Change - SOBEN', 450.00, NULL, '2025-08-29 16:25:33');
+INSERT INTO `warranty_services` (`id`, `warranty_id`, `service_id`, `vehicle_model_id`, `service_date`, `km_at_service`, `service_type`, `cost_covered`, `notes`, `created_at`) VALUES
+(1, 1, 1, 1, '2025-07-10', 15000, 'Oil Change - SOBEN', 450.00, NULL, '2025-08-29 16:25:33'),
+(2, 2, 2, 2, '2025-06-17', 8000, 'Oil Change - KAIN', 95.00, NULL, '2025-08-29 16:25:33'),
+(3, 3, 3, 3, '2025-06-28', 25000, 'Oil Change - KOUPREY', 280.00, NULL, '2025-08-29 16:25:33'),
+(4, 4, 4, 1, '2025-07-07', 5000, 'Oil Change - SOBEN', 450.00, NULL, '2025-08-29 16:25:33'),
+(5, 5, 5, NULL, '2025-06-09', 18000, 'Brake System Repair', 180.00, NULL, '2025-08-29 16:25:33'),
+(6, 6, 6, NULL, '2025-07-07', 44000, 'Engine Repair', 250.00, NULL, '2025-08-29 16:25:33'),
+(7, 7, 7, 1, '2025-06-10', 300, 'Oil Change - SOBEN', 450.00, NULL, '2025-08-29 16:25:33');
 
 -- --------------------------------------------------------
 
@@ -1024,6 +1170,110 @@ CREATE TABLE `warranty_status` (
   `days_remaining` int(7) DEFAULT NULL,
   `expiry_status` varchar(13) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `bookings`
+--
+ALTER TABLE `bookings`
+  ADD KEY `idx_bookings_vehicle_model_id` (`vehicle_model_id`);
+
+--
+-- Indexes for table `customers`
+--
+ALTER TABLE `customers`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `inventory_items`
+--
+ALTER TABLE `inventory_items`
+  ADD KEY `idx_inventory_vehicle_model_id` (`vehicle_model_id`);
+
+--
+-- Indexes for table `services`
+--
+ALTER TABLE `services`
+  ADD KEY `idx_services_vehicle_model_id` (`vehicle_model_id`);
+
+--
+-- Indexes for table `vehicles`
+--
+ALTER TABLE `vehicles`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_vehicle_model_id` (`vehicle_model_id`);
+
+--
+-- Indexes for table `vehicle_models`
+--
+ALTER TABLE `vehicle_models`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_name` (`name`);
+
+--
+-- Indexes for table `warranty_services`
+--
+ALTER TABLE `warranty_services`
+  ADD KEY `idx_warranty_services_vehicle_model_id` (`vehicle_model_id`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `customers`
+--
+ALTER TABLE `customers`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=52;
+
+--
+-- AUTO_INCREMENT for table `vehicles`
+--
+ALTER TABLE `vehicles`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=102;
+
+--
+-- AUTO_INCREMENT for table `vehicle_models`
+--
+ALTER TABLE `vehicle_models`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
+
+--
+-- Constraints for dumped tables
+--
+
+--
+-- Constraints for table `bookings`
+--
+ALTER TABLE `bookings`
+  ADD CONSTRAINT `fk_bookings_vehicle_model` FOREIGN KEY (`vehicle_model_id`) REFERENCES `vehicle_models` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Constraints for table `inventory_items`
+--
+ALTER TABLE `inventory_items`
+  ADD CONSTRAINT `fk_inventory_vehicle_model` FOREIGN KEY (`vehicle_model_id`) REFERENCES `vehicle_models` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Constraints for table `services`
+--
+ALTER TABLE `services`
+  ADD CONSTRAINT `fk_services_vehicle_model` FOREIGN KEY (`vehicle_model_id`) REFERENCES `vehicle_models` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Constraints for table `vehicles`
+--
+ALTER TABLE `vehicles`
+  ADD CONSTRAINT `fk_vehicles_vehicle_model` FOREIGN KEY (`vehicle_model_id`) REFERENCES `vehicle_models` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Constraints for table `warranty_services`
+--
+ALTER TABLE `warranty_services`
+  ADD CONSTRAINT `fk_warranty_services_vehicle_model` FOREIGN KEY (`vehicle_model_id`) REFERENCES `vehicle_models` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

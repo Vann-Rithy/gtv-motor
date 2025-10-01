@@ -8,9 +8,13 @@ import { Calendar, Users, AlertTriangle, DollarSign, Wrench, TrendingUp, Package
 import Link from "next/link"
 import { useDashboard } from "@/hooks/use-dashboard"
 import { useAuth } from "@/components/auth-provider"
+import { useLanguage } from "@/lib/language-context"
 
 export default function Dashboard() {
   const { user } = useAuth()
+  const { t, language } = useLanguage()
+
+
   const {
     stats,
     recentServices,
@@ -51,9 +55,9 @@ export default function Dashboard() {
           <CardContent className="pt-6">
             <div className="text-center">
               <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Error Loading Dashboard</h3>
+              <h3 className="text-lg font-semibold mb-2">{t('dashboard.error_loading', 'Error Loading Dashboard')}</h3>
               <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
-              <Button onClick={refreshDashboard}>Try Again</Button>
+              <Button onClick={refreshDashboard}>{t('dashboard.try_again', 'Try Again')}</Button>
             </div>
           </CardContent>
         </Card>
@@ -67,22 +71,22 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
-            Welcome back, {user?.full_name || user?.username || 'User'}! 👋
+            {t('dashboard.welcome', 'Welcome back')}, {user?.full_name || user?.username || 'User'}! 👋
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Here's what's happening with your business today.
+            {t('dashboard.subtitle', "Here's what's happening with your business today.")}
           </p>
         </div>
-        <Button onClick={refreshDashboard} disabled={dashboardLoading} className="shrink-0">
-          {dashboardLoading ? (
+        <Button onClick={refreshDashboard} disabled={isLoading} className="shrink-0">
+          {isLoading ? (
             <>
               <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-              Refreshing...
+              {t('dashboard.refreshing', 'Refreshing...')}
             </>
           ) : (
             <>
               <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
+              {t('dashboard.refresh', 'Refresh')}
             </>
           )}
         </Button>
@@ -92,52 +96,52 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dashboard.total_revenue', 'Total Revenue')}</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${stats?.totalRevenue?.toLocaleString() || '0'}</div>
+            <div className="text-2xl font-bold">${stats?.monthlyRevenue?.toLocaleString() || '0'}</div>
             <p className="text-xs text-muted-foreground">
-              +{stats?.revenueGrowth || 0}% from last month
+              +0% {t('dashboard.from_last_month', 'from last month')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dashboard.total_customers', 'Total Customers')}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.totalCustomers || '0'}</div>
             <p className="text-xs text-muted-foreground">
-              +{stats?.customerGrowth || 0} new this month
+              +0 {t('dashboard.new_this_month', 'new this month')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Services</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dashboard.active_services', 'Active Services')}</CardTitle>
             <Wrench className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.activeServices || '0'}</div>
+            <div className="text-2xl font-bold">{stats?.totalServices || '0'}</div>
             <p className="text-xs text-muted-foreground">
-              {stats?.completedServices || 0} completed today
+              {stats?.todayServices || 0} {t('dashboard.completed_today', 'completed today')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Bookings</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dashboard.pending_bookings', 'Pending Bookings')}</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.pendingBookings || '0'}</div>
             <p className="text-xs text-muted-foreground">
-              {stats?.todayBookings || 0} scheduled today
+              0 {t('dashboard.scheduled_today', 'scheduled today')}
             </p>
           </CardContent>
         </Card>
@@ -149,10 +153,10 @@ export default function Dashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5" />
-              Recent Services
+              {t('dashboard.recent_services', 'Recent Services')}
             </CardTitle>
             <CardDescription>
-              Latest service activities in your system
+              {t('dashboard.latest_activities', 'Latest service activities in your system')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -181,12 +185,12 @@ export default function Dashboard() {
             ) : (
               <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                 <Wrench className="h-12 w-12 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
-                <p>No recent services</p>
+                <p>{t('dashboard.no_services', 'No recent services')}</p>
               </div>
             )}
             <div className="mt-4">
               <Button variant="outline" asChild className="w-full">
-                <Link href="/services">View All Services</Link>
+                <Link href="/services">{t('dashboard.view_all_services', 'View All Services')}</Link>
               </Button>
             </div>
           </CardContent>
@@ -197,27 +201,27 @@ export default function Dashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-orange-500" />
-              Recent Alerts
+              {t('dashboard.recent_alerts', 'Recent Alerts')}
             </CardTitle>
             <CardDescription>
-              Important notifications and alerts
+              {t('dashboard.important_notifications', 'Important notifications and alerts')}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {alerts && alerts.length > 0 ? (
+            {alerts && alerts.upcomingAlerts && alerts.upcomingAlerts.length > 0 ? (
               <div className="space-y-3">
-                {alerts.slice(0, 5).map((alert) => (
+                {alerts.upcomingAlerts.slice(0, 5).map((alert) => (
                   <div key={alert.id} className="flex items-start gap-3 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
                     <AlertTriangle className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-orange-800 dark:text-orange-200">
-                        {alert.title}
+                        {alert.customer_name} - {alert.vehicle_plate}
                       </p>
                       <p className="text-xs text-orange-600 dark:text-orange-300 mt-1">
-                        {alert.description}
+                        {alert.message}
                       </p>
                       <p className="text-xs text-orange-500 mt-2">
-                        {new Date(alert.created_at).toLocaleDateString()}
+                        {new Date(alert.alert_date).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
@@ -226,12 +230,17 @@ export default function Dashboard() {
             ) : (
               <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                 <CheckCircle className="h-12 w-12 mx-auto mb-2 text-green-300" />
-                <p>No active alerts</p>
+                <p>{t('dashboard.no_alerts', 'No active alerts')}</p>
+                {alerts && alerts.totalAlerts > 0 && (
+                  <p className="text-xs mt-2 text-gray-400">
+                    ({alerts.totalAlerts} alerts in system - check Alerts page for details)
+                  </p>
+                )}
               </div>
             )}
             <div className="mt-4">
               <Button variant="outline" asChild className="w-full">
-                <Link href="/alerts">View All Alerts</Link>
+                <Link href="/alerts">{t('dashboard.view_all_alerts', 'View All Alerts')}</Link>
               </Button>
             </div>
           </CardContent>
@@ -241,9 +250,9 @@ export default function Dashboard() {
       {/* Quick Actions */}
       <Card>
         <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
+          <CardTitle>{t('dashboard.quick_actions', 'Quick Actions')}</CardTitle>
           <CardDescription>
-            Common tasks and shortcuts
+            {t('dashboard.common_tasks', 'Common tasks and shortcuts')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -251,25 +260,25 @@ export default function Dashboard() {
             <Button asChild className="h-auto p-4 flex-col gap-2">
               <Link href="/services/new">
                 <Wrench className="h-6 w-6" />
-                <span>New Service</span>
+                <span>{t('dashboard.new_service', 'New Service')}</span>
               </Link>
             </Button>
             <Button asChild variant="outline" className="h-auto p-4 flex-col gap-2">
               <Link href="/bookings/new">
                 <Calendar className="h-6 w-6" />
-                <span>New Booking</span>
+                <span>{t('dashboard.new_booking', 'New Booking')}</span>
               </Link>
             </Button>
             <Button asChild variant="outline" className="h-auto p-4 flex-col gap-2">
               <Link href="/customers/new">
                 <Users className="h-6 w-6" />
-                <span>New Customer</span>
+                <span>{t('dashboard.new_customer', 'New Customer')}</span>
               </Link>
             </Button>
             <Button asChild variant="outline" className="h-auto p-4 flex-col gap-2">
               <Link href="/inventory/add">
                 <Package className="h-6 w-6" />
-                <span>Add Inventory</span>
+                <span>{t('dashboard.add_inventory', 'Add Inventory')}</span>
               </Link>
             </Button>
           </div>

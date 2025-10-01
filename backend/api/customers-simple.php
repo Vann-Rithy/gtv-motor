@@ -1,7 +1,7 @@
 <?php
 /**
  * Customers API - Simplified Version
- * GTV Motor PHP Backend - Debug Version
+ * GTV Motor PHP Backend
  */
 
 require_once __DIR__ . '/../config/config.php';
@@ -9,70 +9,38 @@ require_once __DIR__ . '/../includes/Request.php';
 require_once __DIR__ . '/../includes/Response.php';
 
 try {
-    // Get token from URL parameter first, then Authorization header
-    $token = $_GET['token'] ?? Request::authorization();
-
-    if (!$token) {
-        Response::unauthorized('No authorization token provided');
-    }
-
-    // Remove 'Bearer ' prefix if present
-    $token = str_replace('Bearer ', '', $token);
-
-    // Simple token validation (base64 encoded JSON)
-    try {
-        $payload = json_decode(base64_decode($token), true);
-
-        if (!$payload || !isset($payload['user_id']) || !isset($payload['exp'])) {
-            Response::unauthorized('Invalid token format');
-        }
-
-        // Check if token is expired
-        if ($payload['exp'] < time()) {
-            Response::unauthorized('Token expired');
-        }
-
-        // Get user from database
-        require_once __DIR__ . '/../config/database.php';
-        $database = new Database();
-        $conn = $database->getConnection();
-
-        $stmt = $conn->prepare("
-            SELECT u.*, s.name as staff_name, s.role as staff_role
-            FROM users u
-            LEFT JOIN staff s ON u.staff_id = s.id
-            WHERE u.id = ? AND u.is_active = 1
-        ");
-        $stmt->execute([$payload['user_id']]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$user) {
-            Response::unauthorized('User not found or inactive');
-        }
-
-    } catch (Exception $e) {
-        Response::unauthorized('Invalid token');
-    }
-    
+    require_once __DIR__ . '/../config/database.php';
     $database = new Database();
     $db = $database->getConnection();
-    
+
     $method = Request::method();
-    $customerId = Request::segment(3); // Get customer ID from URL if present
 
     if ($method === 'GET') {
         // Check if requesting individual customer
-        if ($customerId && is_numeric($customerId)) {
-            // Get individual customer by ID with simplified query
+        $uri = $_SERVER['REQUEST_URI'];
+        $path = parse_url($uri, PHP_URL_PATH);
+        $segments = explode('/', trim($path, '/'));
+        $segments = array_filter($segments);
+        $segments = array_values($segments);
+
+        $customerId = null;
+        if (isset($segments[2]) && is_numeric($segments[2])) {
+            $customerId = $segments[2];
+        }
+
+        if ($customerId && is_numeric($customerId) && $customerId > 0) {
+            // Get individual customer by ID
             $stmt = $db->prepare("
-                SELECT c.*, 
-                       COUNT(DISTINCT v.id) as vehicle_count,
-                       COUNT(DISTINCT s.id) as service_count
+                SELECT
+                    c.id,
+                    c.name,
+                    c.phone,
+                    c.address,
+                    c.email,
+                    c.created_at,
+                    c.updated_at
                 FROM customers c
-                LEFT JOIN vehicles v ON c.id = v.customer_id
-                LEFT JOIN services s ON c.id = s.customer_id
-                WHERE c.id = ?
-                GROUP BY c.id
+                WHERE c.id = ? AND c.id > 0
             ");
             $stmt->execute([$customerId]);
             $customer = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -85,12 +53,15 @@ try {
             return;
         }
 
-        // Get customers with simplified query
+        // Get customers with pagination and search
         $pagination = Request::getPagination();
         $search = Request::getSearch();
 
         $where = [];
         $params = [];
+
+        // Always filter out customers with invalid IDs
+        $where[] = "c.id IS NOT NULL AND c.id > 0";
 
         if (!empty($search['search'])) {
             $where[] = "(c.name LIKE ? OR c.phone LIKE ? OR c.email LIKE ?)";
@@ -102,29 +73,29 @@ try {
 
         $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
 
+        // Simplified query - just get customers first
         $query = "
             SELECT
-                c.id, c.name, c.phone, c.address, c.email, c.created_at, c.updated_at,
-                COUNT(DISTINCT v.id) as vehicle_count,
-                COUNT(DISTINCT s.id) as service_count,
-                MAX(s.service_date) as last_service_date,
-                SUM(s.total_amount) as total_spent
+                c.id,
+                c.name,
+                c.phone,
+                c.address,
+                c.email,
+                c.created_at,
+                c.updated_at
             FROM customers c
-            LEFT JOIN vehicles v ON c.id = v.customer_id
-            LEFT JOIN services s ON c.id = s.customer_id
             {$whereClause}
-            GROUP BY c.id
-            ORDER BY c.{$search['sortBy']} {$search['sortOrder']}
+            ORDER BY {$search['sortBy']} {$search['sortOrder']}
             LIMIT {$pagination['limit']} OFFSET {$pagination['offset']}
         ";
 
-        $customers = $db->prepare($query);
-        $customers->execute($params);
-        $customers = $customers->fetchAll(PDO::FETCH_ASSOC);
+        $stmt = $db->prepare($query);
+        $stmt->execute($params);
+        $customers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         // Get total count
         $countQuery = "
-            SELECT COUNT(DISTINCT c.id) as total
+            SELECT COUNT(*) as total
             FROM customers c
             {$whereClause}
         ";
@@ -145,68 +116,45 @@ try {
     } elseif ($method === 'POST') {
         // Create new customer
         $data = Request::body();
-        Request::validateRequired($data, ['name', 'phone', 'email']);
+        Request::validateRequired($data, ['name', 'phone']);
 
-        $stmt = $db->prepare("
-            INSERT INTO customers (name, phone, email, address, date_of_birth, gender)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ");
-        $stmt->execute([
-            $data['name'],
-            $data['phone'],
-            $data['email'],
-            $data['address'] ?? null,
-            $data['date_of_birth'] ?? null,
-            $data['gender'] ?? null
-        ]);
+        $name = Request::sanitize($data['name']);
+        $phone = Request::sanitize($data['phone']);
+        $email = Request::sanitize($data['email'] ?? '');
+        $address = Request::sanitize($data['address'] ?? '');
 
-        Response::success(['id' => $db->lastInsertId()], 'Customer created successfully', 201);
-
-    } elseif ($method === 'PUT') {
-        // Update customer
-        $customerId = Request::segment(3);
-        if (!$customerId) {
-            Response::error('Customer ID is required', 400);
+        // Check if customer with same phone already exists
+        $stmt = $db->prepare("SELECT id FROM customers WHERE phone = ?");
+        $stmt->execute([$phone]);
+        if ($stmt->fetch()) {
+            Response::error('Customer with this phone number already exists', 409);
         }
 
-        $data = Request::body();
-        Request::validateRequired($data, ['name', 'phone', 'email']);
-
         $stmt = $db->prepare("
-            UPDATE customers
-            SET name = ?, phone = ?, email = ?, address = ?, date_of_birth = ?, gender = ?
+            INSERT INTO customers (name, phone, email, address, created_at, updated_at)
+            VALUES (?, ?, ?, ?, NOW(), NOW())
+        ");
+        $stmt->execute([$name, $phone, $email, $address]);
+
+        $customerId = $db->lastInsertId();
+
+        // Get the created customer
+        $stmt = $db->prepare("
+            SELECT id, name, phone, email, address, created_at, updated_at
+            FROM customers
             WHERE id = ?
         ");
-        $stmt->execute([
-            $data['name'],
-            $data['phone'],
-            $data['email'],
-            $data['address'] ?? null,
-            $data['date_of_birth'] ?? null,
-            $data['gender'] ?? null,
-            $customerId
-        ]);
-
-        Response::success(null, 'Customer updated successfully');
-
-    } elseif ($method === 'DELETE') {
-        // Delete customer
-        $customerId = Request::segment(3);
-        if (!$customerId) {
-            Response::error('Customer ID is required', 400);
-        }
-
-        $stmt = $db->prepare("DELETE FROM customers WHERE id = ?");
         $stmt->execute([$customerId]);
+        $customer = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        Response::success(null, 'Customer deleted successfully');
+        Response::created($customer, 'Customer created successfully');
 
     } else {
         Response::error('Method not allowed', 405);
     }
-    
+
 } catch (Exception $e) {
     error_log("Customers API error: " . $e->getMessage());
-    Response::error('Failed to process customers request: ' . $e->getMessage(), 500);
+    Response::error('Failed to process customers request', 500);
 }
 ?>

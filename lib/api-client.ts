@@ -160,6 +160,23 @@ class ApiClient {
     return this.request(`/api/vehicles/${id}`, { method: "DELETE" })
   }
 
+  // ---------- Vehicle Models ----------
+  async getVehicleModels() {
+    return this.request("/api/vehicle-models", { method: "GET" })
+  }
+  async getVehicleModel(id: number | string) {
+    return this.request(`/api/vehicle-models/${id}`, { method: "GET" })
+  }
+  async createVehicleModel(data: { name: string; description?: string; is_active?: boolean }) {
+    return this.request("/api/vehicle-models", { method: "POST", body: JSON.stringify(data) })
+  }
+  async updateVehicleModel(id: number | string, data: { name: string; description?: string; is_active?: boolean }) {
+    return this.request(`/api/vehicle-models/${id}`, { method: "PUT", body: JSON.stringify(data) })
+  }
+  async deleteVehicleModel(id: number | string) {
+    return this.request(`/api/vehicle-models/${id}`, { method: "DELETE" })
+  }
+
   // ---------- Services ----------
   async getServices(params?: { page?: number; limit?: number; search?: string; status?: string; customer_id?: number; vehicle_id?: number }) {
     return this.request(`/api/services${buildQuery(params)}`, { method: "GET" })
@@ -283,6 +300,26 @@ class ApiClient {
     supplier?: string | null
   }) {
     return this.request(`/api/inventory/${id}`, { method: "PUT", body: JSON.stringify(data) })
+  }
+
+  // ---------- Inventory Categories ----------
+  async getInventoryCategories() {
+    return this.request("/api/inventory/categories", { method: "GET" })
+  }
+  async createInventoryCategory(data: {
+    name: string
+    description?: string
+  }) {
+    return this.request("/api/inventory/categories", { method: "POST", body: JSON.stringify(data) })
+  }
+  async updateInventoryCategory(id: number, data: {
+    name: string
+    description?: string
+  }) {
+    return this.request(`/api/inventory/categories/${id}`, { method: "PUT", body: JSON.stringify(data) })
+  }
+  async deleteInventoryCategory(id: number) {
+    return this.request(`/api/inventory/categories/${id}`, { method: "DELETE" })
   }
 
   // ---------- Staff ----------

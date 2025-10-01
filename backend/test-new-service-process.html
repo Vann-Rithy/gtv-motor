@@ -1,0 +1,118 @@
+// Test script to verify New Service creation process for customer 53
+// This script tests the complete flow from frontend to backend
+
+console.log("=== TESTING NEW SERVICE CREATION PROCESS ===");
+console.log("Customer ID: 53");
+console.log("URL: /services/new?customer=53");
+console.log("");
+
+// Test 1: Customer Data Retrieval
+console.log("1. Testing Customer Data Retrieval...");
+fetch("https://api.gtvmotor.dev/api/customers/53")
+  .then(response => response.json())
+  .then(data => {
+    console.log("✓ Customer Data:", {
+      id: data.data.id,
+      name: data.data.name,
+      phone: data.data.phone,
+      email: data.data.email,
+      address: data.data.address
+    });
+
+    // Test 2: Vehicle Data Retrieval
+    console.log("\n2. Testing Vehicle Data Retrieval...");
+    return fetch("https://api.gtvmotor.dev/api/vehicles?customer_id=53");
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log("✓ Vehicle Data:", {
+      id: data.data[0].id,
+      plate_number: data.data[0].plate_number,
+      model_name: data.data[0].model_name,
+      year: data.data[0].year,
+      vin_number: data.data[0].vin_number
+    });
+
+    // Test 3: Service Types Retrieval
+    console.log("\n3. Testing Service Types Retrieval...");
+    return fetch("https://api.gtvmotor.dev/api/service-types");
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log("✓ Available Service Types:", data.data.map(st => ({
+      id: st.id,
+      name: st.service_type_name,
+      description: st.description
+    })));
+
+    // Test 4: Service Creation
+    console.log("\n4. Testing Service Creation...");
+    const serviceData = {
+      customer_id: 53,
+      vehicle_id: 103,
+      service_type_id: 1, // Oil Change
+      service_date: new Date().toISOString().slice(0, 10),
+      current_km: 15000,
+      total_amount: 75.00,
+      payment_method: "cash",
+      service_status: "pending",
+      payment_status: "pending",
+      service_detail: "Complete oil change service with filter replacement",
+      notes: "Customer requested premium oil",
+      customer_type: "walking"
+    };
+
+    return fetch("https://api.gtvmotor.dev/api/services", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(serviceData)
+    });
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log("✓ Service Created Successfully:", {
+      id: data.data.id,
+      invoice_number: data.data.invoice_number,
+      customer_name: data.data.customer_name,
+      vehicle_plate: data.data.vehicle_plate,
+      service_type_name: data.data.service_type_name,
+      total_amount: data.data.total_amount,
+      service_status: data.data.service_status,
+      payment_status: data.data.payment_status
+    });
+
+    // Test 5: Service Retrieval
+    console.log("\n5. Testing Service Retrieval...");
+    return fetch(`https://api.gtvmotor.dev/api/services/${data.data.id}`);
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log("✓ Service Retrieved Successfully:", {
+      id: data.data.id,
+      invoice_number: data.data.invoice_number,
+      service_detail: data.data.service_detail,
+      notes: data.data.notes,
+      created_at: data.data.created_at
+    });
+
+    console.log("\n=== TEST SUMMARY ===");
+    console.log("✅ All tests passed successfully!");
+    console.log("✅ Customer data loads correctly");
+    console.log("✅ Vehicle data loads correctly");
+    console.log("✅ Service types are available");
+    console.log("✅ Service creation works");
+    console.log("✅ Service retrieval works");
+    console.log("\n🎉 New Service creation process is working correctly!");
+  })
+  .catch(error => {
+    console.error("❌ Test failed:", error);
+    console.log("\n=== ERROR ANALYSIS ===");
+    console.log("Please check the following:");
+    console.log("1. API endpoints are accessible");
+    console.log("2. Database connections are working");
+    console.log("3. Customer ID 53 exists");
+    console.log("4. Vehicle ID 103 exists");
+    console.log("5. Service types are properly configured");
+  });

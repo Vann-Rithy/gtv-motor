@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "./theme-toggle"
+import { LanguageSwitcher } from "@/components/language-switcher"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,8 +12,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Menu, User, LogOut, Settings, Bell } from "lucide-react"
+import { Menu, User, LogOut, Settings } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
+import { useLanguage } from "@/lib/language-context"
 import SidebarNotificationBadge from "@/components/sidebar-notification-badge"
 
 interface HeaderProps {
@@ -23,6 +25,7 @@ interface HeaderProps {
 
 export default function Header({ onToggleSidebar, onMenuClick, user: propUser }: HeaderProps) {
   const { user: authUser, logout } = useAuth()
+  const { t } = useLanguage()
   const user = propUser || authUser
 
   const handleLogout = async () => {
@@ -72,25 +75,8 @@ export default function Header({ onToggleSidebar, onMenuClick, user: propUser }:
           {/* Theme Toggle */}
           <ThemeToggle />
 
-          {/* Language Flags */}
-          <div className="flex items-center space-x-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
-              title="ភាសាខ្មែរ"
-            >
-              <img src="/flag.png" alt="Cambodia" className="w-6 h-4 rounded-sm border border-gray-200" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
-              title="English"
-            >
-              <img src="/united-kingdom.png" alt="English" className="w-6 h-4 rounded-sm border border-gray-200" />
-            </Button>
-          </div>
+          {/* Language Switcher */}
+          <LanguageSwitcher />
 
           {user && (
             <DropdownMenu>
@@ -114,16 +100,16 @@ export default function Header({ onToggleSidebar, onMenuClick, user: propUser }:
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
                   <User className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
+                  <span>{t('common.profile', 'Profile')}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
+                  <span>{t('nav.settings', 'Settings')}</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
+                  <span>{t('nav.logout', 'Log out')}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

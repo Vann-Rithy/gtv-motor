@@ -29,7 +29,7 @@ if ($_POST['action'] === 'frontend_login') {
 
         // Test login endpoint
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, 'https://api.gtvmotor.dev/api/auth/login');
+        curl_setopt($ch, CURLOPT_URL, 'http://localhost/backend/api/auth/login.php');
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $loginData);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
@@ -39,6 +39,7 @@ if ($_POST['action'] === 'frontend_login') {
         ]);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -80,7 +81,7 @@ if (isset($_SESSION['test_token'])) {
 
         // Test /api/auth/me endpoint
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, 'https://api.gtvmotor.dev/api/auth/me');
+        curl_setopt($ch, CURLOPT_URL, 'http://localhost/backend/api/auth/me.php');
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Authorization: Bearer ' . $token,
             'Cache-Control: no-cache',
@@ -88,6 +89,7 @@ if (isset($_SESSION['test_token'])) {
         ]);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -132,7 +134,7 @@ async function testJavaScriptAuth() {
 
     try {
         // Step 1: Login
-        const loginResponse = await fetch('https://api.gtvmotor.dev/api/auth/login', {
+        const loginResponse = await fetch('http://localhost/backend/api/auth/login.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -147,15 +149,16 @@ async function testJavaScriptAuth() {
 
         const loginData = await loginResponse.json();
 
-        if (loginResponse.ok && loginData.success && loginData.data.token) {
+        if (loginResponse.ok && loginData.success && (loginData.data.token || loginData.data.access_token)) {
             resultDiv.innerHTML += '<div style=\"color: green;\">✅ JavaScript Login: SUCCESS</div>';
             resultDiv.innerHTML += '<p>User: ' + loginData.data.user.email + '</p>';
-            resultDiv.innerHTML += '<p>Token: ' + loginData.data.token.substring(0, 50) + '...</p>';
+            const token = loginData.data.token || loginData.data.access_token;
+            resultDiv.innerHTML += '<p>Token: ' + token.substring(0, 50) + '...</p>';
 
             // Step 2: Test /api/auth/me
-            const meResponse = await fetch('https://api.gtvmotor.dev/api/auth/me', {
+            const meResponse = await fetch('http://localhost/backend/api/auth/me.php', {
                 headers: {
-                    'Authorization': 'Bearer ' + loginData.data.token,
+                    'Authorization': 'Bearer ' + token,
                     'Cache-Control': 'no-cache',
                     'Pragma': 'no-cache'
                 }

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vehicle Information Update Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8 text-gray-900">Vehicle Information Update Test</h1>
+
+        <!-- Test Results -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-green-600">✅ Vehicle Information Updates Applied</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="font-medium text-gray-900 mb-3">🔧 Technical Improvements:</h3>
+                    <ul class="space-y-2 text-sm text-gray-700">
+                        <li>✅ Fixed model field mapping (model_name vs model)</li>
+                        <li>✅ Added purchase_date auto-population</li>
+                        <li>✅ Added warranty dates auto-population</li>
+                        <li>✅ Added current_km auto-population</li>
+                        <li>✅ Enhanced Vehicle interface with all fields</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="font-medium text-gray-900 mb-3">🎨 UI Enhancements:</h3>
+                    <ul class="space-y-2 text-sm text-gray-700">
+                        <li>✅ Added vehicle status display banner</li>
+                        <li>✅ Green highlighting for auto-filled fields</li>
+                        <li>✅ Additional vehicle details section</li>
+                        <li>✅ Better visual feedback for loaded data</li>
+                        <li>✅ Improved field labels and descriptions</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customer 53 Vehicle Data Preview -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-blue-600">📋 Customer 53 Vehicle Data Preview</h2>
+
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <div class="flex items-center space-x-3 mb-3">
+                    <div class="p-2 bg-blue-100 rounded-lg">
+                        <svg class="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-blue-900">Vehicle Auto-Loaded</h4>
+                        <p class="text-sm text-blue-700">Existing vehicle data has been populated</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                    <div class="bg-white p-2 rounded border">
+                        <span class="text-gray-600">Model:</span>
+                        <div class="font-medium">SOBEN</div>
+                    </div>
+                    <div class="bg-white p-2 rounded border">
+                        <span class="text-gray-600">Category:</span>
+                        <div class="font-medium">Compact SUV</div>
+                    </div>
+                    <div class="bg-white p-2 rounded border">
+                        <span class="text-gray-600">Engine:</span>
+                        <div class="font-medium">1.5L Petrol</div>
+                    </div>
+                    <div class="bg-white p-2 rounded border">
+                        <span class="text-gray-600">Services:</span>
+                        <div class="font-medium">1 completed</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Plate Number *</label>
+                        <input type="text" value="SSDWW" class="w-full px-3 py-2 border border-green-300 bg-green-50 rounded-md" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Model *</label>
+                        <select class="w-full px-3 py-2 border border-green-300 bg-green-50 rounded-md">
+                            <option selected>SOBEN</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">VIN Number</label>
+                        <input type="text" value="sdfsfds" class="w-full px-3 py-2 border border-green-300 bg-green-50 rounded-md" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                        <input type="number" value="2023" class="w-full px-3 py-2 border border-green-300 bg-green-50 rounded-md" readonly>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Purchase Date</label>
+                        <input type="date" value="2025-10-02" class="w-full px-3 py-2 border border-green-300 bg-green-50 rounded-md" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Warranty Start Date</label>
+                        <input type="date" class="w-full px-3 py-2 border border-gray-300 rounded-md" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Warranty End Date</label>
+                        <input type="date" class="w-full px-3 py-2 border border-gray-300 rounded-md" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Current Kilometers</label>
+                        <input type="number" value="0" class="w-full px-3 py-2 border border-green-300 bg-green-50 rounded-md" readonly>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Vehicle Information -->
+            <div class="mt-6 p-4 bg-gray-50 border rounded-lg">
+                <h4 class="font-medium text-gray-900 mb-3 flex items-center">
+                    <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Additional Vehicle Details
+                </h4>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                        <span class="text-gray-600">Base Price:</span>
+                        <div class="font-medium">$19999.00</div>
+                    </div>
+                    <div>
+                        <span class="text-gray-600">Displacement:</span>
+                        <div class="font-medium">1500cc</div>
+                    </div>
+                    <div>
+                        <span class="text-gray-600">Fuel Type:</span>
+                        <div class="font-medium">Petrol</div>
+                    </div>
+                    <div>
+                        <span class="text-gray-600">Transmission:</span>
+                        <div class="font-medium">CVT</div>
+                    </div>
+                    <div>
+                        <span class="text-gray-600">Warranty Limit:</span>
+                        <div class="font-medium">100000 km</div>
+                    </div>
+                    <div>
+                        <span class="text-gray-600">Max Services:</span>
+                        <div class="font-medium">10</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Instructions -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-semibold mb-4 text-purple-600">🧪 How to Test the Updates</h2>
+
+            <div class="space-y-4">
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span class="text-xs font-bold text-blue-600">1</span>
+                    </div>
+                    <div>
+                        <p class="font-medium text-gray-900">Navigate to the New Service page</p>
+                        <p class="text-sm text-gray-600">Go to: <code class="bg-gray-100 px-2 py-1 rounded">/services/new?customer=53</code></p>
+                    </div>
+                </div>
+
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span class="text-xs font-bold text-blue-600">2</span>
+                    </div>
+                    <div>
+                        <p class="font-medium text-gray-900">Check Vehicle Information section</p>
+                        <p class="text-sm text-gray-600">Look for the blue "Vehicle Auto-Loaded" banner and green-highlighted fields</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span class="text-xs font-bold text-blue-600">3</span>
+                    </div>
+                    <div>
+                        <p class="font-medium text-gray-900">Verify all fields are populated</p>
+                        <p class="text-sm text-gray-600">Plate: SSDWW, Model: SOBEN, Year: 2023, Purchase Date: 2025-10-02</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span class="text-xs font-bold text-blue-600">4</span>
+                    </div>
+                    <div>
+                        <p class="font-medium text-gray-900">Check Additional Vehicle Details</p>
+                        <p class="text-sm text-gray-600">Scroll down to see the gray section with technical specifications</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

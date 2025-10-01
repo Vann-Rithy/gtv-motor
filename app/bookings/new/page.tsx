@@ -39,7 +39,7 @@ export default function NewBooking() {
   const fromService = searchParams.get('from_service') === 'true'
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
-  
+
   const [customers, setCustomers] = useState<Customer[]>([])
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([])
@@ -142,17 +142,17 @@ export default function NewBooking() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // Validate required fields based on customer type
     if (useExistingCustomer) {
-      if (!formData.customer_id || !formData.vehicle_id || !formData.service_type_id || 
+      if (!formData.customer_id || !formData.vehicle_id || !formData.service_type_id ||
           !formData.booking_date || !formData.booking_time) {
         toast.error("Please fill in all required fields")
         return
       }
     } else {
-      if (!formData.customer_name || !formData.phone || !formData.plateNumber || 
-          !formData.model || !formData.service_type_id || !formData.booking_date || 
+      if (!formData.customer_name || !formData.phone || !formData.plateNumber ||
+          !formData.model || !formData.service_type_id || !formData.booking_date ||
           !formData.booking_time) {
         toast.error("Please fill in all required fields")
         return
@@ -161,7 +161,7 @@ export default function NewBooking() {
 
     try {
       setSaving(true)
-      
+
       let bookingData: any = {
         service_type_id: Number(formData.service_type_id),
         booking_date: formData.booking_date,
@@ -175,6 +175,7 @@ export default function NewBooking() {
         bookingData.vehicle_id = Number(formData.vehicle_id)
       } else {
         // For new customers, send customer_data and vehicle_data
+        bookingData.phone = formData.phone // Required top-level field
         bookingData.customer_data = {
           name: formData.customer_name,
           phone: formData.phone,
@@ -190,9 +191,9 @@ export default function NewBooking() {
       }
 
       const result = await apiClient.createBooking(bookingData)
-      
+
       toast.success("Booking created successfully!")
-      
+
       if (fromService) {
         // If accessed from service form, redirect back to service form with booking_id
         router.push(`/services/new?booking_id=${result?.data?.id || result?.id}`)
@@ -265,8 +266,8 @@ export default function NewBooking() {
             {useExistingCustomer ? (
               <>
                 <div className="flex space-x-2 mb-4">
-                  <Input 
-                    placeholder="Search by customer name or phone number..." 
+                  <Input
+                    placeholder="Search by customer name or phone number..."
                     className="flex-1"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}

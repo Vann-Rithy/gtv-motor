@@ -44,14 +44,18 @@ export default function EditCustomerPage() {
       try {
         setLoading(true)
         const response = await apiClient.getCustomer(customerId)
-        setCustomer(response.data)
-        setFormData({
-          name: response.data.name || "",
-          phone: response.data.phone || "",
-          email: response.data.email || "",
-          address: response.data.address || ""
-        })
-        setError(null)
+        if (response.success && response.data) {
+          setCustomer(response.data)
+          setFormData({
+            name: response.data.name || "",
+            phone: response.data.phone || "",
+            email: response.data.email || "",
+            address: response.data.address || ""
+          })
+          setError(null)
+        } else {
+          throw new Error(response.message || "Customer not found")
+        }
       } catch (err: any) {
         console.error("Failed to fetch customer:", err)
         setError(err?.message || "Failed to fetch customer data")

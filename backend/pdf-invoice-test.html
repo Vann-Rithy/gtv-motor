@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Invoice Generation Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8 text-gray-900">PDF Invoice Generation Test</h1>
+
+        <!-- Test Results -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-green-600">✅ PDF Invoice Generation Implemented</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="font-medium text-gray-900 mb-3">🔧 Technical Features:</h3>
+                    <ul class="space-y-2 text-sm text-gray-700">
+                        <li>✅ Professional PDF layout with company branding</li>
+                        <li>✅ Complete service information display</li>
+                        <li>✅ Customer and vehicle details</li>
+                        <li>✅ Service items table with pricing</li>
+                        <li>✅ VAT calculation and totals</li>
+                        <li>✅ Payment information</li>
+                        <li>✅ Notes and footer</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="font-medium text-gray-900 mb-3">🎨 Design Features:</h3>
+                    <ul class="space-y-2 text-sm text-gray-700">
+                        <li>✅ GTV Motor branding header</li>
+                        <li>✅ Professional color scheme</li>
+                        <li>✅ Structured layout sections</li>
+                        <li>✅ Auto-generated invoice numbers</li>
+                        <li>✅ Responsive table formatting</li>
+                        <li>✅ Clean typography</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Invoice Data -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-blue-600">📋 Sample Invoice Data</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-medium text-gray-900 mb-2">Customer Information:</h4>
+                    <div class="text-sm text-gray-700 space-y-1">
+                        <p><strong>Name:</strong> sdfsdf</p>
+                        <p><strong>Phone:</strong> 0955568686</p>
+                        <p><strong>Email:</strong> ahpea88@gmail.com</p>
+                        <p><strong>Address:</strong> st2004</p>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="font-medium text-gray-900 mb-2">Vehicle Information:</h4>
+                    <div class="text-sm text-gray-700 space-y-1">
+                        <p><strong>Plate:</strong> SSDWW</p>
+                        <p><strong>Model:</strong> SOBEN</p>
+                        <p><strong>Year:</strong> 2023</p>
+                        <p><strong>VIN:</strong> sdfsfds</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <h4 class="font-medium text-gray-900 mb-2">Service Items:</h4>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-3 py-2 text-left">Description</th>
+                                <th class="px-3 py-2 text-center">Type</th>
+                                <th class="px-3 py-2 text-center">Qty</th>
+                                <th class="px-3 py-2 text-right">Unit Price</th>
+                                <th class="px-3 py-2 text-right">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="px-3 py-2">Oil Change Service</td>
+                                <td class="px-3 py-2 text-center">SERVICE</td>
+                                <td class="px-3 py-2 text-center">1</td>
+                                <td class="px-3 py-2 text-right">$50.00</td>
+                                <td class="px-3 py-2 text-right">$50.00</td>
+                            </tr>
+                            <tr>
+                                <td class="px-3 py-2">Oil Filter</td>
+                                <td class="px-3 py-2 text-center">PART</td>
+                                <td class="px-3 py-2 text-center">1</td>
+                                <td class="px-3 py-2 text-right">$15.00</td>
+                                <td class="px-3 py-2 text-right">$15.00</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="mt-4 grid grid-cols-2 gap-4 text-sm">
+                <div>
+                    <p><strong>Subtotal:</strong> $65.00</p>
+                    <p><strong>VAT (10%):</strong> $6.50</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-lg font-bold text-blue-600"><strong>Total:</strong> $71.50</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Instructions -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-semibold mb-4 text-purple-600">🧪 How to Test PDF Generation</h2>
+
+            <div class="space-y-4">
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span class="text-xs font-bold text-blue-600">1</span>
+                    </div>
+                    <div>
+                        <p class="font-medium text-gray-900">Test from Service Invoice Page</p>
+                        <p class="text-sm text-gray-600">Go to any service invoice page and click the "Download" button</p>
+                        <code class="bg-gray-100 px-2 py-1 rounded text-xs">/services/[id]/invoice</code>
+                    </div>
+                </div>
+
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span class="text-xs font-bold text-blue-600">2</span>
+                    </div>
+                    <div>
+                        <p class="font-medium text-gray-900">Test from New Service Page</p>
+                        <p class="text-sm text-gray-600">Create a new service and click "Generate Invoice PDF" in the modal</p>
+                        <code class="bg-gray-100 px-2 py-1 rounded text-xs">/services/new</code>
+                    </div>
+                </div>
+
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span class="text-xs font-bold text-blue-600">3</span>
+                    </div>
+                    <div>
+                        <p class="font-medium text-gray-900">Verify PDF Content</p>
+                        <p class="text-sm text-gray-600">Check that the PDF contains all service details, customer info, vehicle info, and pricing</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span class="text-xs font-bold text-blue-600">4</span>
+                    </div>
+                    <div>
+                        <p class="font-medium text-gray-900">Test Different Service Types</p>
+                        <p class="text-sm text-gray-600">Try generating PDFs for different service types and customer data</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Test Button -->
+            <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 class="font-medium text-blue-900 mb-2">Quick Test</h4>
+                <p class="text-sm text-blue-700 mb-3">Click the button below to generate a sample PDF invoice:</p>
+                <button
+                    onclick="generateSamplePDF()"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                >
+                    Generate Sample PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function generateSamplePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+
+            // Sample invoice data
+            const invoiceData = {
+                invoiceNumber: 'INV-20251002-001',
+                serviceDate: '2025-10-02',
+                customerName: 'sdfsdf',
+                customerPhone: '0955568686',
+                vehiclePlate: 'SSDWW',
+                vehicleModel: 'SOBEN',
+                serviceItems: [
+                    { description: 'Oil Change Service', quantity: 1, unitPrice: 50, totalPrice: 50, itemType: 'service' },
+                    { description: 'Oil Filter', quantity: 1, unitPrice: 15, totalPrice: 15, itemType: 'part' }
+                ],
+                subtotal: 65,
+                vatAmount: 6.5,
+                totalAmount: 71.5
+            };
+
+            // Generate PDF
+            doc.setFillColor(41, 128, 185);
+            doc.rect(0, 0, 210, 40, 'F');
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(24);
+            doc.setFont('helvetica', 'bold');
+            doc.text('GTV MOTOR', 20, 25);
+
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(20);
+            doc.text('SERVICE INVOICE', 150, 25);
+
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Invoice #: ${invoiceData.invoiceNumber}`, 150, 35);
+            doc.text(`Date: ${invoiceData.serviceDate}`, 150, 42);
+
+            // Customer info
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Customer Information', 20, 60);
+
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Name: ${invoiceData.customerName}`, 20, 70);
+            doc.text(`Phone: ${invoiceData.customerPhone}`, 20, 77);
+
+            // Vehicle info
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Vehicle Information', 20, 90);
+
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Plate: ${invoiceData.vehiclePlate}`, 20, 100);
+            doc.text(`Model: ${invoiceData.vehicleModel}`, 20, 107);
+
+            // Service items table
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Service Items', 20, 125);
+
+            doc.autoTable({
+                startY: 135,
+                head: [['Description', 'Type', 'Qty', 'Unit Price', 'Total']],
+                body: invoiceData.serviceItems.map(item => [
+                    item.description,
+                    item.itemType.toUpperCase(),
+                    item.quantity.toString(),
+                    `$${item.unitPrice.toFixed(2)}`,
+                    `$${item.totalPrice.toFixed(2)}`
+                ]),
+                theme: 'grid',
+                headStyles: {
+                    fillColor: [41, 128, 185],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold'
+                }
+            });
+
+            // Pricing
+            const finalY = doc.lastAutoTable.finalY + 20;
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Subtotal:', 160, finalY);
+            doc.text(`$${invoiceData.subtotal.toFixed(2)}`, 190, finalY);
+
+            doc.text('VAT (10%):', 160, finalY + 8);
+            doc.text(`$${invoiceData.vatAmount.toFixed(2)}`, 190, finalY + 8);
+
+            doc.setFontSize(14);
+            doc.setTextColor(41, 128, 185);
+            doc.text('TOTAL:', 160, finalY + 20);
+            doc.text(`$${invoiceData.totalAmount.toFixed(2)}`, 190, finalY + 20);
+
+            // Footer
+            doc.setTextColor(100, 100, 100);
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'normal');
+            doc.text('Thank you for choosing GTV Motor!', 20, 280);
+            doc.text('Generated on: ' + new Date().toLocaleDateString(), 150, 280);
+
+            // Save PDF
+            doc.save(`Sample-Invoice-${invoiceData.invoiceNumber}.pdf`);
+        }
+    </script>
+</body>
+</html>

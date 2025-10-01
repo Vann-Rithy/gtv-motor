@@ -9,7 +9,7 @@ import { Calendar, Clock, User, Car, Phone, Plus, Search, Edit, Play, Eye, Loade
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { apiClient } from "@/lib/api-client"
-import { toast } from "sonner"
+import { useLanguage } from "@/lib/language-context"
 
 interface Booking {
   id: number
@@ -31,6 +31,7 @@ interface Booking {
 
 export default function Bookings() {
   const router = useRouter()
+  const { t } = useLanguage()
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
@@ -137,11 +138,11 @@ export default function Bookings() {
   return (
     <div className="p-4 lg:p-8 space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
-        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">Booking Management</h1>
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">{t('nav.bookings', 'Booking Management')}</h1>
         <Link href="/bookings/new">
           <Button>
             <Plus className="h-4 w-4 mr-2" />
-            New Booking
+            {t('bookings.new', 'New Booking')}
           </Button>
         </Link>
       </div>

@@ -6,6 +6,7 @@ import "./globals.css"
 import MainLayout from "@/components/layout/main-layout"
 import { AuthProvider } from "@/components/auth-provider"
 import AuthGuard from "@/components/auth-guard"
+import { LanguageProvider } from "@/lib/language-context"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -23,11 +24,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={inter.className} suppressHydrationWarning>
       <body suppressHydrationWarning>
-        <AuthProvider>
-          <AuthGuard>
-            <MainLayout>{children}</MainLayout>
-          </AuthGuard>
-        </AuthProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <AuthGuard>
+              <MainLayout>{children}</MainLayout>
+            </AuthGuard>
+          </AuthProvider>
+        </LanguageProvider>
       </body>
     </html>
   )
