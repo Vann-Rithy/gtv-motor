@@ -11,6 +11,7 @@ import { ServiceAlertWithDetails, NotificationCounts } from "@/lib/types"
 import { toast } from "sonner"
 import { useLanguage } from "@/lib/language-context"
 import FollowUpModal from "@/components/follow-up-modal"
+import { API_ENDPOINTS } from "@/lib/api-config"
 
 export default function AlertsPage() {
   const { t } = useLanguage()
@@ -42,7 +43,7 @@ export default function AlertsPage() {
 
       // First try the notifications endpoint
       try {
-        const response = await fetch(`/api/alerts/notifications?${params.toString()}`)
+        const response = await fetch(`${API_ENDPOINTS.ALERTS_NOTIFICATIONS}?${params.toString()}`)
         if (response.ok) {
           const data = await response.json()
           console.log('Alerts API response:', data)
@@ -227,7 +228,7 @@ export default function AlertsPage() {
   // Fetch notification counts
   const fetchNotificationCounts = async () => {
     try {
-      const response = await fetch("/api/alerts/notifications")
+      const response = await fetch(API_ENDPOINTS.ALERTS_NOTIFICATIONS)
       if (response.ok) {
         const data = await response.json()
         console.log('Notification counts response:', data)
@@ -288,7 +289,7 @@ export default function AlertsPage() {
   // Update alert status
   const updateAlertStatus = async (alertId: number, newStatus: string) => {
     try {
-      const response = await fetch(`/api/alerts/${alertId}`, {
+      const response = await fetch(`${API_ENDPOINTS.ALERTS}/${alertId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus })
@@ -312,7 +313,7 @@ export default function AlertsPage() {
     if (!confirm("Are you sure you want to delete this alert?")) return
 
     try {
-      const response = await fetch(`/api/alerts/${alertId}`, {
+      const response = await fetch(`${API_ENDPOINTS.ALERTS}/${alertId}`, {
         method: "DELETE"
       })
 

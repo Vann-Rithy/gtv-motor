@@ -21,6 +21,7 @@ const translations = {
     'nav.services': 'Services',
     'nav.bookings': 'Bookings',
     'nav.inventory': 'Inventory',
+    'nav.vehicle_models': 'Vehicle Models',
     'nav.warranty': 'Warranty',
     'nav.alerts': 'Alerts',
     'nav.followups': 'Follow-ups',

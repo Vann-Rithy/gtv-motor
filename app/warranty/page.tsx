@@ -9,6 +9,8 @@ import { Search, Shield, AlertTriangle, Phone, Car, RefreshCw, Calendar } from "
 import { WarrantyWithDetails } from "@/lib/types"
 import { calculateWarrantyStatus, getWarrantyStatusColor, getWarrantyTypeDisplayName } from "@/lib/warranty-utils"
 import { useLanguage } from "@/lib/language-context"
+import { toast } from "sonner"
+import { API_ENDPOINTS } from "@/lib/api-config"
 
 export default function WarrantyPage() {
   const { t } = useLanguage()
@@ -30,7 +32,7 @@ export default function WarrantyPage() {
         params.append("search", searchTerm)
       }
 
-      const response = await fetch(`/api/warranties?${params.toString()}`)
+      const response = await fetch(`${API_ENDPOINTS.WARRANTIES}?${params.toString()}`)
       if (!response.ok) {
         throw new Error("Failed to fetch warranties")
       }

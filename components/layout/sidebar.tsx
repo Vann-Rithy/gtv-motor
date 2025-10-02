@@ -32,6 +32,7 @@ import {
   Bell,
   MessageSquare,
   HelpCircle,
+  Car,
 } from "lucide-react"
 import SidebarNotificationBadge from "@/components/sidebar-notification-badge"
 import { API_ENDPOINTS } from "@/lib/api-config"
@@ -60,6 +61,7 @@ const navigation = [
   { name: "Services", href: "/services", icon: Wrench, key: "nav.services" },
   { name: "Bookings", href: "/bookings", icon: Calendar, key: "nav.bookings" },
   { name: "Inventory", href: "/inventory", icon: Package, key: "nav.inventory" },
+  { name: "Vehicle Models", href: "/vehicle-models", icon: Car, key: "nav.vehicle_models" },
   { name: "Warranty", href: "/warranty", icon: Shield, key: "nav.warranty" },
   { name: "Alerts", href: "/alerts", icon: Bell, key: "nav.alerts" },
   { name: "Follow-ups", href: "/notifications", icon: MessageSquare, key: "nav.followups" },

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useToast } from './use-toast'
+import { API_ENDPOINTS } from '@/lib/api-config'
 
 interface CompanySettings {
   company_name: string
@@ -70,7 +71,7 @@ export function useSettings() {
   const fetchCompanySettings = useCallback(async () => {
     setLoading(prev => ({ ...prev, company: true }))
     try {
-      const response = await fetch('/api/settings/company')
+      const response = await fetch(API_ENDPOINTS.SETTINGS + '/company')
       if (response.ok) {
         const data = await response.json()
         setCompanySettings(data)
@@ -93,7 +94,7 @@ export function useSettings() {
   const fetchSystemConfig = useCallback(async () => {
     setLoading(prev => ({ ...prev, system: true }))
     try {
-      const response = await fetch('/api/settings/system')
+      const response = await fetch(API_ENDPOINTS.SETTINGS + '/system')
       if (response.ok) {
         const data = await response.json()
         setSystemConfig(data)
@@ -116,7 +117,7 @@ export function useSettings() {
   const fetchNotificationSettings = useCallback(async () => {
     setLoading(prev => ({ ...prev, notifications: true }))
     try {
-      const response = await fetch('/api/settings/notifications')
+      const response = await fetch(API_ENDPOINTS.SETTINGS + '/notifications')
       if (response.ok) {
         const data = await response.json()
         setNotificationSettings(data)
@@ -139,7 +140,7 @@ export function useSettings() {
   const fetchStaff = useCallback(async () => {
     setLoading(prev => ({ ...prev, staff: true }))
     try {
-      const response = await fetch('/api/staff')
+      const response = await fetch(API_ENDPOINTS.STAFF)
       if (response.ok) {
         const data = await response.json()
         setStaff(data.data || [])
@@ -162,7 +163,7 @@ export function useSettings() {
   const saveCompanySettings = useCallback(async (settings: Partial<CompanySettings>) => {
     setSaving(prev => ({ ...prev, company: true }))
     try {
-      const response = await fetch('/api/settings/company', {
+      const response = await fetch(API_ENDPOINTS.SETTINGS + '/company', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings)
@@ -196,7 +197,7 @@ export function useSettings() {
   const saveSystemConfig = useCallback(async (config: Partial<SystemConfig>) => {
     setSaving(prev => ({ ...prev, system: true }))
     try {
-      const response = await fetch('/api/settings/system', {
+      const response = await fetch(API_ENDPOINTS.SETTINGS + '/system', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config)
@@ -230,7 +231,7 @@ export function useSettings() {
   const saveNotificationSettings = useCallback(async (settings: Partial<NotificationSettings>) => {
     setSaving(prev => ({ ...prev, notifications: true }))
     try {
-      const response = await fetch('/api/settings/notifications', {
+      const response = await fetch(API_ENDPOINTS.SETTINGS + '/notifications', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings)
@@ -264,7 +265,7 @@ export function useSettings() {
   const addStaffMember = useCallback(async (staffData: { name: string; role: string; phone?: string; email?: string }) => {
     setSaving(prev => ({ ...prev, staff: true }))
     try {
-      const response = await fetch('/api/staff', {
+      const response = await fetch(API_ENDPOINTS.STAFF, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(staffData)
@@ -299,7 +300,7 @@ export function useSettings() {
   // Remove staff member
   const removeStaffMember = useCallback(async (staffId: number) => {
     try {
-      const response = await fetch(`/api/staff/${staffId}`, {
+      const response = await fetch(`${API_ENDPOINTS.STAFF}/${staffId}`, {
         method: 'DELETE'
       })
       
@@ -329,7 +330,7 @@ export function useSettings() {
   // Toggle staff status
   const toggleStaffStatus = useCallback(async (staffId: number, active: boolean) => {
     try {
-      const response = await fetch(`/api/staff/${staffId}`, {
+      const response = await fetch(`${API_ENDPOINTS.STAFF}/${staffId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ active })

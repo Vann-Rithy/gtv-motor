@@ -162,19 +162,19 @@ class ApiClient {
 
   // ---------- Vehicle Models ----------
   async getVehicleModels() {
-    return this.request("/api/vehicle-models", { method: "GET" })
+    return this.request("/api/vehicle-models.php", { method: "GET" })
   }
   async getVehicleModel(id: number | string) {
-    return this.request(`/api/vehicle-models/${id}`, { method: "GET" })
+    return this.request(`/api/vehicle-models.php/${id}`, { method: "GET" })
   }
-  async createVehicleModel(data: { name: string; description?: string; is_active?: boolean }) {
-    return this.request("/api/vehicle-models", { method: "POST", body: JSON.stringify(data) })
+  async createVehicleModel(data: any) {
+    return this.request("/api/vehicle-models.php", { method: "POST", body: JSON.stringify(data) })
   }
-  async updateVehicleModel(id: number | string, data: { name: string; description?: string; is_active?: boolean }) {
-    return this.request(`/api/vehicle-models/${id}`, { method: "PUT", body: JSON.stringify(data) })
+  async updateVehicleModel(id: number | string, data: any) {
+    return this.request(`/api/vehicle-models.php/${id}`, { method: "PUT", body: JSON.stringify(data) })
   }
   async deleteVehicleModel(id: number | string) {
-    return this.request(`/api/vehicle-models/${id}`, { method: "DELETE" })
+    return this.request(`/api/vehicle-models.php/${id}`, { method: "DELETE" })
   }
 
   // ---------- Services ----------

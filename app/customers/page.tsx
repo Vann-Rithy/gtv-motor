@@ -21,6 +21,8 @@ import { useLanguage } from "@/lib/language-context"
 import Link from "next/link"
 import { apiClient } from "@/lib/api-client"
 import { formatKM, formatCurrency } from "@/lib/utils"
+import { API_ENDPOINTS } from "@/lib/api-config"
+import { toast } from "sonner"
 
 interface Customer {
   id: string
@@ -219,7 +221,7 @@ export default function Customers() {
       const vehicles = vehiclesResponse.success ? (vehiclesResponse.data || []) : []
 
       // Fetch customer's services
-      const servicesResponse = await apiClient.getServices({ customer_id: customerId })
+      const servicesResponse = await apiClient.getServices({ customer_id: parseInt(customerId) })
       const services = servicesResponse.success ? (servicesResponse.data || []) : []
 
       // Combine all data
@@ -296,7 +298,7 @@ export default function Customers() {
 
     setIsUpdating(true)
     try {
-      const response = await fetch(`/api/customers/${selectedCustomer.id}`, {
+      const response = await fetch(`${API_ENDPOINTS.CUSTOMERS}/${selectedCustomer.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -328,7 +330,7 @@ export default function Customers() {
       setEditForm({ name: "", phone: "", email: "", address: "" })
     } catch (error) {
       console.error("Error updating customer:", error)
-      // You could add a toast notification here
+      toast.error("Failed to update customer")
     } finally {
       setIsUpdating(false)
     }
@@ -431,7 +433,6 @@ export default function Customers() {
         </div>
         <Link href="/customers/new">
           <Button className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700">
-            <Plus className="h-4 w-4 mr-2" />
             {t('customers.add', '+ Add Customer')}
           </Button>
         </Link>

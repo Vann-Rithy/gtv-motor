@@ -174,7 +174,7 @@ export default function AuthStatusPage() {
             <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
               <h4 className="font-semibold text-green-800 mb-1">🔐 Test Steps</h4>
               <ol className="text-sm text-green-700 space-y-1">
-                <li>1. <strong>Clear all cookies</strong> for localhost:3000</li>
+                <li>1. <strong>Clear all cookies</strong> for the application domain</li>
                 <li>2. <strong>Visit any protected route</strong> (like / or /dashboard)</li>
                 <li>3. <strong>Should redirect to /login</strong> immediately</li>
                 <li>4. <strong>Login with valid credentials</strong></li>

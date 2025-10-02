@@ -30,6 +30,7 @@ import {
   calculateWarrantyCoverage
 } from "@/lib/warranty-utils"
 import { toast } from "sonner"
+import { API_ENDPOINTS } from "@/lib/api-config"
 
 export default function WarrantyDetailsPage() {
   const params = useParams()
@@ -42,7 +43,7 @@ export default function WarrantyDetailsPage() {
     const fetchWarranty = async () => {
       try {
         setLoading(true)
-        const response = await fetch(`/api/warranties/${params.id}`)
+        const response = await fetch(`${API_ENDPOINTS.WARRANTIES}/${params.id}`)
         if (!response.ok) {
           throw new Error("Failed to fetch warranty")
         }
@@ -70,7 +71,7 @@ export default function WarrantyDetailsPage() {
     }
 
     try {
-      const response = await fetch(`/api/warranties/${warranty.id}`, {
+      const response = await fetch(`${API_ENDPOINTS.WARRANTIES}/${warranty.id}`, {
         method: "DELETE",
       })
 
