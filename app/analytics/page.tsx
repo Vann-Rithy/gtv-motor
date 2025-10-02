@@ -10,6 +10,7 @@ import { TrendingUp, DollarSign, Users, BarChart3, PieChart, Activity, RefreshCw
 import { toast } from "sonner"
 import { useLanguage } from "@/lib/language-context"
 import { format } from "date-fns"
+import { API_ENDPOINTS } from "@/lib/api-config"
 
 export default function Analytics() {
   const { t } = useLanguage()
@@ -39,7 +40,7 @@ export default function Analytics() {
         params.append('to', format(toDate, 'yyyy-MM-dd'))
       }
 
-      const response = await fetch(`/api/dashboard/analytics?${params.toString()}`)
+      const response = await fetch(`${API_ENDPOINTS.DASHBOARD.ANALYTICS}?${params.toString()}`)
 
       if (!response.ok) {
         throw new Error("Failed to fetch analytics data")

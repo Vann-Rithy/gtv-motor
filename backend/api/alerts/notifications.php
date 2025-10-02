@@ -68,12 +68,16 @@ try {
             $type = Request::query('type');
             $search = Request::query('search');
 
-            $where = [];
+            $where = []; // Start with no default filter
             $params = [];
 
+            // Only add status filter if explicitly requested
             if ($status && $status !== 'all') {
                 $where[] = "sa.status = ?";
                 $params[] = $status;
+            } else {
+                // Default: show all non-completed alerts
+                $where[] = "sa.status != 'completed'";
             }
 
             if ($type && $type !== 'all') {
@@ -127,7 +131,30 @@ try {
             $params[] = $limit;
             $stmt = $db->prepare($alertsQuery);
             $stmt->execute($params);
-            $notifications['recent_alerts'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $recentAlerts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Debug logging
+            error_log("Alerts query executed. Found " . count($recentAlerts) . " alerts");
+            error_log("Query: " . $alertsQuery);
+            error_log("Params: " . json_encode($params));
+            if (count($recentAlerts) > 0) {
+                error_log("First alert: " . json_encode($recentAlerts[0]));
+            } else {
+                error_log("No alerts found - checking database directly");
+                // Test direct database query
+                $testQuery = "SELECT COUNT(*) as total FROM service_alerts";
+                $testStmt = $db->query($testQuery);
+                $testResult = $testStmt->fetch(PDO::FETCH_ASSOC);
+                error_log("Total alerts in database: " . $testResult['total']);
+                
+                // Check status distribution
+                $statusQuery = "SELECT status, COUNT(*) as count FROM service_alerts GROUP BY status";
+                $statusStmt = $db->query($statusQuery);
+                $statusResults = $statusStmt->fetchAll(PDO::FETCH_ASSOC);
+                error_log("Status distribution: " . json_encode($statusResults));
+            }
+            
+            $notifications['recent_alerts'] = $recentAlerts;
 
         } catch (Exception $e) {
             // If database queries fail, use default values

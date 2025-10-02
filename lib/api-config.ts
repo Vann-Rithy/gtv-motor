@@ -37,11 +37,14 @@ export const API_ENDPOINTS = {
   // Alerts & Notifications
   ALERTS: `${API_BASE_URL}/api/alerts`,
   NOTIFICATIONS: `${API_BASE_URL}/api/notifications`,
+  ALERTS_NOTIFICATIONS: `${API_BASE_URL}/api/alerts/notifications`,
 
   // Dashboard
   DASHBOARD: {
     STATS: `${API_BASE_URL}/api/dashboard/stats`,
     ANALYTICS: `${API_BASE_URL}/api/dashboard/analytics`,
+    REVENUE: `${API_BASE_URL}/api/dashboard/revenue`,
+    ALERTS: `${API_BASE_URL}/api/dashboard/alerts`,
   },
 
   // Reports
@@ -49,6 +52,7 @@ export const API_ENDPOINTS = {
     SUMMARY: `${API_BASE_URL}/api/reports/summary`,
     CUSTOMER: `${API_BASE_URL}/api/reports/customer`,
     WARRANTY: `${API_BASE_URL}/api/reports/warranty`,
+    INVENTORY: `${API_BASE_URL}/api/reports/inventory`,
   },
 
   // Settings

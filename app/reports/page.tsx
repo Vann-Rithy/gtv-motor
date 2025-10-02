@@ -25,6 +25,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useLanguage } from "@/lib/language-context"
+import { API_ENDPOINTS } from "@/lib/api-config"
 
 interface SummaryData {
   totalRevenue: number
@@ -181,7 +182,7 @@ export default function Reports() {
     setLoading(true)
     try {
       // Fetch summary report
-      const summaryResponse = await fetch(`/api/reports/summary?from=${dateRange.from}&to=${dateRange.to}`)
+      const summaryResponse = await fetch(`${API_ENDPOINTS.REPORTS.SUMMARY}?from=${dateRange.from}&to=${dateRange.to}`)
       if (summaryResponse.ok) {
         const response = await summaryResponse.json()
         const summary = response.data // Extract data from API response
@@ -203,7 +204,7 @@ export default function Reports() {
       }
 
       // Fetch warranty report
-      const warrantyResponse = await fetch(`/api/reports/warranty?from=${dateRange.from}&to=${dateRange.to}`)
+      const warrantyResponse = await fetch(`${API_ENDPOINTS.REPORTS.WARRANTY}?from=${dateRange.from}&to=${dateRange.to}`)
       if (warrantyResponse.ok) {
         const response = await warrantyResponse.json()
         const warranty = response.data // Extract data from API response
@@ -224,7 +225,7 @@ export default function Reports() {
       }
 
       // Fetch customer report
-      const customerResponse = await fetch(`/api/reports/customer?from=${dateRange.from}&to=${dateRange.to}`)
+      const customerResponse = await fetch(`${API_ENDPOINTS.REPORTS.CUSTOMER}?from=${dateRange.from}&to=${dateRange.to}`)
       if (customerResponse.ok) {
         const response = await customerResponse.json()
         const customer = response.data // Extract data from API response
@@ -246,7 +247,7 @@ export default function Reports() {
       }
 
       // Fetch inventory report
-      const inventoryResponse = await fetch(`/api/reports/inventory?from=${dateRange.from}&to=${dateRange.to}`)
+      const inventoryResponse = await fetch(`${API_ENDPOINTS.REPORTS.INVENTORY}?from=${dateRange.from}&to=${dateRange.to}`)
       if (inventoryResponse.ok) {
         const response = await inventoryResponse.json()
         const inventory = response.data // Extract data from API response

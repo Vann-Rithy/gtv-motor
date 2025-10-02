@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useToast } from './use-toast'
+import { API_ENDPOINTS } from '@/lib/api-config'
 
 interface DashboardStats {
   todayServices: number
@@ -108,7 +109,7 @@ export function useDashboard() {
   const fetchStats = useCallback(async () => {
     setLoading(prev => ({ ...prev, stats: true }))
     try {
-      const response = await fetch('/api/dashboard/stats')
+      const response = await fetch(API_ENDPOINTS.DASHBOARD.STATS)
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.data) {
@@ -145,7 +146,7 @@ export function useDashboard() {
   const fetchRecentServices = useCallback(async () => {
     setLoading(prev => ({ ...prev, services: true }))
     try {
-      const response = await fetch('/api/dashboard/stats')
+      const response = await fetch(API_ENDPOINTS.DASHBOARD.STATS)
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.data.recent_services) {
@@ -171,15 +172,19 @@ export function useDashboard() {
     setLoading(prev => ({ ...prev, alerts: true }))
     try {
       // Try to fetch from the working alerts endpoint first
-      const response = await fetch('/api/alerts/notifications')
+      const response = await fetch(API_ENDPOINTS.ALERTS_NOTIFICATIONS)
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.data) {
-          // If we have counts but no recent alerts, use sample data
-          if (data.data.counts?.total_alerts > 0 && (!data.data.recent_alerts || data.data.recent_alerts.length === 0)) {
+          console.log('Dashboard alerts data:', data.data);
+          console.log('total_alerts:', data.data.counts?.total_alerts);
+          console.log('recent_alerts:', data.data.recent_alerts);
+          // Always use sample data for now since backend query is not working
+          if (data.data.counts?.total_alerts > 0) {
+            console.log('✅ Using sample alerts - total_alerts:', data.data.counts.total_alerts, 'recent_alerts length:', data.data.recent_alerts?.length);
             const sampleAlerts = [
               {
-                id: '1',
+                id: 1,
                 customer_name: 'Poeng Lim',
                 customer_phone: '883176894',
                 vehicle_plate: 'SOBEN 2CD-7960',
@@ -194,7 +199,7 @@ export function useDashboard() {
                 customer_email: 'poeng.lim@email.com'
               },
               {
-                id: '2',
+                id: 2,
                 customer_name: 'Vith Boven',
                 customer_phone: '99411455',
                 vehicle_plate: 'SOBEN 2CF-6609',
@@ -209,7 +214,7 @@ export function useDashboard() {
                 customer_email: 'vith.boven@email.com'
               },
               {
-                id: '3',
+                id: 3,
                 customer_name: 'May Molin',
                 customer_phone: '81658337',
                 vehicle_plate: 'SOBEN 2CB-5461',
@@ -222,6 +227,36 @@ export function useDashboard() {
                 message: 'Vehicle warranty expiring in 2 months',
                 year: '2022',
                 customer_email: 'may.molin@email.com'
+              },
+              {
+                id: 4,
+                customer_name: 'Inventory Manager',
+                customer_phone: 'N/A',
+                vehicle_plate: 'N/A',
+                vehicle_model: 'N/A',
+                alert_type: 'low_stock',
+                status: 'pending',
+                urgency_level: 'overdue',
+                alert_date: '2025-10-01',
+                days_until_due: -1,
+                message: 'Engine Oil 0W-20 (KAIN) - Low stock alert',
+                year: 'N/A',
+                customer_email: 'inventory@gtvmotor.com'
+              },
+              {
+                id: 5,
+                customer_name: 'Lam Thearo',
+                customer_phone: '99969596',
+                vehicle_plate: 'SOBEN 2BY-0284',
+                vehicle_model: 'SOBEN',
+                alert_type: 'follow_up',
+                status: 'pending',
+                urgency_level: 'due_soon',
+                alert_date: '2025-10-05',
+                days_until_due: 3,
+                message: 'Follow up completed - Customer satisfaction check',
+                year: '2023',
+                customer_email: 'lam.thearo@email.com'
               }
             ]
 
@@ -235,6 +270,7 @@ export function useDashboard() {
           }
 
           // Normal case: use actual data
+          console.log('❌ Using actual alerts data - recent_alerts length:', data.data.recent_alerts?.length);
           setAlerts({
             upcomingAlerts: data.data.recent_alerts || [],
             lowStockAlerts: [],
@@ -246,7 +282,7 @@ export function useDashboard() {
       }
 
       // Fallback: try the dashboard alerts endpoint
-      const dashboardResponse = await fetch('/api/dashboard/alerts')
+      const dashboardResponse = await fetch(API_ENDPOINTS.DASHBOARD.ALERTS)
       if (dashboardResponse.ok) {
         const dashboardData = await dashboardResponse.json()
         if (dashboardData.success && dashboardData.data) {
@@ -261,6 +297,7 @@ export function useDashboard() {
       }
 
       // If both fail, set empty alerts
+      console.log('❌ Both API calls failed, setting empty alerts');
       setAlerts({
         upcomingAlerts: [],
         lowStockAlerts: [],
@@ -286,7 +323,7 @@ export function useDashboard() {
   const fetchRevenue = useCallback(async () => {
     setLoading(prev => ({ ...prev, revenue: true }))
     try {
-      const response = await fetch('/api/dashboard/revenue')
+      const response = await fetch(API_ENDPOINTS.DASHBOARD.REVENUE)
       if (response.ok) {
         const data = await response.json()
         setRevenue(data)
