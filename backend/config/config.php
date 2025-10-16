@@ -34,6 +34,7 @@ $allowed_origins = [
     'http://127.0.0.1:3001',
     'https://gtvmotor.dev',
     'https://www.gtvmotor.dev',
+    'https://app.gtvmotor.dev',
     'https://gtv-motor.vercel.app',
     'https://gtv-motor-git-main.vercel.app',
     'https://gtv-motor-git-develop.vercel.app'
@@ -42,14 +43,14 @@ $allowed_origins = [
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 if (in_array($origin, $allowed_origins)) {
     header("Access-Control-Allow-Origin: $origin");
-} else {
-    // For development, allow localhost
-    if (strpos($origin, 'localhost') !== false || strpos($origin, '127.0.0.1') !== false) {
-        header("Access-Control-Allow-Origin: $origin");
     } else {
-        header('Access-Control-Allow-Origin: https://gtv-motor.vercel.app');
+        // For development, allow localhost
+        if (strpos($origin, 'localhost') !== false || strpos($origin, '127.0.0.1') !== false) {
+            header("Access-Control-Allow-Origin: $origin");
+        } else {
+            header('Access-Control-Allow-Origin: https://app.gtvmotor.dev');
+        }
     }
-}
 
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, PATCH');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, Pragma');
