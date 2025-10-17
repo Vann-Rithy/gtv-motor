@@ -1073,7 +1073,8 @@ export default function NewService() {
       const vehicleId = await findOrCreateVehicle(customer.id)
 
       // 4) Create service with all required fields
-      const totalAmount = itemsTotal > 0 ? itemsTotal : 0
+      // Use the invoice calculations for the final amount (includes discount and VAT)
+      const finalAmount = invoiceCalculations.total > 0 ? invoiceCalculations.total : itemsTotal
              const payload = {
          customer_id: Number(customer.id),
          vehicle_id: Number(vehicleId),
@@ -1082,7 +1083,7 @@ export default function NewService() {
          current_km: formData.kilometers ? Number(formData.kilometers) : null,
          next_service_km: formData.nextServiceKm ? Number(formData.nextServiceKm) : null,
          next_service_date: formData.nextServiceDate || null,
-         total_amount: totalAmount,
+         total_amount: finalAmount,
          payment_method: formData.paymentMethod,
          service_status: "pending",
          payment_status: "pending",
@@ -1092,6 +1093,13 @@ export default function NewService() {
          service_detail: formData.serviceDetail || null,
          customer_type: customerType,
          booking_id: bookingId ? Number(bookingId) : null,
+         // Add discount and VAT information
+         discount_amount: invoiceCalculations.discountAmount,
+         discount_type: invoiceData.discountType,
+         discount_value: invoiceData.discount,
+         vat_rate: invoiceData.vatRate,
+         vat_amount: invoiceCalculations.vatAmount,
+         subtotal: invoiceCalculations.subtotal,
        }
 
       const created = await apiClient.createService(payload)

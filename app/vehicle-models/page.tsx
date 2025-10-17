@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowLeft, Plus, Search, Edit, Trash2, Car, Loader2, Eye, EyeOff, Info, Calendar, DollarSign, Wrench, Settings, Palette, FileText, ChevronDown, ChevronUp } from "lucide-react"
+import { ArrowLeft, Plus, Search, Edit, Trash2, Car, Loader2, Info, Calendar, DollarSign, Wrench, Settings, Palette, FileText, ChevronDown, ChevronUp } from "lucide-react"
 import { toast } from "sonner"
 import { useLanguage } from "@/lib/language-context"
 import { apiClient } from "@/lib/api-client"
@@ -54,6 +54,8 @@ export default function VehicleModelsPage() {
   
   // Dialog states
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false)
+  const [selectedModel, setSelectedModel] = useState<VehicleModel | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [editingModel, setEditingModel] = useState<VehicleModel | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -73,7 +75,7 @@ export default function VehicleModelsPage() {
     transmission: "Manual",
     color_options: "",
     year_range: "",
-    specifications: "",
+    specifications: [] as Array<{key: string, value: string}>,
     is_active: true
   })
 
@@ -116,7 +118,7 @@ export default function VehicleModelsPage() {
       transmission: "Manual",
       color_options: "",
       year_range: "",
-      specifications: "",
+      specifications: [],
       is_active: true
     })
     setEditingModel(null)
@@ -138,7 +140,12 @@ export default function VehicleModelsPage() {
         warranty_max_services: parseInt(formData.warranty_max_services) || 2,
         cc_displacement: formData.cc_displacement ? parseInt(formData.cc_displacement) : null,
         color_options: formData.color_options ? formData.color_options.split(',').map(c => c.trim()) : [],
-        specifications: formData.specifications ? JSON.parse(formData.specifications) : {}
+        specifications: formData.specifications.reduce((acc, spec) => {
+          if (spec.key.trim() && spec.value.trim()) {
+            acc[spec.key.trim()] = spec.value.trim()
+          }
+          return acc
+        }, {} as Record<string, string>)
       }
 
       let response
@@ -181,7 +188,14 @@ export default function VehicleModelsPage() {
       transmission: model.transmission,
       color_options: Array.isArray(model.color_options) ? model.color_options.join(', ') : (typeof model.color_options === 'string' ? model.color_options : ""),
       year_range: model.year_range,
-      specifications: typeof model.specifications === 'object' ? JSON.stringify(model.specifications, null, 2) : (typeof model.specifications === 'string' ? model.specifications : ""),
+      specifications: (() => {
+        try {
+          const specs = typeof model.specifications === 'string' ? JSON.parse(model.specifications) : model.specifications
+          return Object.entries(specs || {}).map(([key, value]) => ({ key, value: String(value) }))
+        } catch {
+          return []
+        }
+      })(),
       is_active: model.is_active === "1" || model.is_active === true
     })
     setIsDialogOpen(true)
@@ -203,25 +217,34 @@ export default function VehicleModelsPage() {
     }
   }
 
-  // Handle toggle status
-  const handleToggleStatus = async (model: VehicleModel) => {
-    try {
-      const isCurrentlyActive = model.is_active === "1" || model.is_active === true
-      const response = await apiClient.updateVehicleModel(model.id, {
-        ...model,
-        is_active: !isCurrentlyActive
-      })
+  // Handle view details
+  const handleViewDetails = (model: VehicleModel) => {
+    setSelectedModel(model)
+    setIsDetailDialogOpen(true)
+  }
 
-      if (response.success) {
-        toast.success(`Vehicle model ${!isCurrentlyActive ? 'activated' : 'deactivated'} successfully`)
-        fetchVehicleModels()
-      } else {
-        toast.error("Failed to update vehicle model status")
-      }
-    } catch (error) {
-      console.error("Error updating vehicle model status:", error)
-      toast.error("Failed to update vehicle model status")
-    }
+  // Handle specifications
+  const addSpecification = () => {
+    setFormData({
+      ...formData,
+      specifications: [...formData.specifications, { key: "", value: "" }]
+    })
+  }
+
+  const removeSpecification = (index: number) => {
+    setFormData({
+      ...formData,
+      specifications: formData.specifications.filter((_, i) => i !== index)
+    })
+  }
+
+  const updateSpecification = (index: number, field: 'key' | 'value', value: string) => {
+    const updatedSpecs = [...formData.specifications]
+    updatedSpecs[index] = { ...updatedSpecs[index], [field]: value }
+    setFormData({
+      ...formData,
+      specifications: updatedSpecs
+    })
   }
 
   // Filter vehicle models
@@ -555,14 +578,44 @@ export default function VehicleModelsPage() {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="specifications">Specifications (JSON format)</Label>
-                    <Textarea
-                      id="specifications"
-                      placeholder='{"weight": "120kg", "max_speed": "120 km/h", "fuel_capacity": "12L"}'
-                      value={formData.specifications}
-                      onChange={(e) => setFormData({ ...formData, specifications: e.target.value })}
-                      rows={4}
-                    />
+                    <Label>Specifications</Label>
+                    <div className="space-y-2">
+                      {formData.specifications.map((spec, index) => (
+                        <div key={index} className="flex gap-2 items-center">
+                          <Input
+                            placeholder="Specification name (e.g., Weight)"
+                            value={spec.key}
+                            onChange={(e) => updateSpecification(index, 'key', e.target.value)}
+                            className="flex-1"
+                          />
+                          <Input
+                            placeholder="Value (e.g., 150kg)"
+                            value={spec.value}
+                            onChange={(e) => updateSpecification(index, 'value', e.target.value)}
+                            className="flex-1"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => removeSpecification(index)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={addSpecification}
+                        className="w-full"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Specification
+                      </Button>
+                    </div>
                   </div>
                   
                   <div className="flex items-center space-x-2">
@@ -685,7 +738,11 @@ export default function VehicleModelsPage() {
                 const isActive = model.is_active === "1" || model.is_active === true
 
                 return (
-                  <Card key={model.id} className="relative overflow-hidden hover:shadow-lg transition-shadow">
+                  <Card 
+                    key={model.id} 
+                    className="relative overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                    onClick={() => handleViewDetails(model)}
+                  >
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -803,48 +860,28 @@ export default function VehicleModelsPage() {
                       )}
 
                       {/* Actions */}
-                      <div className="flex items-center justify-between pt-3 border-t">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setExpandedModel(isExpanded ? null : model.id)}
-                          className="text-blue-600 hover:text-blue-700"
-                        >
-                          {isExpanded ? (
-                            <>
-                              <ChevronUp className="h-4 w-4 mr-1" />
-                              Less
-                            </>
-                          ) : (
-                            <>
-                              <ChevronDown className="h-4 w-4 mr-1" />
-                              More
-                            </>
-                          )}
-                        </Button>
-
+                      <div className="flex items-center justify-end pt-3 border-t">
                         <div className="flex items-center space-x-1">
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleEdit(model)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleEdit(model)
+                            }}
                             className="text-blue-600 hover:text-blue-700"
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
 
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleToggleStatus(model)}
-                            className={isActive ? "text-orange-600 hover:text-orange-700" : "text-green-600 hover:text-green-700"}
-                          >
-                            {isActive ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </Button>
-
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-red-600 hover:text-red-700"
+                                onClick={(e) => e.stopPropagation()}
+                              >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </AlertDialogTrigger>
@@ -890,7 +927,11 @@ export default function VehicleModelsPage() {
                   {filteredModels.map((model) => {
                     const isActive = model.is_active === "1" || model.is_active === true
                     return (
-                      <TableRow key={model.id}>
+                      <TableRow 
+                        key={model.id} 
+                        className="cursor-pointer hover:bg-gray-50"
+                        onClick={() => handleViewDetails(model)}
+                      >
                         <TableCell>
                           <div>
                             <div className="font-medium">{model.name}</div>
@@ -921,24 +962,23 @@ export default function VehicleModelsPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleEdit(model)}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleEdit(model)
+                              }}
                               className="text-blue-600 hover:text-blue-700"
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
 
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleToggleStatus(model)}
-                              className={isActive ? "text-orange-600 hover:text-orange-700" : "text-green-600 hover:text-green-700"}
-                            >
-                              {isActive ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </Button>
-
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="text-red-600 hover:text-red-700"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </AlertDialogTrigger>
@@ -971,6 +1011,184 @@ export default function VehicleModelsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Detail Dialog */}
+      <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <Car className="h-6 w-6 mr-2 text-blue-600" />
+              {selectedModel?.name} - Details
+            </DialogTitle>
+            <DialogDescription>
+              Complete information about this vehicle model
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedModel && (
+            <div className="space-y-6">
+              {/* Basic Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Name</Label>
+                    <p className="text-lg font-semibold">{selectedModel.name}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Description</Label>
+                    <p className="text-sm">{selectedModel.description}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Category</Label>
+                    <Badge variant="outline">{selectedModel.category}</Badge>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Status</Label>
+                    <Badge variant={selectedModel.is_active === "1" || selectedModel.is_active === true ? "default" : "secondary"}>
+                      {selectedModel.is_active === "1" || selectedModel.is_active === true ? "Active" : "Inactive"}
+                    </Badge>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Base Price</Label>
+                    <p className="text-lg font-semibold text-green-600">
+                      ${Number(selectedModel.base_price || 0).toFixed(2)}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Year Range</Label>
+                    <p className="text-sm">{selectedModel.year_range || "Not specified"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Service Duration</Label>
+                    <p className="text-sm">{Number(selectedModel.estimated_duration || 0)} minutes</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Engine Specifications */}
+              <div className="border rounded-lg p-4">
+                <h3 className="text-lg font-semibold mb-4 flex items-center">
+                  <Wrench className="h-5 w-5 mr-2" />
+                  Engine Specifications
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Engine Type</Label>
+                    <p className="text-sm">{selectedModel.engine_type}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Displacement</Label>
+                    <p className="text-sm">{selectedModel.cc_displacement ? `${selectedModel.cc_displacement}cc` : "Not specified"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Fuel Type</Label>
+                    <p className="text-sm">{selectedModel.fuel_type}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Transmission</Label>
+                    <p className="text-sm">{selectedModel.transmission}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Warranty Information */}
+              <div className="border rounded-lg p-4">
+                <h3 className="text-lg font-semibold mb-4 flex items-center">
+                  <Settings className="h-5 w-5 mr-2" />
+                  Warranty Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">KM Limit</Label>
+                    <p className="text-sm">{Number(selectedModel.warranty_km_limit || 0).toLocaleString()} km</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Max Services</Label>
+                    <p className="text-sm">{selectedModel.warranty_max_services} services</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Color Options */}
+              {(() => {
+                const colors = parseColorOptions(selectedModel.color_options)
+                return colors.length > 0 && (
+                  <div className="border rounded-lg p-4">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center">
+                      <Palette className="h-5 w-5 mr-2" />
+                      Available Colors
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {colors.map((color, index) => (
+                        <Badge key={index} variant="outline">{color}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })()}
+
+              {/* Specifications */}
+              {(() => {
+                const specs = parseSpecifications(selectedModel.specifications)
+                return Object.keys(specs).length > 0 && (
+                  <div className="border rounded-lg p-4">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center">
+                      <FileText className="h-5 w-5 mr-2" />
+                      Technical Specifications
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {Object.entries(specs).map(([key, value]) => (
+                        <div key={key} className="flex justify-between py-2 border-b border-gray-100">
+                          <span className="text-sm font-medium text-gray-600 capitalize">
+                            {key.replace(/_/g, ' ')}:
+                          </span>
+                          <span className="text-sm font-semibold">{String(value)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })()}
+
+              {/* Timestamps */}
+              <div className="border rounded-lg p-4">
+                <h3 className="text-lg font-semibold mb-4 flex items-center">
+                  <Calendar className="h-5 w-5 mr-2" />
+                  Record Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Created</Label>
+                    <p className="text-sm">{new Date(selectedModel.created_at).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Last Updated</Label>
+                    <p className="text-sm">{new Date(selectedModel.updated_at).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDetailDialogOpen(false)}>
+              Close
+            </Button>
+            <Button 
+              onClick={() => {
+                setIsDetailDialogOpen(false)
+                handleEdit(selectedModel!)
+              }}
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Model
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

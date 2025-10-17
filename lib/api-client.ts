@@ -213,7 +213,7 @@ class ApiClient {
     return this.request("/api/services", { method: "POST", body: JSON.stringify(data) })
   }
   async updateService(id: number | string, data: any) {
-    return this.request(`/api/services/${id}`, { method: "PUT", body: JSON.stringify(data) })
+    return this.request(`/api/service-update-simple`, { method: "POST", body: JSON.stringify({...data, action: 'update', service_id: id}) })
   }
 
   // ---------- Service Types ----------

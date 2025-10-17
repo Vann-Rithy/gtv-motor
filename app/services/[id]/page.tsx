@@ -25,7 +25,7 @@ interface ServiceDetail {
   customer_phone: string
   customer_address: string
   vehicle_plate: string
-  vehicle_model: string
+  vehicle_model_name: string
   vehicle_year: number
   service_type_name: string
   service_category: string
@@ -168,7 +168,7 @@ export default function ServiceDetailPage() {
                 <CardTitle>Service Overview</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div>
                     <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Service Status</label>
                     <div className="mt-1">
@@ -186,6 +186,10 @@ export default function ServiceDetailPage() {
                     </div>
                   </div>
                   <div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Invoice Number</label>
+                    <div className="mt-1 text-sm text-gray-900 dark:text-gray-100 font-mono">{service.invoice_number}</div>
+                  </div>
+                  <div>
                     <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Service Date</label>
                     <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">
                       {service.service_date ? new Date(service.service_date).toLocaleDateString() : "—"}
@@ -193,7 +197,11 @@ export default function ServiceDetailPage() {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Payment Method</label>
-                    <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">{service.payment_method || "—"}</div>
+                    <div className="mt-1 text-sm text-gray-900 dark:text-gray-100 capitalize">{service.payment_method || "—"}</div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Amount</label>
+                    <div className="mt-1 text-sm text-gray-900 dark:text-gray-100 font-semibold">{toMoney(service.total_amount)}</div>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Current Kilometers</label>
@@ -202,6 +210,12 @@ export default function ServiceDetailPage() {
                   <div>
                     <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Next Service KM</label>
                     <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">{service.next_service_km?.toLocaleString() || "—"}</div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Next Service Date</label>
+                    <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">
+                      {service.next_service_date ? new Date(service.next_service_date).toLocaleDateString() : "—"}
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -291,7 +305,7 @@ export default function ServiceDetailPage() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Model</label>
-                  <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">{service.vehicle_model}</div>
+                  <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">{service.vehicle_model_name || "—"}</div>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Year</label>
@@ -309,22 +323,40 @@ export default function ServiceDetailPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div>
-                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Service Type</label>
-                  <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">{service.service_type_name}</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Service Type</label>
+                    <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">{service.service_type_name}</div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Category</label>
+                    <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">{service.service_category}</div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Customer Type</label>
+                    <div className="mt-1 text-sm text-gray-900 dark:text-gray-100 capitalize">{service.customer_type || "—"}</div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Service Cost</label>
+                    <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">{toMoney(service.service_cost)}</div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Technician</label>
+                    <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">{service.technician_name || "—"}</div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Sales Rep</label>
+                    <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">{service.sales_rep_name || "—"}</div>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Category</label>
-                  <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">{service.service_category}</div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Technician</label>
-                  <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">{service.technician_name || "—"}</div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Sales Rep</label>
-                  <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">{service.sales_rep_name || "—"}</div>
-                </div>
+                {service.service_detail && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Service Details</label>
+                    <div className="mt-1 text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
+                      {service.service_detail}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

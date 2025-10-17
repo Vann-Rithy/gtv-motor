@@ -349,7 +349,7 @@ export default function ServiceInvoicePage() {
                 </div>
                 <div>
                   <span className="font-semibold text-gray-800 dark:text-gray-200">ម៉ាករថយន្ត/Model:</span>
-                  <span className="ml-2 text-gray-700 dark:text-gray-300">{service.vehicle_model}</span>
+                  <span className="ml-2 text-gray-700 dark:text-gray-300">{service.vehicle_model_name || "—"}</span>
                 </div>
                 <div>
                   <span className="font-semibold text-gray-800 dark:text-gray-200">លេខតួរថយន្ត/VIN No:</span>

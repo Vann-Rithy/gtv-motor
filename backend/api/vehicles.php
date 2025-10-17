@@ -39,12 +39,14 @@ try {
                     c.email as customer_email,
                     c.address as customer_address,
                     vm.name as model_name,
+                    vm.name as model,
                     vm.category as model_category,
                     vm.base_price as model_base_price,
                     vm.cc_displacement,
                     vm.engine_type,
                     vm.fuel_type,
                     vm.transmission,
+                    'Unknown' as color,
                     COUNT(DISTINCT s.id) as service_count,
                     MAX(s.service_date) as last_service_date,
                     SUM(s.total_amount) as total_service_amount,
@@ -101,12 +103,14 @@ try {
                 c.email as customer_email,
                 c.address as customer_address,
                 vm.name as model_name,
+                vm.name as model,
                 vm.category as model_category,
                 vm.base_price as model_base_price,
                 vm.cc_displacement,
                 vm.engine_type,
                 vm.fuel_type,
                 vm.transmission,
+                'Unknown' as color,
                 COUNT(DISTINCT s.id) as service_count,
                 MAX(s.service_date) as last_service_date,
                 SUM(s.total_amount) as total_service_amount,
@@ -234,8 +238,9 @@ try {
         // Get created vehicle with customer and model info
         $stmt = $db->prepare("
             SELECT v.*, c.name as customer_name, c.phone as customer_phone,
-                   vm.name as model_name, vm.category as model_category, vm.base_price as model_base_price,
-                   vm.cc_displacement, vm.engine_type, vm.fuel_type, vm.transmission
+                   vm.name as model_name, vm.name as model, vm.category as model_category, vm.base_price as model_base_price,
+                   vm.cc_displacement, vm.engine_type, vm.fuel_type, vm.transmission,
+                   'Unknown' as color
             FROM vehicles v
             LEFT JOIN customers c ON v.customer_id = c.id
             LEFT JOIN vehicle_models vm ON v.vehicle_model_id = vm.id
