@@ -1,10 +1,10 @@
-'use client'
+"use client"
 
-import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Shield, Car, CheckCircle, AlertTriangle, XCircle } from 'lucide-react'
+import { useState, useEffect } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Shield, Car, CheckCircle, AlertTriangle, XCircle } from "lucide-react"
 
 export default function WarrantyDisplayPage() {
   const [vehicles, setVehicles] = useState<any[]>([])
@@ -18,15 +18,15 @@ export default function WarrantyDisplayPage() {
   const fetchWarrantyStatus = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/warranty-status/status')
+      const response = await fetch("/api/warranty-status/status")
       if (!response.ok) {
-        throw new Error('Failed to fetch warranty status')
+        throw new Error("Failed to fetch warranty status")
       }
       const data = await response.json()
       setVehicles(data.data || [])
     } catch (err) {
-      setError('Failed to load warranty status data')
-      console.error('Error fetching warranty status:', err)
+      setError("Failed to load warranty status data")
+      console.error("Error fetching warranty status:", err)
     } finally {
       setLoading(false)
     }
@@ -34,11 +34,11 @@ export default function WarrantyDisplayPage() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'active':
+      case "active":
         return <CheckCircle className="h-4 w-4 text-green-600" />
-      case 'expiring_soon':
+      case "expiring_soon":
         return <AlertTriangle className="h-4 w-4 text-yellow-600" />
-      case 'expired':
+      case "expired":
         return <XCircle className="h-4 w-4 text-red-600" />
       default:
         return <Shield className="h-4 w-4 text-gray-600" />
@@ -47,22 +47,22 @@ export default function WarrantyDisplayPage() {
 
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800'
-      case 'expiring_soon':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'expired':
-        return 'bg-red-100 text-red-800'
+      case "active":
+        return "bg-green-100 text-green-800"
+      case "expiring_soon":
+        return "bg-yellow-100 text-yellow-800"
+      case "expired":
+        return "bg-red-100 text-red-800"
       default:
-        return 'bg-gray-100 text-gray-800'
+        return "bg-gray-100 text-gray-800"
     }
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     })
   }
 
@@ -119,27 +119,34 @@ export default function WarrantyDisplayPage() {
                   <p className="font-medium">{vehicle.customer_phone}</p>
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Warranty Status:</span>
                   <Badge className={getStatusBadgeColor(vehicle.warranty_status)}>
-                    {vehicle.warranty_status?.replace('_', ' ') || 'Unknown'}
+                    {vehicle.warranty_status?.replace("_", " ") || "Unknown"}
                   </Badge>
                 </div>
-                
+
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Expires:</span>
-                  <span className="font-medium">{vehicle.warranty_end_date ? formatDate(vehicle.warranty_end_date) : 'N/A'}</span>
+                  <span className="font-medium">
+                    {vehicle.warranty_end_date ? formatDate(vehicle.warranty_end_date) : "N/A"}
+                  </span>
                 </div>
-                
+
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Days Remaining:</span>
-                  <span className={`font-medium ${
-                    vehicle.days_remaining > 30 ? 'text-green-600' : 
-                    vehicle.days_remaining > 0 ? 'text-yellow-600' : 'text-red-600'
-                  }`}>
-                    {vehicle.days_remaining > 0 ? `${vehicle.days_remaining} days` : 'Expired'}
+                  <span
+                    className={`font-medium ${
+                      vehicle.days_remaining > 30
+                        ? "text-green-600"
+                        : vehicle.days_remaining > 0
+                          ? "text-yellow-600"
+                          : "text-red-600"
+                    }`}
+                  >
+                    {vehicle.days_remaining > 0 ? `${vehicle.days_remaining} days` : "Expired"}
                   </span>
                 </div>
               </div>
@@ -147,12 +154,12 @@ export default function WarrantyDisplayPage() {
               <div className="pt-2">
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-gray-500">Mileage:</span>
-                  <span className="font-medium">{vehicle.current_km?.toLocaleString() || 'N/A'} km</span>
+                  <span className="font-medium">{vehicle.current_km?.toLocaleString() || "N/A"} km</span>
                 </div>
               </div>
 
-              <Button 
-                onClick={() => console.log('View details for vehicle:', vehicle.vehicle_id)}
+              <Button
+                onClick={() => console.log("View details for vehicle:", vehicle.vehicle_id)}
                 className="w-full mt-4"
                 variant="outline"
               >
