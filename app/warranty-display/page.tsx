@@ -48,38 +48,35 @@ interface VehicleWarrantyInfo {
   warranty_transmission_km: number
   warranty_electrical_years: number
   warranty_electrical_km: number
-  warranty_battery_years: number | null
-  warranty_battery_km: number | null
-  has_hybrid_battery: boolean
-}
-
-interface WarrantyComponentStatus {
-  component: string
-  status: 'active' | 'expiring_soon' | 'expired' | 'not_applicable'
-  message: string
-  remaining_years: number
-  remaining_km: number
-  expiry_date: string | null
-  is_expired: boolean
-  progress_percentage: number
-  original_warranty: string
-  remaining_display: string
-}
-
-interface ServiceHistory {
-  id: number
-  service_date: string
-  total_amount: number
-  service_status: string
-  current_km_at_service: number
-  warranty_used: boolean
-  service_type_name: string
+  warranty_battery_years: number
+  warranty_battery_km: number
 }
 
 interface VehicleWarrantyDetails {
-  vehicle_info: VehicleWarrantyInfo
-  warranty_status: Record<string, WarrantyComponentStatus>
-  service_history: ServiceHistory[]
+  vehicle_id: number
+  plate_number: string
+  vin_number: string
+  year: number
+  purchase_date: string
+  warranty_start_date: string
+  warranty_end_date: string
+  warranty_km_limit: number
+  warranty_service_count: number
+  warranty_max_services: number
+  current_km: number
+  customer_name: string
+  customer_phone: string
+  model_name: string
+  model_category: string
+  warranty_components: Array<{
+    component_name: string
+    warranty_years: number
+    warranty_km: number
+    warranty_end_date: string
+    status: string
+    days_remaining: number
+    km_remaining: number
+  }>
 }
 
 export default function WarrantyDisplayPage() {
@@ -219,273 +216,173 @@ export default function WarrantyDisplayPage() {
         </Alert>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Vehicle Warranty Status</CardTitle>
-          <CardDescription>Click "View Details" to see component-specific warranty information</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Vehicle</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Model</TableHead>
-                <TableHead>Warranty Start</TableHead>
-                <TableHead>Current KM</TableHead>
-                <TableHead>Engine Status</TableHead>
-                <TableHead>Paint Status</TableHead>
-                <TableHead>Transmission Status</TableHead>
-                <TableHead>Electrical Status</TableHead>
-                <TableHead>Battery Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {vehicles.map((vehicle) => (
-                <TableRow key={vehicle.vehicle_id}>
-                  <TableCell className="font-medium">
-                    <div>
-                      <div>{vehicle.plate_number}</div>
-                      <div className="text-sm text-gray-500">{vehicle.year}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{vehicle.customer_name}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{vehicle.model_name}</Badge>
-                  </TableCell>
-                  <TableCell>{formatDate(vehicle.warranty_start_date)}</TableCell>
-                  <TableCell>{vehicle.current_km?.toLocaleString() || 'N/A'}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-1">
-                      {getStatusIcon(vehicle.warranty_status?.Engine?.status)}
-                      <Badge className={getStatusBadgeColor(vehicle.warranty_status?.Engine?.status)}>
-                        {vehicle.warranty_status?.Engine?.status || 'N/A'}
-                      </Badge>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-1">
-                      {getStatusIcon(vehicle.warranty_status?.'Car Paint'?.status)}
-                      <Badge className={getStatusBadgeColor(vehicle.warranty_status?.'Car Paint'?.status)}>
-                        {vehicle.warranty_status?.'Car Paint'?.status || 'N/A'}
-                      </Badge>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-1">
-                      {getStatusIcon(vehicle.warranty_status?.'Transmission (gearbox)'?.status)}
-                      <Badge className={getStatusBadgeColor(vehicle.warranty_status?.'Transmission (gearbox)'?.status)}>
-                        {vehicle.warranty_status?.'Transmission (gearbox)'?.status || 'N/A'}
-                      </Badge>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-1">
-                      {getStatusIcon(vehicle.warranty_status?.'Electrical System'?.status)}
-                      <Badge className={getStatusBadgeColor(vehicle.warranty_status?.'Electrical System'?.status)}>
-                        {vehicle.warranty_status?.'Electrical System'?.status || 'N/A'}
-                      </Badge>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-1">
-                      {getStatusIcon(vehicle.warranty_status?.'Battery Hybrid'?.status)}
-                      <Badge className={getStatusBadgeColor(vehicle.warranty_status?.'Battery Hybrid'?.status)}>
-                        {vehicle.warranty_status?.'Battery Hybrid'?.status || 'N/A'}
-                      </Badge>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => fetchVehicleDetails(vehicle.vehicle_id)}
-                    >
-                      View Details
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {vehicles.map((vehicle) => (
+          <Card key={vehicle.vehicle_id} className="hover:shadow-lg transition-shadow">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">{vehicle.plate_number}</CardTitle>
+                {getStatusIcon(vehicle.warranty_status)}
+              </div>
+              <CardDescription>
+                {vehicle.model_name} • {vehicle.year}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-500">Customer:</span>
+                  <p className="font-medium">{vehicle.customer_name}</p>
+                </div>
+                <div>
+                  <span className="text-gray-500">Phone:</span>
+                  <p className="font-medium">{vehicle.customer_phone}</p>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Warranty Status:</span>
+                  <Badge className={getStatusBadgeColor(vehicle.warranty_status)}>
+                    {vehicle.warranty_status.replace('_', ' ')}
+                  </Badge>
+                </div>
+                
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Expires:</span>
+                  <span className="font-medium">{formatDate(vehicle.warranty_end_date)}</span>
+                </div>
+                
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Days Remaining:</span>
+                  <span className={`font-medium ${
+                    vehicle.days_remaining > 30 ? 'text-green-600' : 
+                    vehicle.days_remaining > 0 ? 'text-yellow-600' : 'text-red-600'
+                  }`}>
+                    {vehicle.days_remaining > 0 ? `${vehicle.days_remaining} days` : 'Expired'}
+                  </span>
+                </div>
+              </div>
 
-      {/* Vehicle Warranty Details Dialog */}
+              <div className="pt-2">
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-gray-500">Mileage:</span>
+                  <span className="font-medium">{vehicle.current_km?.toLocaleString() || 'N/A'} km</span>
+                </div>
+                <Progress 
+                  value={vehicle.warranty_km_limit > 0 ? (vehicle.current_km / vehicle.warranty_km_limit) * 100 : 0} 
+                  className="h-2"
+                />
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>0 km</span>
+                  <span>{vehicle.warranty_km_limit?.toLocaleString() || 'N/A'} km limit</span>
+                </div>
+              </div>
+
+              <Button 
+                onClick={() => fetchVehicleDetails(vehicle.vehicle_id)}
+                className="w-full mt-4"
+                variant="outline"
+              >
+                View Details
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {vehicles.length === 0 && !loading && (
+        <div className="text-center py-12">
+          <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No warranty data found</h3>
+          <p className="text-gray-500">There are no vehicles with warranty information available.</p>
+        </div>
+      )}
+
       {selectedVehicle && (
         <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>
-                Warranty Details - {selectedVehicle.vehicle_info.plate_number}
+              <DialogTitle className="flex items-center space-x-2">
+                <Shield className="h-5 w-5 text-blue-600" />
+                <span>Warranty Details - {selectedVehicle.plate_number}</span>
               </DialogTitle>
               <DialogDescription>
-                {selectedVehicle.vehicle_info.model_name} - {selectedVehicle.vehicle_info.customer_name}
+                Complete warranty information for {selectedVehicle.model_name} ({selectedVehicle.year})
               </DialogDescription>
             </DialogHeader>
             
             <div className="space-y-6">
-              {/* Vehicle Information */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Car className="h-5 w-5" />
-                    <span>Vehicle Information</span>
-                  </CardTitle>
+                  <CardTitle className="text-lg">Vehicle Information</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <Label className="text-sm font-medium">Plate Number</Label>
-                      <p className="text-lg font-semibold">{selectedVehicle.vehicle_info.plate_number}</p>
+                      <span className="text-gray-500">Customer:</span>
+                      <p className="font-medium">{selectedVehicle.customer_name}</p>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium">VIN Number</Label>
-                      <p className="text-lg">{selectedVehicle.vehicle_info.vin_number || 'N/A'}</p>
+                      <span className="text-gray-500">Phone:</span>
+                      <p className="font-medium">{selectedVehicle.customer_phone}</p>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium">Year</Label>
-                      <p className="text-lg">{selectedVehicle.vehicle_info.year || 'N/A'}</p>
+                      <span className="text-gray-500">VIN:</span>
+                      <p className="font-medium">{selectedVehicle.vin_number}</p>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium">Current KM</Label>
-                      <p className="text-lg font-semibold">{selectedVehicle.vehicle_info.current_km?.toLocaleString() || 'N/A'}</p>
+                      <span className="text-gray-500">Current Mileage:</span>
+                      <p className="font-medium">{selectedVehicle.current_km?.toLocaleString() || 'N/A'} km</p>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium">Warranty Start Date</Label>
-                      <p className="text-lg">{formatDate(selectedVehicle.vehicle_info.warranty_start_date)}</p>
+                      <span className="text-gray-500">Purchase Date:</span>
+                      <p className="font-medium">{formatDate(selectedVehicle.purchase_date)}</p>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium">Purchase Date</Label>
-                      <p className="text-lg">{formatDate(selectedVehicle.vehicle_info.purchase_date)}</p>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium">Customer</Label>
-                      <p className="text-lg">{selectedVehicle.vehicle_info.customer_name}</p>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium">Phone</Label>
-                      <p className="text-lg">{selectedVehicle.vehicle_info.customer_phone}</p>
+                      <span className="text-gray-500">Warranty Start:</span>
+                      <p className="font-medium">{formatDate(selectedVehicle.warranty_start_date)}</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Warranty Components */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Shield className="h-5 w-5" />
-                    <span>Warranty Components Status</span>
-                  </CardTitle>
-                  <CardDescription>
-                    Component-specific warranty status based on start date and current usage
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {Object.entries(selectedVehicle.warranty_status).map(([component, status]) => (
-                      <Card key={component} className="border-l-4 border-l-blue-500">
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center space-x-3">
-                              {getComponentIcon(component)}
-                              <div>
-                                <h4 className="font-semibold text-lg">{component}</h4>
-                                <p className="text-sm text-gray-600">{status.message}</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              {getStatusIcon(status.status)}
-                              <Badge className={getStatusBadgeColor(status.status)}>
-                                {status.status.replace('_', ' ').toUpperCase()}
-                              </Badge>
-                            </div>
-                          </div>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
-                            <div>
-                              <Label className="text-sm font-medium">Original Warranty</Label>
-                              <p className="text-sm">{status.original_warranty}</p>
-                            </div>
-                            <div>
-                              <Label className="text-sm font-medium">Remaining</Label>
-                              <p className="text-sm font-semibold">{status.remaining_display}</p>
-                            </div>
-                            <div>
-                              <Label className="text-sm font-medium">Expiry Date</Label>
-                              <p className="text-sm">
-                                {status.expiry_date ? formatDate(status.expiry_date) : 'N/A'}
-                                {status.expiry_date && !status.is_expired && (
-                                  <span className="ml-2 text-xs text-gray-500">
-                                    ({calculateDaysRemaining(status.expiry_date)} days left)
-                                  </span>
-                                )}
-                              </p>
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                              <span>Warranty Progress</span>
-                              <span>{status.progress_percentage}%</span>
-                            </div>
-                            <Progress 
-                              value={status.progress_percentage} 
-                              className="h-2"
-                              style={{
-                                backgroundColor: status.is_expired ? '#ef4444' : 
-                                               status.status === 'expiring_soon' ? '#f59e0b' : '#10b981'
-                              }}
-                            />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Service History */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Wrench className="h-5 w-5" />
-                    <span>Service History</span>
-                  </CardTitle>
-                  <CardDescription>
-                    Service records affecting warranty status
-                  </CardDescription>
+                  <CardTitle className="text-lg">Warranty Components</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Service Date</TableHead>
-                        <TableHead>Service Type</TableHead>
-                        <TableHead>KM at Service</TableHead>
-                        <TableHead>Amount</TableHead>
+                        <TableHead>Component</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>Warranty Used</TableHead>
+                        <TableHead>Expires</TableHead>
+                        <TableHead>Days Left</TableHead>
+                        <TableHead>KM Left</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {selectedVehicle.service_history.map((service) => (
-                        <TableRow key={service.id}>
-                          <TableCell>{formatDate(service.service_date)}</TableCell>
-                          <TableCell>{service.service_type_name || 'N/A'}</TableCell>
-                          <TableCell>{service.current_km_at_service?.toLocaleString() || 'N/A'}</TableCell>
-                          <TableCell>${service.total_amount?.toFixed(2) || '0.00'}</TableCell>
-                          <TableCell>
-                            <Badge variant={service.service_status === 'completed' ? 'default' : 'secondary'}>
-                              {service.service_status}
-                            </Badge>
+                      {selectedVehicle.warranty_components.map((component, index) => (
+                        <TableRow key={index}>
+                          <TableCell className="flex items-center space-x-2">
+                            {getComponentIcon(component.component_name)}
+                            <span>{component.component_name}</span>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={service.warranty_used ? 'default' : 'outline'}>
-                              {service.warranty_used ? 'Yes' : 'No'}
+                            <Badge className={getStatusBadgeColor(component.status)}>
+                              {component.status.replace('_', ' ')}
                             </Badge>
+                          </TableCell>
+                          <TableCell>{formatDate(component.warranty_end_date)}</TableCell>
+                          <TableCell className={
+                            component.days_remaining > 30 ? 'text-green-600' : 
+                            component.days_remaining > 0 ? 'text-yellow-600' : 'text-red-600'
+                          }>
+                            {component.days_remaining > 0 ? `${component.days_remaining} days` : 'Expired'}
+                          </TableCell>
+                          <TableCell>
+                            {component.km_remaining > 0 ? `${component.km_remaining.toLocaleString()} km` : 'N/A'}
                           </TableCell>
                         </TableRow>
                       ))}
