@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Update Exchange Rate</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .form-group { margin: 20px 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input { padding: 10px; width: 200px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin: 20px 0; padding: 10px; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    </style>
+</head>
+<body>
+    <h1>Update Exchange Rate for Service</h1>
+    
+    <div class="form-group">
+        <label for="serviceId">Service ID:</label>
+        <input type="number" id="serviceId" value="120" placeholder="Enter service ID">
+    </div>
+    
+    <div class="form-group">
+        <label for="exchangeRate">Exchange Rate (1 USD = KHR):</label>
+        <input type="number" id="exchangeRate" value="1257" placeholder="Enter exchange rate">
+    </div>
+    
+    <div class="form-group">
+        <label for="totalAmount">Total Amount (USD):</label>
+        <input type="number" id="totalAmount" value="55" placeholder="Enter total amount">
+    </div>
+    
+    <button onclick="updateExchangeRate()">Update Exchange Rate</button>
+    
+    <div id="result"></div>
+    
+    <script>
+        async function updateExchangeRate() {
+            const serviceId = document.getElementById('serviceId').value;
+            const exchangeRate = document.getElementById('exchangeRate').value;
+            const totalAmount = document.getElementById('totalAmount').value;
+            const totalKhr = totalAmount * exchangeRate;
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Updating...';
+            
+            try {
+                // Try the new endpoint first
+                const response = await fetch('https://api.gtvmotor.dev/api/update-exchange-rate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        service_id: serviceId,
+                        exchange_rate: exchangeRate,
+                        total_khr: totalKhr
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="result success">
+                        ✅ Exchange rate updated successfully!<br>
+                        Service ID: ${serviceId}<br>
+                        Exchange Rate: ${exchangeRate} KHR per USD<br>
+                        Total KHR: ${totalKhr.toLocaleString()}
+                    </div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="result error">
+                        ❌ Failed to update exchange rate: ${data.error}
+                    </div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">
+                    ❌ Error: ${error.message}
+                </div>`;
+            }
+        }
+    </script>
+</body>
+</html>

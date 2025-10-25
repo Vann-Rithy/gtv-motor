@@ -3,7 +3,7 @@
  * Centralized configuration for API endpoints
  */
 
-// API Base URL - Production server
+// API Base URL - Production server (api.gtvmotor.dev)
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.gtvmotor.dev'
 
 // API Endpoints
@@ -31,8 +31,11 @@ export const API_ENDPOINTS = {
   // Service Types
   SERVICE_TYPES: `${API_BASE_URL}/api/service-types`,
 
+  // Service Items
+  SERVICE_ITEMS: `${API_BASE_URL}/api/service-items`,
+
   // Warranties
-  WARRANTIES: `${API_BASE_URL}/api/warranties`,
+  WARRANTIES: `${API_BASE_URL}/api/warranties.php`,
 
   // Alerts & Notifications
   ALERTS: `${API_BASE_URL}/api/alerts`,

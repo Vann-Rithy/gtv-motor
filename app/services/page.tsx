@@ -37,6 +37,8 @@ type ServiceRow = {
   technician_name?: string | null
   technician_id?: number | null
   notes?: string | null
+  current_km?: number | null
+  volume_l?: number | null
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -437,7 +439,7 @@ export default function ServicesPage() {
                  </div>
 
                  {/* Service Details */}
-                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
+                 <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 mb-3">
                    <div className="text-center p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md">
                      <div className="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">Service Type</div>
                      <div className="text-sm font-bold text-gray-900 dark:text-gray-100">
@@ -463,6 +465,13 @@ export default function ServicesPage() {
                      <div className="text-xs text-orange-600 dark:text-orange-400 font-medium mb-1">Technician</div>
                      <div className="text-sm font-bold text-gray-900 dark:text-gray-100">
                        {s.technician_name || (s.technician_id ? `Tech #${s.technician_id}` : "—")}
+                     </div>
+                   </div>
+
+                   <div className="text-center p-2 bg-cyan-50 dark:bg-cyan-900/20 rounded-md">
+                     <div className="text-xs text-cyan-600 dark:text-cyan-400 font-medium mb-1">Volume (L)</div>
+                     <div className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                       {s.volume_l ? `${s.volume_l}L` : "—"}
                      </div>
                    </div>
                  </div>

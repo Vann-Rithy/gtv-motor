@@ -14,6 +14,7 @@ interface ServiceDetail {
   invoice_number: string
   service_date: string
   current_km: number
+  volume_l?: number
   next_service_km: number
   next_service_date: string
   total_amount: number
@@ -203,9 +204,29 @@ export default function ServiceDetailPage() {
                     <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Amount</label>
                     <div className="mt-1 text-sm text-gray-900 dark:text-gray-100 font-semibold">{toMoney(service.total_amount)}</div>
                   </div>
+                  {service.exchange_rate && service.exchange_rate > 0 && (
+                    <>
+                      <div>
+                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Exchange Rate</label>
+                        <div className="mt-1 text-sm text-gray-900 dark:text-gray-100 font-semibold text-green-600">
+                          {service.exchange_rate.toLocaleString()} KHR per USD
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Amount (KHR)</label>
+                        <div className="mt-1 text-sm text-gray-900 dark:text-gray-100 font-semibold text-blue-600">
+                          {(service.total_khr || (service.total_amount * service.exchange_rate)).toLocaleString()} KHR
+                        </div>
+                      </div>
+                    </>
+                  )}
                   <div>
                     <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Current Kilometers</label>
                     <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">{service.current_km?.toLocaleString() || "—"}</div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Volume (L)</label>
+                    <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">{service.volume_l ? `${service.volume_l}L` : "—"}</div>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Next Service KM</label>

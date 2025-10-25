@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Exchange Rate Storage</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; border-radius: 5px; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+        .result { margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>Exchange Rate Storage Test</h1>
+    
+    <div class="test-section">
+        <h3>1. Store Exchange Rate</h3>
+        <button onclick="storeExchangeRate()">Store Exchange Rate for Service 121</button>
+        <div id="storeResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. Retrieve Exchange Rate</h3>
+        <button onclick="retrieveExchangeRate()">Retrieve Exchange Rate for Service 121</button>
+        <div id="retrieveResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>3. Clear Exchange Rate</h3>
+        <button onclick="clearExchangeRate()">Clear Exchange Rate for Service 121</button>
+        <div id="clearResult" class="result"></div>
+    </div>
+    
+    <script>
+        function storeExchangeRate() {
+            const serviceId = 121;
+            const exchangeRate = 4521;
+            const totalAmount = 55;
+            const totalKhr = totalAmount * exchangeRate;
+            
+            const exchangeData = {
+                exchange_rate: exchangeRate,
+                total_khr: totalKhr,
+                timestamp: Date.now()
+            };
+            
+            localStorage.setItem(`exchange_rate_${serviceId}`, JSON.stringify(exchangeData));
+            
+            document.getElementById('storeResult').innerHTML = `
+                ✅ Stored exchange rate for service ${serviceId}:<br>
+                Exchange Rate: ${exchangeRate.toLocaleString()} KHR per USD<br>
+                Total Amount: $${totalAmount}<br>
+                Total KHR: ${totalKhr.toLocaleString()} KHR
+            `;
+        }
+        
+        function retrieveExchangeRate() {
+            const serviceId = 121;
+            const stored = localStorage.getItem(`exchange_rate_${serviceId}`);
+            
+            if (stored) {
+                try {
+                    const exchangeData = JSON.parse(stored);
+                    document.getElementById('retrieveResult').innerHTML = `
+                        ✅ Retrieved exchange rate for service ${serviceId}:<br>
+                        Exchange Rate: ${exchangeData.exchange_rate.toLocaleString()} KHR per USD<br>
+                        Total KHR: ${exchangeData.total_khr.toLocaleString()} KHR<br>
+                        Stored at: ${new Date(exchangeData.timestamp).toLocaleString()}
+                    `;
+                } catch (e) {
+                    document.getElementById('retrieveResult').innerHTML = `❌ Error parsing stored data: ${e.message}`;
+                }
+            } else {
+                document.getElementById('retrieveResult').innerHTML = `❌ No exchange rate found for service ${serviceId}`;
+            }
+        }
+        
+        function clearExchangeRate() {
+            const serviceId = 121;
+            localStorage.removeItem(`exchange_rate_${serviceId}`);
+            document.getElementById('clearResult').innerHTML = `✅ Cleared exchange rate for service ${serviceId}`;
+        }
+    </script>
+</body>
+</html>

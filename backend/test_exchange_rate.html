@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Exchange Rate Test</title>
+</head>
+<body>
+    <h1>Exchange Rate Test</h1>
+    
+    <form id="testForm">
+        <div>
+            <label for="exchangeRate">Exchange Rate:</label>
+            <input type="number" id="exchangeRate" value="4080" />
+        </div>
+        <div>
+            <label for="totalAmount">Total Amount:</label>
+            <input type="number" id="totalAmount" value="100" />
+        </div>
+        <button type="button" onclick="testExchangeRate()">Test Exchange Rate</button>
+    </form>
+    
+    <div id="result"></div>
+    
+    <script>
+        async function testExchangeRate() {
+            const exchangeRate = document.getElementById('exchangeRate').value;
+            const totalAmount = document.getElementById('totalAmount').value;
+            const totalKhr = totalAmount * exchangeRate;
+            
+            const testData = {
+                customer_id: 1,
+                vehicle_id: 1,
+                service_type_id: 1,
+                service_date: '2025-01-01',
+                total_amount: parseFloat(totalAmount),
+                payment_method: 'cash',
+                exchange_rate: parseFloat(exchangeRate),
+                total_khr: totalKhr
+            };
+            
+            console.log('Test data:', testData);
+            
+            try {
+                const response = await fetch('/api/services', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                const result = await response.json();
+                console.log('API Response:', result);
+                
+                document.getElementById('result').innerHTML = 
+                    '<h3>Result:</h3>' +
+                    '<pre>' + JSON.stringify(result, null, 2) + '</pre>';
+                    
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML = 
+                    '<h3>Error:</h3>' +
+                    '<pre>' + error.message + '</pre>';
+            }
+        }
+    </script>
+</body>
+</html>

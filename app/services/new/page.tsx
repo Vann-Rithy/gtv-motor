@@ -103,7 +103,9 @@ export default function NewService() {
   const [loadingBooking, setLoadingBooking] = useState(false)
   const [bookingData, setBookingData] = useState<any>(null)
   const [showInvoiceModal, setShowInvoiceModal] = useState(false)
+  const [showExchangeRateModal, setShowExchangeRateModal] = useState(false)
   const [createdServiceId, setCreatedServiceId] = useState<number | null>(null)
+  const [pendingServiceData, setPendingServiceData] = useState<any>(null)
   const [showBookingForm, setShowBookingForm] = useState(false)
   const [showBookingSelector, setShowBookingSelector] = useState(false)
   const [showBookingActionModal, setShowBookingActionModal] = useState(false)
@@ -111,7 +113,8 @@ export default function NewService() {
   const [invoiceData, setInvoiceData] = useState({
     discount: 0,
     vatRate: 10, // Default 10% VAT
-    discountType: 'percentage' as 'percentage' | 'fixed'
+    discountType: 'percentage' as 'percentage' | 'fixed',
+    exchangeRate: 0 // Default exchange rate USD to KHR (blank/0)
   })
 
   const [formData, setFormData] = useState({
@@ -127,6 +130,7 @@ export default function NewService() {
     warrantyStartDate: "",
     warrantyEndDate: "",
     kilometers: "",
+    volumeL: "",
     serviceType: "",
     serviceDetail: "",
     paymentMethod: "cash",
@@ -187,30 +191,8 @@ export default function NewService() {
         // Set customer type to walking since we're coming from customer page
         setCustomerType("walking")
 
-        // Load customer's vehicles
-        try {
-          const vehiclesResponse = await apiClient.getVehicles({ customer_id: customerId })
-          const vehicles = vehiclesResponse.data || []
-
-          if (vehicles.length > 0) {
-            // Pre-select the first vehicle
-            const firstVehicle = vehicles[0]
-            setSelectedVehicle(firstVehicle)
-            setFormData(prev => ({
-              ...prev,
-              plateNumber: firstVehicle.plate_number || "",
-              model: firstVehicle.model_name || firstVehicle.model || "",
-              year: firstVehicle.year?.toString() || "",
-              vinNumber: firstVehicle.vin_number || "",
-              purchaseDate: formatDateForInput(firstVehicle.purchase_date),
-              warrantyStartDate: formatDateForInput(firstVehicle.warranty_start_date),
-              warrantyEndDate: formatDateForInput(firstVehicle.warranty_end_date),
-              kilometers: firstVehicle.current_km?.toString() || ""
-            }))
-          }
-        } catch (vehicleError) {
-          console.warn("Could not load customer vehicles:", vehicleError)
-        }
+        // Load customer's vehicles - removed auto-loading to prevent vehicle search
+        // Customer vehicles will not be auto-loaded, user will enter vehicle details manually
       }
     } catch (error) {
       console.error("Failed to load customer data:", error)
@@ -229,9 +211,8 @@ export default function NewService() {
       setBookingData(booking)
 
       if (booking) {
-        // First, try to find existing customer and vehicle
+        // First, try to find existing customer
         let existingCustomer: Customer | null = null
-        let existingVehicle: Vehicle | null = null
 
         // Search for existing customer by phone number
         if (booking.customer_phone) {
@@ -241,15 +222,7 @@ export default function NewService() {
             if (customers.length > 0) {
               existingCustomer = customers[0] as Customer
 
-              // Search for existing vehicle by plate number for this customer
-              if (booking.vehicle_plate) {
-                const vehiclesResponse = await apiClient.getVehicles({ search: booking.vehicle_plate, limit: 1 })
-                const vehicles = vehiclesResponse?.data || []
-                const customerVehicle = vehicles.find((v: any) => v.customer_id === existingCustomer?.id)
-                if (customerVehicle) {
-                  existingVehicle = customerVehicle as Vehicle
-                }
-              }
+              // Vehicle search removed - will create new vehicle for each service
             }
           } catch (error) {
             console.warn("Error searching for existing customer:", error)
@@ -265,8 +238,8 @@ export default function NewService() {
           address: existingCustomer?.address || booking.customer_address || "",
           plateNumber: booking.vehicle_plate || "",
           model: booking.vehicle_model || "",
-          vinNumber: existingVehicle?.vin_number || booking.vehicle_vin || "",
-          year: existingVehicle?.year?.toString() || booking.vehicle_year?.toString() || "",
+          vinNumber: booking.vehicle_vin || "",
+          year: booking.vehicle_year?.toString() || "",
           serviceType: booking.service_type_name || "",
           notes: booking.notes || "",
           // Convert any date strings to proper format for HTML date inputs
@@ -294,14 +267,8 @@ export default function NewService() {
 
         setFormData(updatedFormData)
 
-        if (existingCustomer && existingVehicle) {
-          // Use existing customer and vehicle
-          setSelectedCustomer(existingCustomer)
-          setSelectedVehicle(existingVehicle)
-          setCustomerType("booking")
-          toast.success("Existing customer and vehicle found! Service will be linked to existing records.")
-        } else if (existingCustomer) {
-          // Use existing customer but create new vehicle
+        if (existingCustomer) {
+          // Use existing customer but always create new vehicle
           setSelectedCustomer(existingCustomer)
           setSelectedVehicle({
             id: 0, // Will create new vehicle
@@ -429,6 +396,7 @@ export default function NewService() {
         warrantyStartDate: "",
         warrantyEndDate: "",
         kilometers: "",
+        volumeL: "",
         serviceType: "",
         serviceDetail: "",
         paymentMethod: "cash",
@@ -567,189 +535,19 @@ export default function NewService() {
     toast.success("Existing booking selected! Service form has been pre-filled with booking data.")
   }
 
-  // Auto-complete customer and vehicle data when plate number is entered
+  // Handle plate number change without auto-completion
   const handlePlateNumberChange = async (plateNumber: string) => {
     setFormData({ ...formData, plateNumber })
-
-    if (plateNumber.length >= 3) {
-      setSearchingPlate(true)
-      try {
-        console.log("Searching for plate number:", plateNumber)
-
-        // Search for vehicle by plate number
-        const vehiclesResponse = await apiClient.getVehicles({ search: plateNumber, limit: 1 })
-        console.log("Vehicles response:", vehiclesResponse)
-
-        // Handle different API response structures
-        let vehicle = null
-        if (vehiclesResponse?.vehicles && vehiclesResponse.vehicles.length > 0) {
-          vehicle = vehiclesResponse.vehicles[0]
-        } else if (vehiclesResponse?.data && vehiclesResponse.data.length > 0) {
-          vehicle = vehiclesResponse.data[0]
-        } else if (Array.isArray(vehiclesResponse) && vehiclesResponse.length > 0) {
-          vehicle = vehiclesResponse[0]
-        }
-
-        console.log("Found vehicle:", vehicle)
-
-        if (vehicle) {
-          setSelectedVehicle(vehicle)
-
-          // Get customer data for this vehicle
-          console.log("Getting customer data for customer_id:", vehicle.customer_id)
-          const customerResponse = await apiClient.getCustomer(vehicle.customer_id)
-          console.log("Customer response:", customerResponse)
-
-          if (customerResponse) {
-            // Extract customer data from the response structure
-            const customerData = customerResponse.data || customerResponse
-            console.log("Customer data extracted:", customerData)
-
-            setSelectedCustomer(customerData)
-
-            // Auto-fill form data
-            const updatedFormData = {
-              ...formData,
-              plateNumber: vehicle.plate_number || plateNumber, // Keep the plate number
-              customerName: customerData.name || "",
-              phone: customerData.phone || "",
-              email: customerData.email || "",
-              address: customerData.address || "",
-              model: vehicle.model || "",
-              vinNumber: vehicle.vin_number || "",
-              year: vehicle.year?.toString() || "",
-              purchaseDate: formatDateForInput(vehicle.purchase_date),
-              warrantyStartDate: formatDateForInput(vehicle.warranty_start_date),
-              warrantyEndDate: formatDateForInput(vehicle.warranty_end_date),
-            }
-
-            console.log("Auto-filling form data:", updatedFormData)
-            setFormData(updatedFormData)
-
-            // Show success message for walking customers
-            if (customerType === "walking") {
-              toast.success(`Found existing vehicle: ${vehicle.model} (${vehicle.plate_number}) - Customer data auto-filled`)
-            }
-          }
-        } else {
-          console.log("No vehicle found for plate number:", plateNumber)
-          setSelectedVehicle(null)
-          setSelectedCustomer(null)
-
-          // Show info message for walking customers
-          if (customerType === "walking") {
-            toast.info("No existing vehicle found - new customer and vehicle records will be created")
-          }
-        }
-      } catch (error) {
-        console.error("Error searching for vehicle:", error)
-        if (customerType === "walking") {
-          toast.error("Error searching for existing vehicle data")
-        }
-      } finally {
-        setSearchingPlate(false)
-      }
-    }
   }
 
-  // Auto-complete customer data when customer name is entered
+  // Handle customer name change without auto-completion
   const handleCustomerNameChange = async (customerName: string) => {
     setFormData({ ...formData, customerName })
-
-    if (customerName.length >= 3 && customerType === "walking") {
-      try {
-        console.log("Searching for customer by name:", customerName)
-
-        // Search for customer by name
-        const customersResponse = await apiClient.getCustomers({ search: customerName, limit: 1 })
-        console.log("Customers response:", customersResponse)
-
-        // Handle different API response structures
-        let customer = null
-        if (customersResponse?.customers && customersResponse.customers.length > 0) {
-          customer = customersResponse.customers[0]
-        } else if (customersResponse?.data && customersResponse.data.length > 0) {
-          customer = customersResponse.data[0]
-        } else if (Array.isArray(customersResponse) && customersResponse.length > 0) {
-          customer = customersResponse[0]
-        }
-
-        console.log("Found customer:", customer)
-
-        if (customer) {
-          setSelectedCustomer(customer)
-
-          // Auto-fill customer data
-          const updatedFormData = {
-            ...formData,
-            customerName: customer.name || customerName,
-            phone: customer.phone || "",
-            email: customer.email || "",
-            address: customer.address || "",
-          }
-
-          console.log("Auto-filling customer data:", updatedFormData)
-          setFormData(updatedFormData)
-
-          toast.success(`Found existing customer: ${customer.name} - Customer data auto-filled`)
-        } else {
-          console.log("No customer found for name:", customerName)
-          setSelectedCustomer(null)
-        }
-      } catch (error) {
-        console.error("Error searching for customer:", error)
-      }
-    }
   }
 
-  // Auto-complete customer data when phone number is entered
+  // Handle phone change without auto-completion
   const handlePhoneChange = async (phone: string) => {
     setFormData({ ...formData, phone })
-
-    if (phone.length >= 3 && customerType === "walking") {
-      try {
-        console.log("Searching for customer by phone:", phone)
-
-        // Search for customer by phone
-        const customersResponse = await apiClient.getCustomers({ search: phone, limit: 1 })
-        console.log("Customers response:", customersResponse)
-
-        // Handle different API response structures
-        let customer = null
-        if (customersResponse?.customers && customersResponse.customers.length > 0) {
-          customer = customersResponse.customers[0]
-        } else if (customersResponse?.data && customersResponse.data.length > 0) {
-          customer = customersResponse.data[0]
-        } else if (Array.isArray(customersResponse) && customersResponse.length > 0) {
-          customer = customersResponse[0]
-        }
-
-        console.log("Found customer:", customer)
-
-        if (customer) {
-          setSelectedCustomer(customer)
-
-          // Auto-fill customer data
-          const updatedFormData = {
-            ...formData,
-            customerName: customer.name || "",
-            phone: customer.phone || phone,
-            email: customer.email || "",
-            address: customer.address || "",
-          }
-
-          console.log("Auto-filling customer data:", updatedFormData)
-          setFormData(updatedFormData)
-
-          toast.success(`Found existing customer: ${customer.name} - Customer data auto-filled`)
-        } else {
-          console.log("No customer found for phone:", phone)
-          setSelectedCustomer(null)
-        }
-      } catch (error) {
-        console.error("Error searching for customer:", error)
-      }
-    }
   }
 
   // Function to handle service type selection
@@ -829,11 +627,26 @@ export default function NewService() {
     [serviceItems],
   )
 
+  // Check if form is ready to submit
+  const isFormReady = useMemo(() => {
+    return !!(
+      formData.serviceType &&
+      formData.serviceDetail &&
+      formData.plateNumber &&
+      formData.model &&
+      formData.customerName &&
+      formData.phone &&
+      serviceItems.length > 0 &&
+      serviceItems.every(item => item.description.trim())
+    )
+  }, [formData, serviceItems])
+
   // Invoice calculations
   const invoiceCalculations = useMemo(() => {
     const subtotal = Number(itemsTotal) || 0
     const discount = Number(invoiceData.discount) || 0
     const vatRate = Number(invoiceData.vatRate) || 0
+    const exchangeRate = Number(invoiceData.exchangeRate) || 0
 
     const discountAmount = invoiceData.discountType === 'percentage'
       ? (subtotal * discount) / 100
@@ -841,13 +654,16 @@ export default function NewService() {
     const afterDiscount = subtotal - discountAmount
     const vatAmount = (afterDiscount * vatRate) / 100
     const total = afterDiscount + vatAmount
+    const totalKHR = total * exchangeRate
 
     return {
       subtotal,
       discountAmount,
       afterDiscount,
       vatAmount,
-      total
+      total,
+      exchangeRate,
+      totalKHR
     }
   }, [itemsTotal, invoiceData])
 
@@ -897,25 +713,9 @@ export default function NewService() {
       throw new Error("Customer name and phone are required")
     }
 
-    // If we have a selected customer with an ID, use it (existing customer)
-    if (selectedCustomer && selectedCustomer.id && selectedCustomer.id !== 0) {
-      return { id: selectedCustomer.id, name: selectedCustomer.name }
-    }
-
-    // Try to find existing customer by phone number
-    try {
-      const customersResponse = await apiClient.getCustomers({ search: phone, limit: 1 })
-      const customers = customersResponse?.data || []
-      const existingCustomer = customers.find((c: any) => c.phone === phone)
-
-      if (existingCustomer) {
-        return { id: existingCustomer.id, name: existingCustomer.name }
-      }
-    } catch (error) {
-      console.warn("Error searching for existing customer:", error)
-    }
-
-    // Create new customer if none exists
+    // Always create new customer with current form data (never reuse existing customer)
+    console.log("Creating new customer with current form data:", { name, phone, email: formData.email, address: formData.address })
+    
     const customerData = {
       name,
       phone,
@@ -924,6 +724,12 @@ export default function NewService() {
     }
 
     const res = await apiClient.createCustomer(customerData)
+    
+    // Check if this is a mock response (API failed)
+    if (res?.isMock) {
+      throw new Error(`Customer creation failed: ${res.error}`)
+    }
+    
     return { id: res?.data?.id ?? res?.id, name }
   }
 
@@ -932,96 +738,18 @@ export default function NewService() {
       throw new Error("Vehicle plate number and model are required")
     }
 
-    // If we have a selected vehicle with an ID, use it (existing vehicle)
-    if (selectedVehicle && selectedVehicle.id && selectedVehicle.id !== 0) {
-      console.log("Using selected existing vehicle:", selectedVehicle)
-      return selectedVehicle.id
-    }
-
-    // Try to find existing vehicle by plate number
-    try {
-      console.log("=== VEHICLE SEARCH DEBUG ===")
-      console.log("Searching for existing vehicle with plate:", formData.plateNumber)
-      console.log("Customer ID:", customerId)
-
-      const vehiclesResponse = await apiClient.getVehicles({ search: formData.plateNumber, limit: 50 })
-
-      console.log("Raw API Response:", vehiclesResponse)
-      console.log("Response type:", typeof vehiclesResponse)
-      console.log("Response keys:", vehiclesResponse ? Object.keys(vehiclesResponse) : 'No response')
-
-      // Handle different API response structures
-      let vehicles: any[] = []
-      if (vehiclesResponse?.vehicles) {
-        // API returns { vehicles: [...], pagination: {...} }
-        vehicles = vehiclesResponse.vehicles
-        console.log("Using vehiclesResponse.vehicles")
-      } else if (vehiclesResponse?.data) {
-        // API returns { data: [...] }
-        vehicles = vehiclesResponse.data
-        console.log("Using vehiclesResponse.data")
-      } else if (Array.isArray(vehiclesResponse)) {
-        // API returns direct array
-        vehicles = vehiclesResponse
-        console.log("Using vehiclesResponse as direct array")
-      } else {
-        console.log("No valid vehicles array found in response")
-      }
-
-      console.log("Extracted vehicles array:", vehicles)
-      console.log("Vehicles array length:", vehicles.length)
-
-      // Find vehicles with matching plate number
-      const matchingVehicles = vehicles.filter((v: any) => {
-        console.log("Checking vehicle:", v.plate_number, "against:", formData.plateNumber)
-        const matches = v.plate_number === formData.plateNumber
-        console.log("Match result:", matches)
-        return matches
-      })
-
-      console.log("Found matching vehicles:", matchingVehicles.length)
-
-      if (matchingVehicles.length > 0) {
-        // Find the best match - prioritize vehicles for the same customer
-        let bestVehicle = matchingVehicles[0]
-
-        // First, try to find a vehicle for the same customer
-        const sameCustomerVehicle = matchingVehicles.find(v => v.customer_id === Number(customerId))
-        if (sameCustomerVehicle) {
-          bestVehicle = sameCustomerVehicle
-          console.log("Found vehicle for same customer:", bestVehicle)
-        } else {
-          // If no vehicle for same customer, use the most recent one
-          bestVehicle = matchingVehicles.sort((a, b) =>
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-          )[0]
-          console.log("Using most recent vehicle:", bestVehicle)
-        }
-
-        // Check if it belongs to the same customer
-        if (bestVehicle.customer_id === Number(customerId)) {
-          console.log("Vehicle belongs to same customer, using existing vehicle")
-          toast.success(`Using existing vehicle: ${bestVehicle.model} (${bestVehicle.plate_number})`)
-          return bestVehicle.id
-        } else {
-          // Vehicle exists but belongs to different customer
-          console.log("Vehicle exists but belongs to different customer")
-          console.log("Vehicle customer_id:", bestVehicle.customer_id, "vs current customer_id:", customerId)
-
-          // Since we allow duplicate plate numbers, we can create a new vehicle for this customer
-          console.log("Creating new vehicle for different customer with same plate number")
-        }
-      } else {
-        console.log("No existing vehicle found with plate:", formData.plateNumber)
-        console.log("Searched through vehicles:", vehicles.map(v => ({ id: v.id, plate: v.plate_number, customer: v.customer_id })))
-      }
-    } catch (error) {
-      console.warn("Error searching for existing vehicle:", error)
-      // Don't throw here, continue to create new vehicle
-    }
-
-    // Create new vehicle if none exists or if we need one for a different customer
-    console.log("Creating new vehicle for customer:", customerId)
+    // Always create new vehicle with current form data (never reuse existing vehicle)
+    console.log("Creating new vehicle with current form data for customer:", customerId)
+    console.log("Form data:", {
+      plateNumber: formData.plateNumber,
+      model: formData.model,
+      vinNumber: formData.vinNumber,
+      year: formData.year,
+      purchaseDate: formData.purchaseDate,
+      warrantyStartDate: formData.warrantyStartDate,
+      warrantyEndDate: formData.warrantyEndDate
+    })
+    
     try {
       const created = await apiClient.createVehicle({
         customer_id: customerId,
@@ -1032,7 +760,13 @@ export default function NewService() {
         purchase_date: formData.purchaseDate || null,
         warranty_start_date: formData.warrantyStartDate || null,
         warranty_end_date: formData.warrantyEndDate || null,
+        current_km: formData.kilometers ? Number(formData.kilometers) : null, // Add current_km to vehicle creation
       })
+
+      // Check if this is a mock response (API failed)
+      if (created?.isMock) {
+        throw new Error(`Vehicle creation failed: ${created.error}`)
+      }
 
       const vehicleId = created?.data?.id ?? created?.id ?? created?.vehicle?.id
       console.log("New vehicle created with ID:", vehicleId)
@@ -1046,16 +780,47 @@ export default function NewService() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Prevent multiple submissions
+    if (isSubmitting) {
+      console.log("Form is already submitting, ignoring duplicate submission")
+      return
+    }
+    
     setIsSubmitting(true)
     setError(null)
     setSuccessMsg(null)
 
     try {
-      // Basic validations
-      if (!formData.serviceType) throw new Error("Please select a service type")
-      if (!formData.serviceDetail) throw new Error("Please provide service details")
-      if (!formData.plateNumber || !formData.model) throw new Error("Please fill vehicle information")
-      if (!formData.customerName || !formData.phone) throw new Error("Please fill customer information")
+      // Basic validations with better error messages
+      if (!formData.serviceType) {
+        throw new Error("Please select a service type from the options above")
+      }
+      if (!formData.serviceDetail) {
+        throw new Error("Please provide detailed information about the service to be performed")
+      }
+      
+      // Debug vehicle information
+      console.log("Vehicle validation debug:", {
+        plateNumber: formData.plateNumber,
+        model: formData.model,
+        plateNumberEmpty: !formData.plateNumber,
+        modelEmpty: !formData.model
+      })
+      
+      if (!formData.plateNumber || !formData.model) {
+        const missingFields = []
+        if (!formData.plateNumber) missingFields.push("Plate Number")
+        if (!formData.model) missingFields.push("Vehicle Model")
+        throw new Error(`Please complete the vehicle information section. Missing: ${missingFields.join(", ")}`)
+      }
+      
+      if (!formData.customerName || !formData.phone) {
+        const missingCustomerFields = []
+        if (!formData.customerName) missingCustomerFields.push("Customer Name")
+        if (!formData.phone) missingCustomerFields.push("Phone Number")
+        throw new Error(`Please complete the customer information section. Missing: ${missingCustomerFields.join(", ")}`)
+      }
 
       // Validate service items have descriptions
       const invalidItems = serviceItems.filter(item => !item.description.trim())
@@ -1075,48 +840,59 @@ export default function NewService() {
       // 4) Create service with all required fields
       // Use the invoice calculations for the final amount (includes discount and VAT)
       const finalAmount = invoiceCalculations.total > 0 ? invoiceCalculations.total : itemsTotal
-             const payload = {
-         customer_id: Number(customer.id),
-         vehicle_id: Number(vehicleId),
-         service_type_id: Number(serviceTypeId),
-         service_date: new Date().toISOString().slice(0, 10), // YYYY-MM-DD
-         current_km: formData.kilometers ? Number(formData.kilometers) : null,
-         next_service_km: formData.nextServiceKm ? Number(formData.nextServiceKm) : null,
-         next_service_date: formData.nextServiceDate || null,
-         total_amount: finalAmount,
-         payment_method: formData.paymentMethod,
-         service_status: "pending",
-         payment_status: "pending",
-         technician_id: formData.technicianId ? Number(formData.technicianId) : null,
-         sales_rep_id: formData.salesRepId ? Number(formData.salesRepId) : null,
-         notes: formData.notes || null,
-         service_detail: formData.serviceDetail || null,
-         customer_type: customerType,
-         booking_id: bookingId ? Number(bookingId) : null,
-         // Add discount and VAT information
-         discount_amount: invoiceCalculations.discountAmount,
-         discount_type: invoiceData.discountType,
-         discount_value: invoiceData.discount,
-         vat_rate: invoiceData.vatRate,
-         vat_amount: invoiceCalculations.vatAmount,
-         subtotal: invoiceCalculations.subtotal,
-       }
-
-      const created = await apiClient.createService(payload)
-
-      // 5) If we have service items, save them
-      if (serviceItems.length > 0 && created?.data?.id) {
-        try {
-          await saveServiceItems(created.data.id, serviceItems)
-        } catch (itemError) {
-          console.warn("Failed to save service items:", itemError)
-          // Don't fail the whole request if items fail to save
-        }
+      
+      // Debug logging
+      console.log("=== FRONTEND EXCHANGE RATE DEBUG ===");
+      console.log("invoiceData.exchangeRate:", invoiceData.exchangeRate);
+      console.log("invoiceCalculations.exchangeRate:", invoiceCalculations.exchangeRate);
+      console.log("invoiceCalculations.totalKHR:", invoiceCalculations.totalKHR);
+      console.log("invoiceData object:", invoiceData);
+      console.log("invoiceCalculations object:", invoiceCalculations);
+      
+      // Get current exchange rate from the input field to ensure we have the latest value
+      const exchangeRateInput = document.getElementById('exchangeRate') as HTMLInputElement;
+      const currentExchangeRate = exchangeRateInput ? Number(exchangeRateInput.value) || 0 : invoiceData.exchangeRate;
+      const currentTotalKHR = finalAmount * currentExchangeRate;
+      
+      console.log("Current exchange rate from input:", currentExchangeRate);
+      console.log("Current total KHR calculated:", currentTotalKHR);
+      
+      // Prepare service data to be created after exchange rate input
+      const payload = {
+        customer_id: Number(customer.id),
+        vehicle_id: Number(vehicleId),
+        service_type_id: Number(serviceTypeId),
+        service_date: new Date().toISOString().slice(0, 10), // YYYY-MM-DD
+        current_km: formData.kilometers ? Number(formData.kilometers) : null,
+        volume_l: formData.volumeL ? Number(formData.volumeL) : null,
+        next_service_km: formData.nextServiceKm ? Number(formData.nextServiceKm) : null,
+        next_service_date: formData.nextServiceDate || null,
+        total_amount: finalAmount,
+        payment_method: formData.paymentMethod,
+        service_status: "pending",
+        payment_status: "pending",
+        technician_id: formData.technicianId ? Number(formData.technicianId) : null,
+        sales_rep_id: formData.salesRepId ? Number(formData.salesRepId) : null,
+        notes: formData.notes || null,
+        service_detail: formData.serviceDetail || null,
+        customer_type: customerType,
+        booking_id: bookingId ? Number(bookingId) : null,
+        // Add discount and VAT information
+        discount_amount: invoiceCalculations.discountAmount,
+        discount_type: invoiceData.discountType,
+        discount_value: invoiceData.discount,
+        vat_rate: invoiceData.vatRate,
+        vat_amount: invoiceCalculations.vatAmount,
+        subtotal: invoiceCalculations.subtotal,
+        exchange_rate: 0, // Will be updated after exchange rate input
+        total_khr: 0, // Will be updated after exchange rate input
       }
 
-      setSuccessMsg("Service created successfully!")
-      setCreatedServiceId(created?.data?.id)
-      setShowInvoiceModal(true)
+      // Store the service data and service items to be used after exchange rate input
+      setPendingServiceData({ payload, serviceItems })
+      
+      // Show exchange rate popup first
+      setShowExchangeRateModal(true)
     } catch (err: any) {
       console.error("[new-service] submit failed:", err)
       setError(err?.message || "Failed to create service")
@@ -1124,6 +900,68 @@ export default function NewService() {
       setIsSubmitting(false)
     }
   }
+
+  // Function to create service with exchange rate
+  const handleCreateServiceWithExchangeRate = async () => {
+    if (!pendingServiceData) {
+      console.error("No pending service data found");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      // Update the payload with the exchange rate
+      const updatedPayload = {
+        ...pendingServiceData.payload,
+        exchange_rate: invoiceData.exchangeRate,
+        total_khr: invoiceCalculations.total * invoiceData.exchangeRate
+      };
+
+      console.log("🔄 Creating service with exchange rate:", invoiceData.exchangeRate);
+      console.log("📤 Service payload:", updatedPayload);
+
+      // Create the service
+      const created = await apiClient.createService(updatedPayload);
+
+      // Check if this is a mock response (API failed)
+      if (created?.isMock) {
+        console.error("Service creation failed - using mock data:", created.error);
+        setError(`Service creation failed: ${created.error}. The service was NOT saved to the database.`);
+        return;
+      }
+
+      // Save service items if we have them
+      if (pendingServiceData.serviceItems.length > 0 && created?.data?.id) {
+        try {
+          await saveServiceItems(created.data.id, pendingServiceData.serviceItems);
+        } catch (itemError) {
+          console.warn("Failed to save service items:", itemError);
+          // Don't fail the whole request if items fail to save
+        }
+      }
+
+      console.log("✅ Service created successfully with exchange rate:", invoiceData.exchangeRate);
+      console.log("✅ Total KHR:", invoiceCalculations.total * invoiceData.exchangeRate);
+
+      setSuccessMsg("Service created successfully!");
+      setCreatedServiceId(created?.data?.id);
+      
+      // Close exchange rate modal and show invoice modal
+      setShowExchangeRateModal(false);
+      setShowInvoiceModal(true);
+      
+      toast.success('Service created successfully!');
+
+    } catch (err: any) {
+      console.error("Error creating service with exchange rate:", err);
+      setError(err?.message || "Failed to create service");
+      toast.error(err?.message || "Failed to create service");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   // Helper function to save service items
   async function saveServiceItems(serviceId: number, items: ServiceItem[]) {
@@ -1187,11 +1025,31 @@ export default function NewService() {
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Feedback messages */}
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">{error}</div>
+            <div className="bg-red-50 border-l-4 border-red-400 text-red-700 px-4 py-3 rounded-r-lg shadow-sm">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium">{error}</p>
+                </div>
+              </div>
+            </div>
           )}
           {successMsg && (
-            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
-              {successMsg}
+            <div className="bg-green-50 border-l-4 border-green-400 text-green-700 px-4 py-3 rounded-r-lg shadow-sm">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium">{successMsg}</p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -1286,7 +1144,10 @@ export default function NewService() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="plateNumber">Plate Number *</Label>
+                  <Label htmlFor="plateNumber" className={`${!formData.plateNumber ? "text-red-600 font-medium" : ""}`}>
+                    Plate Number *
+                    {!formData.plateNumber && <span className="text-red-500 ml-1">(Required)</span>}
+                  </Label>
                   <div className="relative">
                     <Input
                       id="plateNumber"
@@ -1294,7 +1155,7 @@ export default function NewService() {
                       onChange={(e) => handlePlateNumberChange(e.target.value)}
                       placeholder="2CD-7960"
                       required
-                      className={selectedVehicle ? "bg-green-50 border-green-300" : ""}
+                      className={`${selectedVehicle ? "bg-green-50 border-green-300" : ""} ${!formData.plateNumber ? "border-red-300 focus:border-red-500 ring-red-200" : ""}`}
                     />
                     {searchingPlate && (
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -1313,12 +1174,15 @@ export default function NewService() {
                   )}
                 </div>
                 <div>
-                  <Label htmlFor="model">Model *</Label>
+                  <Label htmlFor="model" className={`${!formData.model ? "text-red-600 font-medium" : ""}`}>
+                    Vehicle Model *
+                    {!formData.model && <span className="text-red-500 ml-1">(Required)</span>}
+                  </Label>
                   <Select
                     value={formData.model}
                     onValueChange={(value) => setFormData({ ...formData, model: value })}
                   >
-                    <SelectTrigger className={selectedVehicle ? "bg-green-50 border-green-300" : ""}>
+                    <SelectTrigger className={`${selectedVehicle ? "bg-green-50 border-green-300" : ""} ${!formData.model ? "border-red-300 focus:border-red-500 ring-red-200" : ""}`}>
                       <SelectValue placeholder="Select model" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1392,6 +1256,18 @@ export default function NewService() {
                     className={selectedVehicle ? "bg-green-50 border-green-300" : ""}
                   />
                 </div>
+                <div>
+                  <Label htmlFor="volumeL">Volume (L)</Label>
+                  <Input
+                    id="volumeL"
+                    type="number"
+                    step="0.1"
+                    value={formData.volumeL}
+                    onChange={(e) => setFormData({ ...formData, volumeL: e.target.value })}
+                    placeholder="1.5"
+                    className={selectedVehicle ? "bg-green-50 border-green-300" : ""}
+                  />
+                </div>
               </div>
 
               {/* Additional Vehicle Information */}
@@ -1460,23 +1336,31 @@ export default function NewService() {
               )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="customerName">Customer Name *</Label>
+                  <Label htmlFor="customerName" className={`${!formData.customerName ? "text-red-600 font-medium" : ""}`}>
+                    Customer Name *
+                    {!formData.customerName && <span className="text-red-500 ml-1">(Required)</span>}
+                  </Label>
                   <Input
                     id="customerName"
                     value={formData.customerName}
                     onChange={(e) => handleCustomerNameChange(e.target.value)}
                     placeholder="Enter customer name for auto-complete"
                     required
+                    className={!formData.customerName ? "border-red-300 focus:border-red-500 ring-red-200" : ""}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="phone">Phone Number *</Label>
+                  <Label htmlFor="phone" className={`${!formData.phone ? "text-red-600 font-medium" : ""}`}>
+                    Phone Number *
+                    {!formData.phone && <span className="text-red-500 ml-1">(Required)</span>}
+                  </Label>
                   <Input
                     id="phone"
                     value={formData.phone}
                     onChange={(e) => handlePhoneChange(e.target.value)}
                     placeholder="Enter phone number for auto-complete"
                     required
+                    className={!formData.phone ? "border-red-300 focus:border-red-500 ring-red-200" : ""}
                   />
                 </div>
                                  <div>
@@ -1529,7 +1413,10 @@ export default function NewService() {
               {/* Service Detail - Only show when service type is selected */}
               {formData.serviceType && (
                 <div className="mt-6">
-                  <Label htmlFor="serviceDetail">Service Detail *</Label>
+                  <Label htmlFor="serviceDetail" className={`${!formData.serviceDetail ? "text-red-600 font-medium" : ""}`}>
+                    Service Detail *
+                    {!formData.serviceDetail && <span className="text-red-500 ml-1">(Required)</span>}
+                  </Label>
                   <Textarea
                     id="serviceDetail"
                     value={formData.serviceDetail}
@@ -1537,6 +1424,7 @@ export default function NewService() {
                     placeholder="Describe the specific service details..."
                     rows={3}
                     required
+                    className={!formData.serviceDetail ? "border-red-300 focus:border-red-500 ring-red-200" : ""}
                   />
                   <p className="text-sm text-gray-500 mt-1">
                     Provide detailed information about the service to be performed
@@ -1789,11 +1677,15 @@ export default function NewService() {
                 Cancel
               </Button>
             </Link>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting || !isFormReady}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Creating Service…
+                </>
+              ) : !isFormReady ? (
+                <>
+                  Complete Required Fields
                 </>
               ) : (
                 "Create Service"
@@ -1937,6 +1829,36 @@ export default function NewService() {
                                 className="mt-2 bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                               />
                             </div>
+                            <div>
+                              <Label htmlFor="invoiceExchangeRate" className="text-sm font-semibold text-gray-700">
+                                Exchange Rate (1 USD = KHR)
+                              </Label>
+                              <Input
+                                id="invoiceExchangeRate"
+                                type="number"
+                                value={invoiceData.exchangeRate}
+                                onChange={(e) => {
+                                  const value = Number(e.target.value) || 0;
+                                  console.log("Invoice exchange rate changed to:", value);
+                                  setInvoiceData({...invoiceData, exchangeRate: value});
+                                }}
+                                placeholder="4050"
+                                className="mt-2 bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                              />
+                              <div className="text-xs text-gray-500 mt-1">
+                                Current: {invoiceData.exchangeRate} KHR per USD
+                              </div>
+                              {invoiceData.exchangeRate === 0 && (
+                                <div className="text-xs text-red-500 mt-1 font-semibold bg-red-50 p-2 rounded border">
+                                  ⚠️ Please enter the exchange rate (e.g., 4050) to calculate KHR amount
+                                </div>
+                              )}
+                              {invoiceData.exchangeRate > 0 && (
+                                <div className="text-xs text-green-600 mt-1 font-semibold bg-green-50 p-2 rounded border">
+                                  ✅ Exchange rate set: {invoiceData.exchangeRate.toLocaleString()} KHR per USD
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
@@ -2040,6 +1962,14 @@ export default function NewService() {
                             <span className="text-xl font-bold">Total Amount</span>
                             <span className="text-2xl font-bold">${invoiceCalculations.total.toFixed(2)}</span>
                           </div>
+
+                          <div className="flex justify-between items-center py-3 px-4 bg-blue-50 rounded-lg shadow-sm border border-blue-200">
+                            <div className="flex items-center space-x-2">
+                              <span className="font-medium text-blue-800">Exchange Rate</span>
+                              <span className="text-sm text-blue-600">(1 USD = {invoiceCalculations.exchangeRate.toLocaleString()} KHR)</span>
+                            </div>
+                            <span className="font-semibold text-blue-900">KHR {invoiceCalculations.totalKHR.toLocaleString()}</span>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -2050,6 +1980,12 @@ export default function NewService() {
                         variant="outline"
                         size="lg"
                         onClick={() => {
+                          if (invoiceData.exchangeRate === 0) {
+                            const confirmed = confirm("⚠️ EXCHANGE RATE WARNING\n\nYou're skipping the invoice generation without setting an exchange rate.\n\nThis means:\n• The service will have exchange_rate = 0\n• The invoice will show 0 KHR\n• You'll need to manually update the exchange rate later\n\nDo you want to continue without setting an exchange rate?\n\nClick OK to continue, or Cancel to go back and set the exchange rate.");
+                            if (!confirmed) {
+                              return;
+                            }
+                          }
                           setShowInvoiceModal(false)
                           router.push("/services")
                         }}
@@ -2060,11 +1996,38 @@ export default function NewService() {
                       </Button>
                       <Button
                         size="lg"
-                        onClick={() => {
-                          // Here you would typically generate and download/print the invoice
-                          // For now, we'll just close the modal and redirect
-                          setShowInvoiceModal(false)
-                          router.push(`/services/${createdServiceId}`)
+                        onClick={async () => {
+                          try {
+                            // Update the service with the exchange rate from the invoice modal
+                            if (createdServiceId && invoiceData.exchangeRate > 0) {
+                              console.log("🔄 Updating service with exchange rate:", invoiceData.exchangeRate);
+                              
+                              const totalKHR = invoiceCalculations.total * invoiceData.exchangeRate;
+                              console.log("Calculated total KHR:", totalKHR);
+                              
+                              const updateData = {
+                                exchange_rate: invoiceData.exchangeRate,
+                                total_khr: totalKHR
+                              };
+                              
+                              console.log("📤 Sending update to database:", updateData);
+                              
+                              const result = await apiClient.updateService(createdServiceId, updateData);
+                              console.log("✅ Database update response:", result);
+                              console.log("✅ Service updated with exchange rate successfully in database!");
+                            } else if (invoiceData.exchangeRate === 0) {
+                              console.warn("⚠️ Exchange rate is 0 - service will have no KHR amount");
+                            }
+                            
+                            // Close modal and redirect to service page
+                            setShowInvoiceModal(false);
+                            router.push(`/services/${createdServiceId}`);
+                          } catch (error) {
+                            console.error("❌ Error updating service with exchange rate:", error);
+                            // Still redirect even if update fails
+                            setShowInvoiceModal(false);
+                            router.push(`/services/${createdServiceId}`);
+                          }
                         }}
                         className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200"
                       >
@@ -2188,6 +2151,141 @@ export default function NewService() {
                         <User className="h-4 w-4" />
                         <span>Cancel - Switch to Walking Customer</span>
                       </div>
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Exchange Rate Input Modal */}
+      {showExchangeRateModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-md">
+            <Card className="border-0 shadow-2xl bg-white">
+              <CardHeader className="bg-blue-600 text-white rounded-t-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <DollarSign className="h-6 w-6" />
+                    <div>
+                      <h2 className="text-xl font-bold">Set Exchange Rate</h2>
+                      <p className="text-blue-100 text-sm">Enter the current USD to KHR exchange rate</p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowExchangeRateModal(false)
+                      setIsSubmitting(false)
+                    }}
+                    className="text-white hover:bg-blue-700"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              
+              <CardContent className="p-6">
+                <div className="space-y-6">
+                  {/* Service Summary */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h3 className="font-semibold text-gray-800 mb-2">Service Summary</h3>
+                    <div className="space-y-1 text-sm text-gray-600">
+                      <div className="flex justify-between">
+                        <span>Customer:</span>
+                        <span className="font-medium">{formData.customerName}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Vehicle:</span>
+                        <span className="font-medium">{formData.plateNumber} - {formData.model}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Service Type:</span>
+                        <span className="font-medium">{serviceTypes.find(st => st.value === formData.serviceType)?.label}</span>
+                      </div>
+                      <div className="flex justify-between border-t pt-2 mt-2">
+                        <span className="font-semibold">Total Amount:</span>
+                        <span className="font-bold text-green-600">${invoiceCalculations.total.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Exchange Rate Input */}
+                  <div>
+                    <Label htmlFor="exchangeRateInput" className="text-sm font-semibold text-gray-700">
+                      Exchange Rate (1 USD = KHR)
+                    </Label>
+                    <Input
+                      id="exchangeRateInput"
+                      type="number"
+                      value={invoiceData.exchangeRate}
+                      onChange={(e) => {
+                        const value = Number(e.target.value) || 0;
+                        console.log("Exchange rate changed to:", value);
+                        setInvoiceData({...invoiceData, exchangeRate: value});
+                      }}
+                      placeholder="4050"
+                      className="mt-2 bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-lg"
+                    />
+                    <div className="text-xs text-gray-500 mt-1">
+                      Current: {invoiceData.exchangeRate} KHR per USD
+                    </div>
+                    {invoiceData.exchangeRate === 0 && (
+                      <div className="text-xs text-red-500 mt-1 font-semibold bg-red-50 p-2 rounded border">
+                        ⚠️ Please enter the exchange rate (e.g., 4050) to calculate KHR amount
+                      </div>
+                    )}
+                    {invoiceData.exchangeRate > 0 && (
+                      <div className="text-xs text-green-600 mt-1 font-semibold bg-green-50 p-2 rounded border">
+                        ✅ Exchange rate set: {invoiceData.exchangeRate.toLocaleString()} KHR per USD
+                      </div>
+                    )}
+                  </div>
+
+                  {/* KHR Calculation Preview */}
+                  {invoiceData.exchangeRate > 0 && (
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                      <h4 className="font-semibold text-blue-800 mb-2">Amount in KHR</h4>
+                      <div className="text-2xl font-bold text-blue-900">
+                        {(invoiceCalculations.total * invoiceData.exchangeRate).toLocaleString()} KHR
+                      </div>
+                      <div className="text-sm text-blue-600 mt-1">
+                        ${invoiceCalculations.total.toFixed(2)} × {invoiceData.exchangeRate.toLocaleString()} = {(invoiceCalculations.total * invoiceData.exchangeRate).toLocaleString()} KHR
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-gray-200">
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      onClick={() => {
+                        if (invoiceData.exchangeRate === 0) {
+                          const confirmed = confirm("⚠️ EXCHANGE RATE WARNING\n\nYou're creating a service without setting an exchange rate.\n\nThis means:\n• The service will have exchange_rate = 0\n• The invoice will show 0 KHR\n• You'll need to manually update the exchange rate later\n\nDo you want to continue without setting an exchange rate?\n\nClick OK to continue, or Cancel to go back and set the exchange rate.");
+                          if (!confirmed) {
+                            return;
+                          }
+                        }
+                        handleCreateServiceWithExchangeRate();
+                      }}
+                      className="w-full sm:w-auto sm:min-w-[140px] border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      <span className="hidden sm:inline">Skip Exchange Rate</span>
+                      <span className="sm:hidden">Skip</span>
+                    </Button>
+                    <Button
+                      size="lg"
+                      onClick={handleCreateServiceWithExchangeRate}
+                      className="w-full sm:w-auto sm:min-w-[160px] bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                    >
+                      <DollarSign className="h-4 w-4 mr-2" />
+                      <span className="hidden sm:inline">Create Service</span>
+                      <span className="sm:hidden">Create</span>
                     </Button>
                   </div>
                 </div>

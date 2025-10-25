@@ -12,8 +12,12 @@ export function calculateWarrantyStatus(warranty: WarrantyWithDetails): {
   const daysUntilExpiry = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
   
   const currentKm = warranty.current_km || 0
-  const kmRemaining = Math.max(0, warranty.km_limit - currentKm)
-  const servicesRemaining = Math.max(0, warranty.max_services - warranty.services_used)
+  const kmLimit = warranty.km_limit || 0
+  const maxServices = warranty.max_services || 0
+  const servicesUsed = warranty.services_used || 0
+  
+  const kmRemaining = Math.max(0, kmLimit - currentKm)
+  const servicesRemaining = Math.max(0, maxServices - servicesUsed)
   
   // Determine status
   let status: "active" | "expired" | "expiring_soon" | "suspended" | "cancelled" = "active"
@@ -82,8 +86,12 @@ export function calculateWarrantyCoverage(warranty: WarrantyWithDetails): {
   const elapsedDays = Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
   
   const currentKm = warranty.current_km || 0
-  const kmCoverage = Math.min(100, (currentKm / warranty.km_limit) * 100)
-  const serviceCoverage = (warranty.services_used / warranty.max_services) * 100
+  const kmLimit = warranty.km_limit || 1 // Avoid division by zero
+  const maxServices = warranty.max_services || 1 // Avoid division by zero
+  const servicesUsed = warranty.services_used || 0
+  
+  const kmCoverage = Math.min(100, (currentKm / kmLimit) * 100)
+  const serviceCoverage = Math.min(100, (servicesUsed / maxServices) * 100)
   const timeCoverage = Math.min(100, Math.max(0, (elapsedDays / totalDays) * 100))
   
   return {

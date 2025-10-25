@@ -176,19 +176,39 @@ try {
     } elseif ($method === 'POST') {
         // Create new customer
         $data = Request::body();
-        Request::validateRequired($data, ['name', 'phone']);
-
-        $name = Request::sanitize($data['name']);
-        $phone = Request::sanitize($data['phone']);
+        
+        // Debug logging
+        error_log("Customer creation data: " . json_encode($data));
+        
+        // Check if data has modified names with timestamps (from frontend)
+        $name = '';
+        $phone = '';
+        
+        if (isset($data['name'])) {
+            $name = Request::sanitize($data['name']);
+            // Remove timestamp suffix if present (format: name_timestamp)
+            if (preg_match('/^(.+)_\d+$/', $name, $matches)) {
+                $name = $matches[1];
+            }
+        }
+        
+        if (isset($data['phone'])) {
+            $phone = Request::sanitize($data['phone']);
+            // Remove timestamp suffix if present (format: phone_timestamp)
+            if (preg_match('/^(.+)_\d+$/', $phone, $matches)) {
+                $phone = $matches[1];
+            }
+        }
+        
+        // Validate required fields after cleaning
+        if (empty($name) || empty($phone)) {
+            Response::error('Missing required fields: name, phone', 400);
+        }
+        
         $email = Request::sanitize($data['email'] ?? '');
         $address = Request::sanitize($data['address'] ?? '');
 
-        // Check if customer with same phone already exists
-        $stmt = $db->prepare("SELECT id FROM customers WHERE phone = ?");
-        $stmt->execute([$phone]);
-        if ($stmt->fetch()) {
-            Response::error('Customer with this phone number already exists', 409);
-        }
+        // Removed phone number duplicate validation - users can upload same phone number multiple times
 
         $stmt = $db->prepare("
             INSERT INTO customers (name, phone, email, address, created_at, updated_at)

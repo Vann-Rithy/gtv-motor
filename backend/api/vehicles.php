@@ -80,8 +80,9 @@ try {
         $params = [];
 
         if (!empty($search['search'])) {
-            $where[] = "(v.plate_number LIKE ? OR v.model LIKE ? OR v.vin_number LIKE ? OR c.name LIKE ?)";
+            $where[] = "(v.plate_number LIKE ? OR v.vin_number LIKE ? OR c.name LIKE ? OR vm.name LIKE ? OR v.model LIKE ?)";
             $searchTerm = '%' . $search['search'] . '%';
+            $params[] = $searchTerm;
             $params[] = $searchTerm;
             $params[] = $searchTerm;
             $params[] = $searchTerm;
@@ -122,7 +123,7 @@ try {
             LEFT JOIN services s ON v.id = s.vehicle_id
             {$whereClause}
             GROUP BY v.id
-            ORDER BY v.{$search['sortBy']} {$search['sortOrder']}
+            ORDER BY v.id DESC
             LIMIT {$pagination['limit']} OFFSET {$pagination['offset']}
         ";
 
@@ -155,12 +156,38 @@ try {
     } elseif ($method === 'POST') {
         // Create new vehicle
         $data = Request::body();
-        Request::validateRequired($data, ['customer_id', 'plate_number']);
-
-        $customerId = (int)$data['customer_id'];
-        $plateNumber = Request::sanitize($data['plate_number']);
+        
+        // Debug logging
+        error_log("Vehicle creation data: " . json_encode($data));
+        
+        // Check if data has modified plate numbers with timestamps (from frontend)
+        $customerId = 0;
+        $plateNumber = '';
+        
+        if (isset($data['customer_id'])) {
+            $customerId = (int)$data['customer_id'];
+        }
+        
+        if (isset($data['plate_number'])) {
+            $plateNumber = Request::sanitize($data['plate_number']);
+            // Remove timestamp suffix if present (format: plate_timestamp)
+            if (preg_match('/^(.+)_\d+$/', $plateNumber, $matches)) {
+                $plateNumber = $matches[1];
+            }
+        }
+        
+        // Validate required fields after cleaning
+        if ($customerId <= 0 || empty($plateNumber)) {
+            Response::error('Missing required fields: customer_id, plate_number', 400);
+        }
+        
         $model = Request::sanitize($data['model'] ?? '');
         $vinNumber = Request::sanitize($data['vin_number'] ?? '');
+        
+        // Clean VIN number if it has timestamp suffix
+        if (!empty($vinNumber) && preg_match('/^(.+)_\d+$/', $vinNumber, $matches)) {
+            $vinNumber = $matches[1];
+        }
         $year = !empty($data['year']) ? (int)$data['year'] : null;
         $currentKm = !empty($data['current_km']) ? (int)$data['current_km'] : 0;
         $purchaseDate = $data['purchase_date'] ?? null;
@@ -176,21 +203,7 @@ try {
             Response::error('Customer not found', 404);
         }
 
-        // Check if plate number already exists
-        $stmt = $db->prepare("SELECT id FROM vehicles WHERE plate_number = ?");
-        $stmt->execute([$plateNumber]);
-        if ($stmt->fetch()) {
-            Response::error('Vehicle with this plate number already exists', 409);
-        }
-
-        // Check if VIN number already exists (if provided)
-        if (!empty($vinNumber)) {
-            $stmt = $db->prepare("SELECT id FROM vehicles WHERE vin_number = ?");
-            $stmt->execute([$vinNumber]);
-            if ($stmt->fetch()) {
-                Response::error('Vehicle with this VIN number already exists', 409);
-            }
-        }
+        // Removed duplicate plate number and VIN validation - users can upload same plate/VIN multiple times
 
         // Get vehicle_model_id from vehicle_models table (if model is provided)
         $vehicleModelId = null;

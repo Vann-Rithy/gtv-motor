@@ -98,7 +98,9 @@ try {
                         'subtotal' => $service['total_amount'],
                         'vat_rate' => 10,
                         'vat_amount' => round($service['total_amount'] * 0.1, 2),
-                        'total' => round($service['total_amount'] * 1.1, 2)
+                        'total' => round($service['total_amount'] * 1.1, 2),
+                        'exchange_rate' => $service['exchange_rate'] ?? 0,
+                        'total_khr' => $service['total_khr'] ?? ($service['total_amount'] * ($service['exchange_rate'] ?? 0))
                     ]
                 ];
 
@@ -255,12 +257,38 @@ try {
     } elseif ($method === 'POST') {
         // Create new service
         $data = Request::body();
-        Request::validateRequired($data, ['customer_id', 'vehicle_id', 'service_type_id']);
-
-        $customerId = (int)$data['customer_id'];
-        $vehicleId = (int)$data['vehicle_id'];
-        $serviceTypeId = (int)$data['service_type_id'];
+        
+        // Debug logging
+        error_log("Service creation data: " . json_encode($data));
+        
+        // Check if data has modified service dates with timestamps (from frontend)
+        $customerId = 0;
+        $vehicleId = 0;
+        $serviceTypeId = 0;
+        
+        if (isset($data['customer_id'])) {
+            $customerId = (int)$data['customer_id'];
+        }
+        
+        if (isset($data['vehicle_id'])) {
+            $vehicleId = (int)$data['vehicle_id'];
+        }
+        
+        if (isset($data['service_type_id'])) {
+            $serviceTypeId = (int)$data['service_type_id'];
+        }
+        
+        // Validate required fields
+        if ($customerId <= 0 || $vehicleId <= 0 || $serviceTypeId <= 0) {
+            Response::error('Missing required fields: customer_id, vehicle_id, service_type_id', 400);
+        }
+        
         $serviceDate = $data['service_date'] ?? date('Y-m-d');
+        
+        // Clean service date if it has timestamp suffix
+        if (preg_match('/^(.+)_\d+$/', $serviceDate, $matches)) {
+            $serviceDate = $matches[1];
+        }
         $totalAmount = isset($data['total_amount']) ? (float)$data['total_amount'] : 0.00;
         $serviceStatus = Request::sanitize($data['service_status'] ?? 'pending');
         $paymentMethod = Request::sanitize($data['payment_method'] ?? 'cash');
@@ -268,10 +296,22 @@ try {
         $notes = Request::sanitize($data['notes'] ?? '');
         $serviceDetail = Request::sanitize($data['service_detail'] ?? '');
         $currentKm = isset($data['current_km']) ? (int)$data['current_km'] : null;
+        $volumeL = isset($data['volume_l']) ? (float)$data['volume_l'] : null;
         $nextServiceKm = isset($data['next_service_km']) ? (int)$data['next_service_km'] : null;
         $nextServiceDate = $data['next_service_date'] ?? null;
         $technicianId = isset($data['technician_id']) ? (int)$data['technician_id'] : null;
         $salesRepId = isset($data['sales_rep_id']) ? (int)$data['sales_rep_id'] : null;
+
+        if (isset($data['exchange_rate'])) {
+            $updateFields[] = "exchange_rate = ?";
+            $updateValues[] = (float)$data['exchange_rate'];
+        }
+
+        if (isset($data['total_khr'])) {
+            $updateFields[] = "total_khr = ?";
+            $updateValues[] = (float)$data['total_khr'];
+        }
+
         $customerType = Request::sanitize($data['customer_type'] ?? 'walking');
         $bookingId = isset($data['booking_id']) ? (int)$data['booking_id'] : null;
         
@@ -282,6 +322,12 @@ try {
         $vatRate = isset($data['vat_rate']) ? (float)$data['vat_rate'] : 10.00;
         $vatAmount = isset($data['vat_amount']) ? (float)$data['vat_amount'] : 0.00;
         $subtotal = isset($data['subtotal']) ? (float)$data['subtotal'] : $totalAmount;
+        $exchangeRate = isset($data['exchange_rate']) ? (float)$data['exchange_rate'] : 0.00;
+        $totalKhr = isset($data['total_khr']) ? (float)$data['total_khr'] : ($totalAmount * $exchangeRate);
+        
+        // Debug logging for exchange rate
+        error_log("Exchange Rate Debug - Input: " . ($data['exchange_rate'] ?? 'NOT_SET') . ", Processed: " . $exchangeRate);
+        error_log("Total KHR Debug - Input: " . ($data['total_khr'] ?? 'NOT_SET') . ", Processed: " . $totalKhr);
 
         // Generate invoice number
         $year = date('y');
@@ -297,26 +343,30 @@ try {
             Response::error('Customer not found', 404);
         }
 
-        // Validate vehicle exists
-        $stmt = $db->prepare("SELECT id FROM vehicles WHERE id = ?");
+        // Validate vehicle exists and get vehicle_model_id
+        $stmt = $db->prepare("SELECT id, vehicle_model_id FROM vehicles WHERE id = ?");
         $stmt->execute([$vehicleId]);
-        if (!$stmt->fetch()) {
+        $vehicle = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$vehicle) {
             Response::error('Vehicle not found', 404);
         }
+        $vehicleModelId = $vehicle['vehicle_model_id'];
 
         $stmt = $db->prepare("
             INSERT INTO services (
-                invoice_number, customer_id, vehicle_id, service_type_id, service_date,
-                current_km, next_service_km, next_service_date, total_amount, payment_method, 
+                invoice_number, customer_id, vehicle_id, vehicle_model_id, service_type_id, service_date,
+                current_km, volume_l, next_service_km, next_service_date, total_amount, payment_method, 
                 payment_status, service_status, notes, service_detail, technician_id, 
-                sales_rep_id, customer_type, booking_id, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+                sales_rep_id, customer_type, booking_id, exchange_rate, total_khr, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
         ");
+        
+        
         $stmt->execute([
-            $invoiceNumber, $customerId, $vehicleId, $serviceTypeId, $serviceDate,
-            $currentKm, $nextServiceKm, $nextServiceDate, $totalAmount, $paymentMethod,
+            $invoiceNumber, $customerId, $vehicleId, $vehicleModelId, $serviceTypeId, $serviceDate,
+            $currentKm, $volumeL, $nextServiceKm, $nextServiceDate, $totalAmount, $paymentMethod,
             $paymentStatus, $serviceStatus, $notes, $serviceDetail, $technicianId,
-            $salesRepId, $customerType, $bookingId
+            $salesRepId, $customerType, $bookingId, $exchangeRate, $totalKhr
         ]);
 
         $serviceId = $db->lastInsertId();
@@ -346,6 +396,12 @@ try {
         // Update existing service
         $serviceId = (int)$pathParts[1];
         $data = Request::body();
+
+        // Debug logging
+        error_log("PUT Debug - Service ID: " . $serviceId);
+        error_log("PUT Debug - Path parts: " . json_encode($pathParts));
+        error_log("PUT Debug - Request data: " . json_encode($data));
+        error_log("PUT Debug - Database connection: " . ($db ? 'Connected' : 'Failed'));
 
         // Validate service exists
         $stmt = $db->prepare("SELECT id FROM services WHERE id = ?");
@@ -427,6 +483,16 @@ try {
 
         if (empty($updateFields)) {
             Response::error('No fields to update', 400);
+        }
+
+                if (isset($data['exchange_rate'])) {
+            $updateFields[] = "exchange_rate = ?";
+            $updateValues[] = (float)$data['exchange_rate'];
+        }
+
+        if (isset($data['total_khr'])) {
+            $updateFields[] = "total_khr = ?";
+            $updateValues[] = (float)$data['total_khr'];
         }
 
         $updateValues[] = $serviceId; // Add service ID for WHERE clause
@@ -541,6 +607,16 @@ try {
 
         if (empty($updateFields)) {
             Response::error('No fields to update', 400);
+        }
+
+                if (isset($data['exchange_rate'])) {
+            $updateFields[] = "exchange_rate = ?";
+            $updateValues[] = (float)$data['exchange_rate'];
+        }
+
+        if (isset($data['total_khr'])) {
+            $updateFields[] = "total_khr = ?";
+            $updateValues[] = (float)$data['total_khr'];
         }
 
         $updateValues[] = $serviceId; // Add service ID for WHERE clause
@@ -660,7 +736,17 @@ try {
                 Response::error('No fields to update', 400);
             }
             
-            $updateValues[] = $serviceId; // Add service ID for WHERE clause
+                    if (isset($data['exchange_rate'])) {
+            $updateFields[] = "exchange_rate = ?";
+            $updateValues[] = (float)$data['exchange_rate'];
+        }
+
+        if (isset($data['total_khr'])) {
+            $updateFields[] = "total_khr = ?";
+            $updateValues[] = (float)$data['total_khr'];
+        }
+
+        $updateValues[] = $serviceId; // Add service ID for WHERE clause
             
             $updateQuery = "UPDATE services SET " . implode(', ', $updateFields) . " WHERE id = ?";
             $stmt = $db->prepare($updateQuery);
@@ -766,7 +852,17 @@ try {
                 Response::error('No fields to update', 400);
             }
             
-            $updateValues[] = $serviceId; // Add service ID for WHERE clause
+                    if (isset($data['exchange_rate'])) {
+            $updateFields[] = "exchange_rate = ?";
+            $updateValues[] = (float)$data['exchange_rate'];
+        }
+
+        if (isset($data['total_khr'])) {
+            $updateFields[] = "total_khr = ?";
+            $updateValues[] = (float)$data['total_khr'];
+        }
+
+        $updateValues[] = $serviceId; // Add service ID for WHERE clause
             
             $updateQuery = "UPDATE services SET " . implode(', ', $updateFields) . " WHERE id = ?";
             $stmt = $db->prepare($updateQuery);
@@ -889,7 +985,17 @@ try {
                     Response::error('No fields to update', 400);
                 }
                 
-                $updateValues[] = $serviceId; // Add service ID for WHERE clause
+                        if (isset($data['exchange_rate'])) {
+            $updateFields[] = "exchange_rate = ?";
+            $updateValues[] = (float)$data['exchange_rate'];
+        }
+
+        if (isset($data['total_khr'])) {
+            $updateFields[] = "total_khr = ?";
+            $updateValues[] = (float)$data['total_khr'];
+        }
+
+        $updateValues[] = $serviceId; // Add service ID for WHERE clause
                 
                 $updateQuery = "UPDATE services SET " . implode(', ', $updateFields) . " WHERE id = ?";
                 $stmt = $db->prepare($updateQuery);
@@ -928,6 +1034,7 @@ try {
                 $notes = Request::sanitize($data['notes'] ?? '');
                 $serviceDetail = Request::sanitize($data['service_detail'] ?? '');
                 $currentKm = isset($data['current_km']) ? (int)$data['current_km'] : null;
+                $volumeL = isset($data['volume_l']) ? (float)$data['volume_l'] : null;
                 $nextServiceKm = isset($data['next_service_km']) ? (int)$data['next_service_km'] : null;
                 $nextServiceDate = $data['next_service_date'] ?? null;
                 $technicianId = isset($data['technician_id']) ? (int)$data['technician_id'] : null;
@@ -942,6 +1049,13 @@ try {
                 $vatRate = isset($data['vat_rate']) ? (float)$data['vat_rate'] : 10.00;
                 $vatAmount = isset($data['vat_amount']) ? (float)$data['vat_amount'] : 0.00;
                 $subtotal = isset($data['subtotal']) ? (float)$data['subtotal'] : $totalAmount;
+                $exchangeRate = isset($data['exchange_rate']) ? (float)$data['exchange_rate'] : 0.00;
+                $totalKhr = isset($data['total_khr']) ? (float)$data['total_khr'] : ($totalAmount * $exchangeRate);
+                
+                // Debug logging
+                error_log("PUT Exchange Rate Debug - Raw data: " . json_encode($data['exchange_rate'] ?? 'not_set'));
+                error_log("PUT Exchange Rate Debug - Processed: " . $exchangeRate);
+                error_log("PUT Total KHR Debug - Processed: " . $totalKhr);
 
                 // Generate invoice number
                 $year = date('y');
@@ -957,26 +1071,28 @@ try {
                     Response::error('Customer not found', 404);
                 }
 
-                // Validate vehicle exists
-                $stmt = $db->prepare("SELECT id FROM vehicles WHERE id = ?");
+                // Validate vehicle exists and get vehicle_model_id
+                $stmt = $db->prepare("SELECT id, vehicle_model_id FROM vehicles WHERE id = ?");
                 $stmt->execute([$vehicleId]);
-                if (!$stmt->fetch()) {
+                $vehicle = $stmt->fetch(PDO::FETCH_ASSOC);
+                if (!$vehicle) {
                     Response::error('Vehicle not found', 404);
                 }
+                $vehicleModelId = $vehicle['vehicle_model_id'];
 
                 $stmt = $db->prepare("
                     INSERT INTO services (
-                        invoice_number, customer_id, vehicle_id, service_type_id, service_date,
-                        current_km, next_service_km, next_service_date, total_amount, payment_method, 
+                        invoice_number, customer_id, vehicle_id, vehicle_model_id, service_type_id, service_date,
+                        current_km, volume_l, next_service_km, next_service_date, total_amount, payment_method, 
                         payment_status, service_status, notes, service_detail, technician_id, 
-                        sales_rep_id, customer_type, booking_id, created_at, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+                        sales_rep_id, customer_type, booking_id, exchange_rate, total_khr, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
                 ");
                 $stmt->execute([
-                    $invoiceNumber, $customerId, $vehicleId, $serviceTypeId, $serviceDate,
-                    $currentKm, $nextServiceKm, $nextServiceDate, $totalAmount, $paymentMethod,
+                    $invoiceNumber, $customerId, $vehicleId, $vehicleModelId, $serviceTypeId, $serviceDate,
+                    $currentKm, $volumeL, $nextServiceKm, $nextServiceDate, $totalAmount, $paymentMethod,
                     $paymentStatus, $serviceStatus, $notes, $serviceDetail, $technicianId,
-                    $salesRepId, $customerType, $bookingId
+                    $salesRepId, $customerType, $bookingId, $exchangeRate, $totalKhr
                 ]);
 
                 $serviceId = $db->lastInsertId();

@@ -10,10 +10,12 @@ import { WarrantyWithDetails } from "@/lib/types"
 import { calculateWarrantyStatus, getWarrantyStatusColor, getWarrantyTypeDisplayName } from "@/lib/warranty-utils"
 import { useLanguage } from "@/lib/language-context"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 import { API_ENDPOINTS } from "@/lib/api-config"
 
 export default function WarrantyPage() {
   const { t } = useLanguage()
+  const router = useRouter()
   const [warranties, setWarranties] = useState<WarrantyWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
@@ -49,7 +51,73 @@ export default function WarrantyPage() {
       }
     } catch (error) {
       console.error("Error fetching warranties:", error)
-      toast.error("Failed to load warranties")
+      
+      // Fallback to sample data when API fails
+      console.log("Using fallback warranty list data due to API error")
+      const fallbackWarranties = [
+        {
+          id: 27,
+          vehicle_id: 101,
+          warranty_type: "standard",
+          start_date: "2025-10-01",
+          end_date: "2026-10-01",
+          km_limit: 15000,
+          max_services: 2,
+          terms_conditions: "Standard warranty coverage",
+          status: "active",
+          created_at: "2025-09-30 15:35:10",
+          updated_at: "2025-09-30 15:35:10",
+          warranty_start_date: "2025-09-30",
+          warranty_end_date: "2026-09-30",
+          warranty_cost_covered: "0.00",
+          customer_name: "Demo Customer",
+          customer_phone: "012345678",
+          customer_email: "demo@example.com",
+          customer_address: "Phnom Penh, Cambodia",
+          vehicle_plate: "DEMO-101",
+          vehicle_vin: "VIN123456789",
+          vehicle_year: 2023,
+          vehicle_model: "SOBEN",
+          vehicle_category: "SUV",
+          current_km: 25000,
+          services_used: 2,
+          last_service_date: "2025-09-15",
+          total_services_amount: 450.00,
+          debug_fallback_data: true
+        },
+        {
+          id: 28,
+          vehicle_id: 102,
+          warranty_type: "extended",
+          start_date: "2025-08-01",
+          end_date: "2026-08-01",
+          km_limit: 20000,
+          max_services: 3,
+          terms_conditions: "Extended warranty coverage",
+          status: "active",
+          created_at: "2025-07-30 10:20:15",
+          updated_at: "2025-07-30 10:20:15",
+          warranty_start_date: "2025-07-30",
+          warranty_end_date: "2026-07-30",
+          warranty_cost_covered: "0.00",
+          customer_name: "Jane Smith",
+          customer_phone: "098765432",
+          customer_email: "jane@example.com",
+          customer_address: "Siem Reap, Cambodia",
+          vehicle_plate: "XYZ-5678",
+          vehicle_vin: "VIN987654321",
+          vehicle_year: 2022,
+          vehicle_model: "KAIN",
+          vehicle_category: "SUV",
+          current_km: 18000,
+          services_used: 1,
+          last_service_date: "2025-08-15",
+          total_services_amount: 200.00,
+          debug_fallback_data: true
+        }
+      ]
+      setWarranties(fallbackWarranties)
+      toast.warning("Using demo data - API server unavailable")
     } finally {
       setLoading(false)
     }
@@ -110,6 +178,23 @@ export default function WarrantyPage() {
 
   return (
     <div className="p-4 lg:p-8 space-y-6">
+      {/* Demo Mode Banner */}
+      {warranties.some(w => w.debug_fallback_data) && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <AlertTriangle className="h-5 w-5 text-yellow-400" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-yellow-700">
+                <strong>Demo Mode:</strong> The API server is currently unavailable. 
+                You are viewing sample warranty data for demonstration purposes.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Shield className="h-8 w-8 text-blue-600" />
@@ -232,7 +317,7 @@ export default function WarrantyPage() {
                     bg-white dark:bg-gray-900
                     border-gray-200 dark:border-gray-700
                     space-y-4 lg:space-y-0 cursor-pointer"
-                  onClick={() => window.open(`/warranty/${warranty.id}`, '_blank')}
+                  onClick={() => router.push(`/warranty/${warranty.id}`)}
                 >
                   <div className="flex-1">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4">
@@ -334,13 +419,26 @@ export default function WarrantyPage() {
                   </div>
 
                   <div className="flex flex-row lg:flex-col space-x-2 lg:space-x-0 lg:space-y-2">
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        router.push(`/warranty/${warranty.id}`)
+                      }}
+                    >
                       View Details
                     </Button>
                     <Button
                       size="sm"
                       disabled={calculatedStatus.status === "expired" || calculatedStatus.status === "cancelled"}
                       title={calculatedStatus.status === "expired" || calculatedStatus.status === "cancelled" ? "Warranty not eligible for service" : "Create new service"}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (calculatedStatus.status !== "expired" && calculatedStatus.status !== "cancelled") {
+                          router.push(`/services/new?warranty_id=${warranty.id}`)
+                        }
+                      }}
                     >
                       New Service
                     </Button>

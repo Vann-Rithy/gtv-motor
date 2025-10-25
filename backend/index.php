@@ -45,6 +45,7 @@ try {
                 'customers' => '/api/customers',
                 'vehicles' => '/api/vehicles',
                 'services' => '/api/services',
+                'service-items' => '/api/service-items',
                 'dashboard' => '/api/dashboard/stats'
             ]
         ], 'API is running');
@@ -159,6 +160,14 @@ try {
 
             case 'service-types':
                 require_once __DIR__ . '/api/service-types.php';
+                break;
+
+            case 'service-items':
+                require_once __DIR__ . '/api/service-items.php';
+                break;
+
+            case 'stock-movements':
+                require_once __DIR__ . '/api/stock-movements.php';
                 break;
 
             case (strpos($apiPath, 'bookings') === 0):

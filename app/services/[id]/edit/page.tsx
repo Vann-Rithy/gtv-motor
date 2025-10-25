@@ -21,6 +21,7 @@ interface Service {
   service_type_id: number
   service_date: string
   current_km?: number
+  volume_l?: number
   next_service_km?: number
   next_service_date?: string
   total_amount: number
@@ -85,6 +86,7 @@ export default function EditServicePage() {
     service_type_id: "",
     service_date: "",
     current_km: "",
+    volume_l: "",
     next_service_km: "",
     next_service_date: "",
     total_amount: "",
@@ -118,6 +120,7 @@ export default function EditServicePage() {
           service_type_id: serviceData.service_type_id?.toString() || "",
           service_date: serviceData.service_date ? new Date(serviceData.service_date).toISOString().split('T')[0] : "",
           current_km: serviceData.current_km?.toString() || "",
+          volume_l: serviceData.volume_l?.toString() || "",
           next_service_km: serviceData.next_service_km?.toString() || "",
           next_service_date: serviceData.next_service_date ? new Date(serviceData.next_service_date).toISOString().split('T')[0] : "",
           total_amount: serviceData.total_amount?.toString() || "",
@@ -226,6 +229,7 @@ export default function EditServicePage() {
         service_type_id: parseInt(formData.service_type_id),
         service_date: formData.service_date,
         current_km: formData.current_km ? parseInt(formData.current_km) : null,
+        volume_l: formData.volume_l ? parseFloat(formData.volume_l) : null,
         next_service_km: formData.next_service_km ? parseInt(formData.next_service_km) : null,
         next_service_date: formData.next_service_date || null,
         total_amount: totalAmount,
@@ -399,6 +403,23 @@ export default function EditServicePage() {
                     onChange={handleInputChange}
                     className="mt-1"
                     placeholder="Enter current mileage"
+                  />
+                </div>
+
+                {/* Volume (L) */}
+                <div>
+                  <Label htmlFor="volume_l" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Volume (L)
+                  </Label>
+                  <Input
+                    id="volume_l"
+                    name="volume_l"
+                    type="number"
+                    step="0.1"
+                    value={formData.volume_l}
+                    onChange={handleInputChange}
+                    className="mt-1"
+                    placeholder="Enter engine volume in liters"
                   />
                 </div>
 

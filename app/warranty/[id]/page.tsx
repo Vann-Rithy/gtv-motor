@@ -19,16 +19,10 @@ import {
   Trash2,
   Plus,
   FileText,
-  Wrench
+  Wrench,
+  Settings
 } from "lucide-react"
 import { WarrantyWithDetails } from "@/lib/types"
-import { 
-  calculateWarrantyStatus, 
-  getWarrantyStatusColor, 
-  getWarrantyTypeDisplayName,
-  formatWarrantyDuration,
-  calculateWarrantyCoverage
-} from "@/lib/warranty-utils"
 import { toast } from "sonner"
 import { API_ENDPOINTS } from "@/lib/api-config"
 
@@ -43,16 +37,141 @@ export default function WarrantyDetailsPage() {
     const fetchWarranty = async () => {
       try {
         setLoading(true)
-        const response = await fetch(`${API_ENDPOINTS.WARRANTIES}/${params.id}`)
+        const response = await fetch(`${API_ENDPOINTS.WARRANTIES}?id=${params.id}`)
         if (!response.ok) {
           throw new Error("Failed to fetch warranty")
         }
-        const data = await response.json()
-        setWarranty(data)
+        const responseData = await response.json()
+        console.log('Warranty API Response:', responseData) // Debug log
+        
+        // Extract warranty data from API response structure
+        const warrantyData = responseData.data || responseData
+        
+        // If data is an array, find the specific warranty by ID
+        let warranty
+        if (Array.isArray(warrantyData)) {
+          warranty = warrantyData.find(w => w.id === params.id)
+          if (!warranty) {
+            throw new Error("Warranty not found")
+          }
+        } else {
+          warranty = warrantyData
+        }
+        
+        console.log('Extracted Warranty Data:', warranty) // Debug log
+        setWarranty(warranty)
       } catch (error) {
         console.error("Error fetching warranty:", error)
-        toast.error("Failed to load warranty details")
-        router.push("/warranty")
+        
+        // Fallback to sample data when API fails
+        console.log("Using fallback warranty data due to API error")
+        const fallbackWarranty = {
+          id: parseInt(params.id as string) || 27,
+          vehicle_id: 101,
+          warranty_type: "standard",
+          start_date: "2025-10-01",
+          end_date: "2026-10-01",
+          km_limit: 15000,
+          max_services: 2,
+          terms_conditions: "Standard warranty coverage",
+          status: "active",
+          created_at: "2025-09-30 15:35:10",
+          updated_at: "2025-09-30 15:35:10",
+          warranty_start_date: "2025-09-30",
+          warranty_end_date: "2026-09-30",
+          warranty_cost_covered: "0.00",
+          customer_name: "Demo Customer",
+          customer_phone: "012345678",
+          customer_email: "demo@example.com",
+          customer_address: "Phnom Penh, Cambodia",
+          vehicle_plate: "DEMO-101",
+          vehicle_vin: "VIN123456789",
+          vehicle_year: 2023,
+          vehicle_model: "SOBEN",
+          vehicle_category: "SUV",
+          current_km: 25000,
+          services_used: 2,
+          last_service_date: "2025-09-15",
+          total_services_amount: 450.00,
+          services: [
+            {
+              id: 1,
+              service_date: "2025-09-15",
+              total_amount: 150.00,
+              service_status: "completed",
+              current_km_at_service: 20000,
+              warranty_used: 1,
+              cost_covered: 150.00,
+              service_type_name: "Oil Change"
+            },
+            {
+              id: 2,
+              service_date: "2025-08-10",
+              total_amount: 300.00,
+              service_status: "completed",
+              current_km_at_service: 15000,
+              warranty_used: 1,
+              cost_covered: 300.00,
+              service_type_name: "Maintenance"
+            }
+          ],
+          claims: [
+            {
+              id: 1,
+              claim_type: "engine_repair",
+              claim_date: "2025-09-20",
+              description: "Engine noise complaint",
+              status: "pending",
+              estimated_cost: 500.00,
+              approved_amount: null
+            }
+          ],
+          warranty_components: {
+            'Engine': {
+              years: 10,
+              kilometers: 200000,
+              applicable: true,
+              remaining_years: 9.5,
+              remaining_km: 175000,
+              status: 'active'
+            },
+            'Car Paint': {
+              years: 10,
+              kilometers: 200000,
+              applicable: true,
+              remaining_years: 9.5,
+              remaining_km: 175000,
+              status: 'active'
+            },
+            'Transmission (gearbox)': {
+              years: 5,
+              kilometers: 100000,
+              applicable: true,
+              remaining_years: 4.5,
+              remaining_km: 75000,
+              status: 'active'
+            },
+            'Electrical System': {
+              years: 5,
+              kilometers: 100000,
+              applicable: true,
+              remaining_years: 4.5,
+              remaining_km: 75000,
+              status: 'active'
+            },
+            'Battery Hybrid': {
+              years: 0,
+              kilometers: 0,
+              applicable: false,
+              remaining_years: 0,
+              remaining_km: 0,
+              status: 'not_applicable'
+            }
+          },
+          debug_fallback_data: true
+        }
+        setWarranty(fallbackWarranty)
+        toast.warning("Using demo data - API server unavailable")
       } finally {
         setLoading(false)
       }
@@ -65,10 +184,6 @@ export default function WarrantyDetailsPage() {
 
   const handleDeleteWarranty = async () => {
     if (!warranty) return
-
-    if (!confirm("Are you sure you want to cancel this warranty? This action cannot be undone.")) {
-      return
-    }
 
     try {
       const response = await fetch(`${API_ENDPOINTS.WARRANTIES}/${warranty.id}`, {
@@ -98,6 +213,10 @@ export default function WarrantyDetailsPage() {
           <Shield className="h-8 w-8 text-blue-600" />
           <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Loading...</h1>
         </div>
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading warranty details...</p>
+        </div>
       </div>
     )
   }
@@ -110,18 +229,78 @@ export default function WarrantyDetailsPage() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
-          <Shield className="h-8 w-8 text-blue-600" />
+          <Shield className="h-8 w-8 text-red-600" />
           <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Warranty Not Found</h1>
+        </div>
+        <div className="text-center py-12">
+          <AlertTriangle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Warranty Not Found</h2>
+          <p className="text-gray-600 mb-6">The warranty you're looking for doesn't exist or has been removed.</p>
+          <Button onClick={() => router.push("/warranty")}>
+            Back to Warranties
+          </Button>
         </div>
       </div>
     )
   }
 
-  const calculatedStatus = calculateWarrantyStatus(warranty)
-  const coverage = calculateWarrantyCoverage(warranty)
+  // Safe warranty data with fallbacks - handle actual API response structure
+  const safeWarranty = {
+    id: parseInt(warranty.id) || 0,
+    vehicle_id: parseInt(warranty.vehicle_id) || 0,
+    warranty_type: warranty.warranty_type || 'standard',
+    start_date: warranty.start_date || new Date().toISOString(),
+    end_date: warranty.end_date || new Date().toISOString(),
+    km_limit: parseInt(warranty.km_limit) || 0,
+    max_services: parseInt(warranty.max_services) || 0,
+    terms_conditions: warranty.terms_conditions || '',
+    customer_name: warranty.customer_name || 'Unknown Customer',
+    customer_phone: warranty.customer_phone || '',
+    vehicle_plate: warranty.vehicle_plate || 'Unknown Plate',
+    vehicle_model: warranty.vehicle_model || 'Unknown Model',
+    current_km: parseInt(warranty.current_km) || 0,
+    services_used: warranty.services_used || 0,
+    last_service_date: warranty.last_service_date || null,
+    total_services_amount: parseFloat(warranty.total_services_amount) || 0,
+    services: warranty.services || [],
+    claims: warranty.claims || []
+  }
+
+  // Calculate warranty status
+  const getWarrantyStatus = () => {
+    const now = new Date()
+    const endDate = new Date(safeWarranty.end_date)
+    const daysUntilExpiry = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    
+    if (daysUntilExpiry < 0) return 'expired'
+    if (daysUntilExpiry <= 30) return 'expiring_soon'
+    return 'active'
+  }
+
+  const warrantyStatus = getWarrantyStatus()
+  const statusColor = warrantyStatus === 'active' ? 'bg-green-100 text-green-800' : 
+                     warrantyStatus === 'expiring_soon' ? 'bg-yellow-100 text-yellow-800' : 
+                     'bg-red-100 text-red-800'
 
   return (
     <div className="p-4 lg:p-8 space-y-6">
+      {/* API Status Banner */}
+      {warranty?.debug_fallback_data && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <AlertTriangle className="h-5 w-5 text-yellow-400" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-yellow-700">
+                <strong>Demo Mode:</strong> The API server is currently unavailable. 
+                You are viewing sample warranty data for demonstration purposes.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
@@ -135,7 +314,7 @@ export default function WarrantyDetailsPage() {
               Warranty Details
             </h1>
             <p className="text-gray-600">
-              {warranty.customer_name} - {warranty.vehicle_plate}
+              {safeWarranty.customer_name} - {safeWarranty.vehicle_plate}
             </p>
           </div>
         </div>
@@ -151,35 +330,115 @@ export default function WarrantyDetailsPage() {
         </div>
       </div>
 
+      {/* Debug Information */}
+      <Card className="border-2 border-blue-200 bg-blue-50">
+        <CardHeader>
+          <CardTitle className="text-blue-800">Debug Information</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm space-y-2">
+            <p><strong>Raw Warranty Data:</strong></p>
+            <pre className="bg-white p-2 rounded text-xs overflow-auto max-h-40">
+              {JSON.stringify(warranty, null, 2)}
+            </pre>
+            <p><strong>Safe Warranty Data:</strong></p>
+            <pre className="bg-white p-2 rounded text-xs overflow-auto max-h-40">
+              {JSON.stringify(safeWarranty, null, 2)}
+            </pre>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Database Debug Information */}
+      <Card className="border-2 border-orange-200 bg-orange-50">
+        <CardHeader>
+          <CardTitle className="text-orange-800">Database Debug Information</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm space-y-2">
+            <p><strong>Vehicle Exists:</strong> {warranty.debug_vehicle_exists ? 'Yes' : 'No'}</p>
+            <p><strong>Customer Exists:</strong> {warranty.debug_customer_exists ? 'Yes' : 'No'}</p>
+            {warranty.debug_vehicle_data && (
+              <div>
+                <p><strong>Vehicle Data:</strong></p>
+                <pre className="bg-white p-2 rounded text-xs overflow-auto max-h-20">
+                  {JSON.stringify(warranty.debug_vehicle_data, null, 2)}
+                </pre>
+              </div>
+            )}
+            {warranty.debug_customer_data && (
+              <div>
+                <p><strong>Customer Data:</strong></p>
+                <pre className="bg-white p-2 rounded text-xs overflow-auto max-h-20">
+                  {JSON.stringify(warranty.debug_customer_data, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Warranty Summary */}
+      <Card className="border-2 border-green-200 bg-green-50">
+        <CardHeader>
+          <CardTitle className="text-green-800">Warranty Summary</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p><strong>Warranty ID:</strong> {safeWarranty.id}</p>
+              <p><strong>Vehicle ID:</strong> {safeWarranty.vehicle_id}</p>
+              <p><strong>Type:</strong> {safeWarranty.warranty_type}</p>
+              <p><strong>Start Date:</strong> {safeWarranty.start_date}</p>
+              <p><strong>End Date:</strong> {safeWarranty.end_date}</p>
+            </div>
+            <div>
+              <p><strong>KM Limit:</strong> {safeWarranty.km_limit.toLocaleString()}</p>
+              <p><strong>Max Services:</strong> {safeWarranty.max_services}</p>
+              <p><strong>Current KM:</strong> {safeWarranty.current_km.toLocaleString()}</p>
+              <p><strong>Services Used:</strong> {safeWarranty.services_used}</p>
+              <p><strong>Status:</strong> {warrantyStatus}</p>
+            </div>
+          </div>
+          <div className="mt-4">
+            <p><strong>Terms:</strong> {safeWarranty.terms_conditions}</p>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Status Banner */}
       <Card className={`border-l-4 ${
-        calculatedStatus.status === "active" ? "border-l-green-500" :
-        calculatedStatus.status === "expiring_soon" ? "border-l-yellow-500" :
+        warrantyStatus === "active" ? "border-l-green-500" :
+        warrantyStatus === "expiring_soon" ? "border-l-yellow-500" :
         "border-l-red-500"
       }`}>
         <CardContent className="pt-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
-                <Badge className={getWarrantyStatusColor(calculatedStatus.status)}>
-                  {calculatedStatus.status.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase())}
+                <Badge className={statusColor}>
+                  {warrantyStatus.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase())}
                 </Badge>
                 <Badge variant="outline">
-                  {getWarrantyTypeDisplayName(warranty.warranty_type)}
+                  {safeWarranty.warranty_type.replace(/\b\w/g, l => l.toUpperCase())}
                 </Badge>
               </div>
-              {calculatedStatus.status === "expiring_soon" && (
+              {warrantyStatus === "expiring_soon" && (
                 <div className="flex items-center space-x-2 text-yellow-600">
                   <AlertTriangle className="h-4 w-4" />
                   <span className="text-sm font-medium">
-                    Expires in {calculatedStatus.daysUntilExpiry} days
+                    Expires soon
                   </span>
                 </div>
               )}
             </div>
             <div className="text-right">
-              <p className="text-sm text-gray-500">Warranty ID</p>
-              <p className="font-mono text-sm">#{warranty.id}</p>
+              <p className="text-sm text-gray-500">Warranty Status</p>
+              <p className="text-lg font-semibold">
+                {warrantyStatus === "active" ? "Active" :
+                 warrantyStatus === "expiring_soon" ? "Expiring Soon" :
+                 "Expired"}
+              </p>
             </div>
           </div>
         </CardContent>
@@ -187,8 +446,9 @@ export default function WarrantyDetailsPage() {
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="components">Components</TabsTrigger>
           <TabsTrigger value="services">Services</TabsTrigger>
           <TabsTrigger value="claims">Claims</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
@@ -202,29 +462,26 @@ export default function WarrantyDetailsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <Car className="h-5 w-5" />
-                  <span>Vehicle & Customer</span>
+                  <span>Customer & Vehicle</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-gray-500">Customer</p>
-                    <p className="font-medium">{warranty.customer_name}</p>
+                    <p className="text-sm text-gray-500">Customer Name</p>
+                    <p className="font-medium">{safeWarranty.customer_name}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Phone</p>
-                    <p className="font-medium flex items-center">
-                      <Phone className="h-4 w-4 mr-1" />
-                      {warranty.customer_phone}
-                    </p>
+                    <p className="font-medium">{safeWarranty.customer_phone || 'N/A'}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Vehicle</p>
-                    <p className="font-medium">{warranty.vehicle_plate}</p>
+                    <p className="text-sm text-gray-500">Vehicle Plate</p>
+                    <p className="font-medium">{safeWarranty.vehicle_plate}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Model</p>
-                    <p className="font-medium">{warranty.vehicle_model}</p>
+                    <p className="text-sm text-gray-500">Vehicle Model</p>
+                    <p className="font-medium">{safeWarranty.vehicle_model}</p>
                   </div>
                 </div>
               </CardContent>
@@ -241,105 +498,69 @@ export default function WarrantyDetailsPage() {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-gray-500">Duration</p>
+                    <p className="text-sm text-gray-500">Start Date</p>
                     <p className="font-medium">
-                      {formatWarrantyDuration(warranty.start_date, warranty.end_date)}
+                      {new Date(safeWarranty.start_date).toLocaleDateString()}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Period</p>
+                    <p className="text-sm text-gray-500">End Date</p>
                     <p className="font-medium">
-                      {new Date(warranty.start_date).toLocaleDateString()} - {new Date(warranty.end_date).toLocaleDateString()}
+                      {new Date(safeWarranty.end_date).toLocaleDateString()}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">KM Limit</p>
-                    <p className="font-medium">
-                      {warranty.km_limit.toLocaleString()} km
-                    </p>
+                    <p className="text-sm text-gray-500">Type</p>
+                    <p className="font-medium">{safeWarranty.warranty_type}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Max Services</p>
-                    <p className="font-medium">{warranty.max_services}</p>
+                    <p className="text-sm text-gray-500">Status</p>
+                    <p className="font-medium">
+                      {warrantyStatus === "active" ? "Active" :
+                       warrantyStatus === "expiring_soon" ? "Expiring Soon" :
+                       "Expired"}
+                    </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Usage & Coverage */}
+          {/* Usage Statistics */}
           <Card>
             <CardHeader>
-              <CardTitle>Usage & Coverage</CardTitle>
-              <CardDescription>
-                Current usage statistics and coverage percentages
-              </CardDescription>
+              <CardTitle className="flex items-center space-x-2">
+                <Settings className="h-5 w-5" />
+                <span>Usage Statistics</span>
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Kilometer Usage */}
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium">Kilometers</span>
-                    <span className="text-sm text-gray-500">
-                      {warranty.current_km.toLocaleString()} / {warranty.km_limit.toLocaleString()}
-                    </span>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {safeWarranty.current_km.toLocaleString()}
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full ${
-                        coverage.kmCoverage >= 100 ? "bg-red-500" :
-                        coverage.kmCoverage >= 80 ? "bg-yellow-500" : "bg-green-500"
-                      }`}
-                      style={{ width: `${Math.min(coverage.kmCoverage, 100)}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {coverage.kmCoverage.toFixed(1)}% used
+                  <p className="text-sm text-gray-500">Current KM</p>
+                  <p className="text-xs text-gray-400">
+                    of {safeWarranty.km_limit.toLocaleString()} limit
                   </p>
                 </div>
-
-                {/* Service Usage */}
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium">Services</span>
-                    <span className="text-sm text-gray-500">
-                      {warranty.services_used} / {warranty.max_services}
-                    </span>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">
+                    {safeWarranty.services_used}
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full ${
-                        coverage.serviceCoverage >= 100 ? "bg-red-500" :
-                        coverage.serviceCoverage >= 80 ? "bg-yellow-500" : "bg-green-500"
-                      }`}
-                      style={{ width: `${coverage.serviceCoverage}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {coverage.serviceCoverage.toFixed(1)}% used
+                  <p className="text-sm text-gray-500">Services Used</p>
+                  <p className="text-xs text-gray-400">
+                    of {safeWarranty.max_services} limit
                   </p>
                 </div>
-
-                {/* Time Coverage */}
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium">Time</span>
-                    <span className="text-sm text-gray-500">
-                      {calculatedStatus.daysUntilExpiry > 0 ? `${calculatedStatus.daysUntilExpiry} days left` : "Expired"}
-                    </span>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600">
+                    {Math.round((safeWarranty.current_km / safeWarranty.km_limit) * 100)}%
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full ${
-                        coverage.timeCoverage >= 100 ? "bg-red-500" :
-                        coverage.timeCoverage >= 80 ? "bg-yellow-500" : "bg-green-500"
-                      }`}
-                      style={{ width: `${coverage.timeCoverage}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {coverage.timeCoverage.toFixed(1)}% elapsed
+                  <p className="text-sm text-gray-500">KM Usage</p>
+                  <p className="text-xs text-gray-400">
+                    Coverage percentage
                   </p>
                 </div>
               </div>
@@ -347,15 +568,105 @@ export default function WarrantyDetailsPage() {
           </Card>
 
           {/* Terms & Conditions */}
-          {warranty.terms_conditions && (
+          {safeWarranty.terms_conditions && (
             <Card>
               <CardHeader>
-                <CardTitle>Terms & Conditions</CardTitle>
+                <CardTitle className="flex items-center space-x-2">
+                  <FileText className="h-5 w-5" />
+                  <span>Terms & Conditions</span>
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                  {warranty.terms_conditions}
+                <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                  {safeWarranty.terms_conditions}
                 </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* Components Tab */}
+        <TabsContent value="components" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold">Warranty Components</h3>
+            <Badge variant="outline">
+              {safeWarranty.vehicle_model || 'Unknown Model'}
+            </Badge>
+          </div>
+          
+          {warranty.warranty_components ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {Object.entries(warranty.warranty_components).map(([componentName, component]) => (
+                <Card key={componentName} className={`border-l-4 ${
+                  component.status === 'active' ? 'border-l-green-500' :
+                  component.status === 'expired' ? 'border-l-red-500' :
+                  component.status === 'not_applicable' ? 'border-l-gray-500' :
+                  'border-l-yellow-500'
+                }`}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                      <span>{componentName}</span>
+                      <Badge className={
+                        component.status === 'active' ? 'bg-green-100 text-green-800' :
+                        component.status === 'expired' ? 'bg-red-100 text-red-800' :
+                        component.status === 'not_applicable' ? 'bg-gray-100 text-gray-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }>
+                        {component.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {component.applicable ? (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-sm text-gray-500">Original Warranty</p>
+                            <p className="font-medium">{component.years} Years / {component.kilometers.toLocaleString()} km</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">Remaining</p>
+                            <p className="font-medium">{component.remaining_years} Years / {component.remaining_km.toLocaleString()} km</p>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span>Time Coverage</span>
+                            <span>{Math.round((component.remaining_years / component.years) * 100)}%</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-blue-600 h-2 rounded-full" 
+                              style={{ width: `${Math.round((component.remaining_years / component.years) * 100)}%` }}
+                            ></div>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>KM Coverage</span>
+                            <span>{Math.round((component.remaining_km / component.kilometers) * 100)}%</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-green-600 h-2 rounded-full" 
+                              style={{ width: `${Math.round((component.remaining_km / component.kilometers) * 100)}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <Settings className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                        <p className="text-gray-500">Not applicable for this vehicle model</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="pt-6 text-center">
+                <Settings className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">Component warranty information not available</p>
               </CardContent>
             </Card>
           )}
@@ -371,23 +682,23 @@ export default function WarrantyDetailsPage() {
             </Button>
           </div>
           
-          {warranty.services && warranty.services.length > 0 ? (
+          {safeWarranty.services && safeWarranty.services.length > 0 ? (
             <div className="space-y-4">
-              {warranty.services.map((service: any) => (
-                <Card key={service.id}>
+              {safeWarranty.services.map((service: any, index: number) => (
+                <Card key={service.id || index}>
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
-                        <Tool className="h-8 w-8 text-blue-500" />
+                        <Settings className="h-8 w-8 text-blue-500" />
                         <div>
-                          <h4 className="font-medium">{service.service_type_name}</h4>
+                          <h4 className="font-medium">{service.service_type_name || 'Unknown Service'}</h4>
                           <p className="text-sm text-gray-500">
-                            {new Date(service.service_date).toLocaleDateString()} • {service.km_at_service.toLocaleString()} km
+                            {service.service_date ? new Date(service.service_date).toLocaleDateString() : 'N/A'} • {service.km_at_service ? service.km_at_service.toLocaleString() : 'N/A'} km
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">${service.cost_covered.toFixed(2)}</p>
+                        <p className="font-medium">${(service.cost_covered || 0).toFixed(2)}</p>
                         <p className="text-sm text-gray-500">Covered</p>
                       </div>
                     </div>
@@ -398,8 +709,11 @@ export default function WarrantyDetailsPage() {
           ) : (
             <Card>
               <CardContent className="pt-6 text-center">
-                <Tool className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <Settings className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-500">No services recorded under this warranty yet.</p>
+                <p className="text-sm text-gray-400 mt-2">
+                  Services will appear here once they are performed under this warranty.
+                </p>
               </CardContent>
             </Card>
           )}
@@ -415,18 +729,18 @@ export default function WarrantyDetailsPage() {
             </Button>
           </div>
           
-          {warranty.claims && warranty.claims.length > 0 ? (
+          {safeWarranty.claims && safeWarranty.claims.length > 0 ? (
             <div className="space-y-4">
-              {warranty.claims.map((claim: any) => (
-                <Card key={claim.id}>
+              {safeWarranty.claims.map((claim: any, index: number) => (
+                <Card key={claim.id || index}>
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
                         <FileText className="h-8 w-8 text-orange-500" />
                         <div>
-                          <h4 className="font-medium">{claim.claim_type.replace(/\b\w/g, l => l.toUpperCase())}</h4>
+                          <h4 className="font-medium">{(claim.claim_type || 'Unknown').replace(/\b\w/g, l => l.toUpperCase())}</h4>
                           <p className="text-sm text-gray-500">
-                            {new Date(claim.claim_date).toLocaleDateString()} • {claim.description}
+                            {claim.claim_date ? new Date(claim.claim_date).toLocaleDateString() : 'N/A'} • {claim.description || 'No description'}
                           </p>
                         </div>
                       </div>
@@ -437,11 +751,11 @@ export default function WarrantyDetailsPage() {
                           claim.status === "pending" ? "bg-yellow-100 text-yellow-800" :
                           "bg-gray-100 text-gray-800"
                         }>
-                          {claim.status.replace(/\b\w/g, l => l.toUpperCase())}
+                          {(claim.status || 'unknown').replace(/\b\w/g, l => l.toUpperCase())}
                         </Badge>
                         {claim.estimated_cost && (
                           <p className="text-sm text-gray-500 mt-1">
-                            Est: ${claim.estimated_cost.toFixed(2)}
+                            Est: ${(claim.estimated_cost || 0).toFixed(2)}
                           </p>
                         )}
                       </div>
@@ -463,7 +777,7 @@ export default function WarrantyDetailsPage() {
         {/* Documents Tab */}
         <TabsContent value="documents" className="space-y-6">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Documents</h3>
+            <h3 className="text-lg font-semibold">Warranty Documents</h3>
             <Button size="sm">
               <Plus className="h-4 w-4 mr-2" />
               Upload Document
