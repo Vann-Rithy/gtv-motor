@@ -53,6 +53,7 @@ try {
         $serviceStatus = Request::sanitize($data['service_status'] ?? 'pending');
         $warrantyUsed = isset($data['warranty_used']) ? (bool)$data['warranty_used'] : false;
         $setWarrantyStartDate = isset($data['set_warranty_start_date']) ? (bool)$data['set_warranty_start_date'] : false;
+        $warrantyParts = isset($data['warranty_parts']) ? $data['warranty_parts'] : [];
 
         // Validate vehicle exists
         $stmt = $db->prepare("SELECT id FROM vehicles WHERE id = ?");
@@ -87,6 +88,39 @@ try {
                     WHERE id = ?
                 ");
                 $stmt->execute([$serviceDate, $serviceDate, $vehicleId]);
+
+                // Create warranty parts if provided
+                if (!empty($warrantyParts)) {
+                    foreach ($warrantyParts as $part) {
+                        $componentId = (int)$part['warranty_component_id'];
+                        $years = (int)$part['warranty_years'];
+                        $kilometers = (int)$part['warranty_kilometers'];
+                        
+                        // Calculate end date based on years
+                        $startDateObj = new DateTime($serviceDate);
+                        $endDate = $startDateObj->modify("+{$years} years")->format('Y-m-d');
+                        
+                        // Reset for next iteration
+                        $startDateObj = new DateTime($serviceDate);
+                        
+                        $stmt = $db->prepare("
+                            INSERT INTO vehicle_warranty_parts (
+                                vehicle_id, warranty_component_id, warranty_years, 
+                                warranty_kilometers, start_date, end_date, km_limit, status
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'active')
+                        ");
+                        
+                        $stmt->execute([
+                            $vehicleId,
+                            $componentId,
+                            $years,
+                            $kilometers,
+                            $serviceDate,
+                            $endDate,
+                            $kilometers
+                        ]);
+                    }
+                }
             }
         }
 

@@ -232,13 +232,22 @@ try {
         // Get warranties with pagination and customer/vehicle details
         $pagination = Request::getPagination();
 
+        $limit = isset($pagination['limit']) && $pagination['limit'] > 0 ? (int)$pagination['limit'] : 10;
+        $offset = isset($pagination['offset']) && $pagination['offset'] >= 0 ? (int)$pagination['offset'] : 0;
+        
         $query = "
             SELECT 
                 w.*,
                 c.name as customer_name,
                 c.phone as customer_phone,
+                c.email as customer_email,
+                c.address as customer_address,
                 v.plate_number as vehicle_plate,
+                v.vin_number as vehicle_vin,
+                v.year as vehicle_year,
                 v.current_km,
+                v.warranty_start_date,
+                v.warranty_end_date,
                 vm.name as vehicle_model,
                 vm.category as vehicle_category
             FROM warranties w
@@ -246,24 +255,63 @@ try {
             LEFT JOIN customers c ON v.customer_id = c.id
             LEFT JOIN vehicle_models vm ON v.vehicle_model_id = vm.id
             ORDER BY w.created_at DESC
-            LIMIT {$pagination['limit']} OFFSET {$pagination['offset']}
+            LIMIT {$limit} OFFSET {$offset}
         ";
 
         $stmt = $db->prepare($query);
         $stmt->execute();
         $warranties = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+        // Add service statistics for each warranty
+        foreach ($warranties as &$warranty) {
+            $vehicleId = $warranty['vehicle_id'] ?? null;
+            
+            if (!$vehicleId) {
+                $warranty['services_used'] = 0;
+                $warranty['total_services_amount'] = 0;
+                $warranty['last_service_date'] = null;
+                continue;
+            }
+            
+            try {
+                // Get services used count
+                $stmt = $db->prepare("SELECT COUNT(*) as count FROM services WHERE vehicle_id = ? AND warranty_used = 1");
+                $stmt->execute([$vehicleId]);
+                $servicesUsed = $stmt->fetch(PDO::FETCH_ASSOC);
+                $warranty['services_used'] = $servicesUsed['count'] ?? 0;
+                
+                // Get total services amount
+                $stmt = $db->prepare("SELECT COALESCE(SUM(total_amount), 0) as total FROM services WHERE vehicle_id = ? AND warranty_used = 1");
+                $stmt->execute([$vehicleId]);
+                $totalAmount = $stmt->fetch(PDO::FETCH_ASSOC);
+                $warranty['total_services_amount'] = $totalAmount['total'] ?? 0;
+                
+                // Get last service date
+                $stmt = $db->prepare("SELECT MAX(service_date) as last_date FROM services WHERE vehicle_id = ? AND warranty_used = 1");
+                $stmt->execute([$vehicleId]);
+                $lastDate = $stmt->fetch(PDO::FETCH_ASSOC);
+                $warranty['last_service_date'] = $lastDate['last_date'] ?? null;
+            } catch (Exception $e) {
+                // If service statistics fail, just set defaults
+                $warranty['services_used'] = 0;
+                $warranty['total_services_amount'] = 0;
+                $warranty['last_service_date'] = null;
+                error_log("Error fetching service statistics: " . $e->getMessage());
+            }
+        }
+        unset($warranty);
+
         // Get total count
         $countQuery = "SELECT COUNT(*) as total FROM warranties";
         $stmt = $db->prepare($countQuery);
         $stmt->execute();
         $total = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-
+        
         $paginationData = [
             'total' => (int)$total,
-            'page' => $pagination['page'],
-            'limit' => $pagination['limit'],
-            'totalPages' => ceil($total / $pagination['limit'])
+            'page' => $pagination['page'] ?? 1,
+            'limit' => $limit,
+            'totalPages' => $limit > 0 ? ceil($total / $limit) : 1
         ];
 
         Response::paginated($warranties, $paginationData, 'Warranties retrieved successfully');

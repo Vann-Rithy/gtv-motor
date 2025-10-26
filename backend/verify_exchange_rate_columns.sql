@@ -36,3 +36,4 @@ SELECT
     total_khr
 FROM services 
 LIMIT 1;
+

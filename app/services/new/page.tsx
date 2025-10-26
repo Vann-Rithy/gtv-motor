@@ -11,10 +11,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { ArrowLeft, Search, Plus, Trash2, Loader2, Package, User, Car, X, DollarSign } from "lucide-react"
+import { ArrowLeft, Search, Plus, Trash2, Loader2, Package, User, Car, X, DollarSign, Shield, Calendar } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
 import { useSearchParams } from "next/navigation"
 import { toast } from "sonner"
+import { Checkbox } from "@/components/ui/checkbox"
 import BookingForm from "@/components/booking-form"
 import BookingSelector from "@/components/booking-selector"
 
@@ -83,6 +84,16 @@ interface InventoryItem {
   category_name: string
 }
 
+interface WarrantyComponent {
+  id: number
+  name: string
+  description: string
+  category: string
+  warranty_years: number
+  warranty_kilometers: number
+  is_applicable: number
+}
+
 export default function NewService() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -116,6 +127,13 @@ export default function NewService() {
     discountType: 'percentage' as 'percentage' | 'fixed',
     exchangeRate: 0 // Default exchange rate USD to KHR (blank/0)
   })
+
+  // Warranty state
+  const [warrantyComponents, setWarrantyComponents] = useState<WarrantyComponent[]>([])
+  const [selectedWarrantyParts, setSelectedWarrantyParts] = useState<Record<number, boolean>>({})
+  const [warrantyDurations, setWarrantyDurations] = useState<Record<number, {years: number, kilometers: number}>>({})
+  const [showWarrantyParts, setShowWarrantyParts] = useState(false)
+  const [setWarrantyStartDate, setSetWarrantyStartDate] = useState(false)
 
   const [formData, setFormData] = useState({
     customerName: "",
@@ -169,6 +187,52 @@ export default function NewService() {
       loadCustomerData()
     }
   }, [bookingId, customerId])
+
+  // Fetch warranty components when vehicle or model is selected
+  useEffect(() => {
+    if (selectedVehicle || formData.model) {
+      fetchWarrantyComponents()
+      // Set warranty start date checkbox to true by default if no existing warranty
+      if (selectedVehicle && !selectedVehicle.warranty_start_date) {
+        setSetWarrantyStartDate(true)
+      } else if (!selectedVehicle && formData.model) {
+        setSetWarrantyStartDate(true)
+      }
+    }
+  }, [selectedVehicle, formData.model])
+
+  const fetchWarrantyComponents = async () => {
+    try {
+      const modelId = selectedVehicle?.model || formData.model || ''
+      const response = await fetch('/api/warranty-parts?vehicle_model_id=' + modelId)
+      const data = await response.json()
+      
+      if (data.success && data.data) {
+        setWarrantyComponents(data.data)
+      } else {
+        // Use fallback components
+        const fallbackComponents: WarrantyComponent[] = [
+          { id: 1, name: 'Engine', description: 'Engine warranty coverage', category: 'Engine', warranty_years: 10, warranty_kilometers: 200000, is_applicable: 1 },
+          { id: 2, name: 'Car Paint', description: 'Paint and body warranty coverage', category: 'Body', warranty_years: 10, warranty_kilometers: 200000, is_applicable: 1 },
+          { id: 3, name: 'Transmission (gearbox)', description: 'Transmission and gearbox warranty coverage', category: 'Transmission', warranty_years: 5, warranty_kilometers: 100000, is_applicable: 1 },
+          { id: 4, name: 'Electrical System', description: 'Electrical components warranty coverage', category: 'Electrical', warranty_years: 5, warranty_kilometers: 100000, is_applicable: 1 },
+          { id: 5, name: 'Battery Hybrid', description: 'Hybrid battery warranty coverage', category: 'Battery', warranty_years: 8, warranty_kilometers: 150000, is_applicable: 0 }
+        ]
+        setWarrantyComponents(fallbackComponents)
+      }
+    } catch (err) {
+      console.error('Error fetching warranty components:', err)
+      // Use fallback on error
+      const fallbackComponents: WarrantyComponent[] = [
+        { id: 1, name: 'Engine', description: 'Engine warranty coverage', category: 'Engine', warranty_years: 10, warranty_kilometers: 200000, is_applicable: 1 },
+        { id: 2, name: 'Car Paint', description: 'Paint and body warranty coverage', category: 'Body', warranty_years: 10, warranty_kilometers: 200000, is_applicable: 1 },
+        { id: 3, name: 'Transmission (gearbox)', description: 'Transmission and gearbox warranty coverage', category: 'Transmission', warranty_years: 5, warranty_kilometers: 100000, is_applicable: 1 },
+        { id: 4, name: 'Electrical System', description: 'Electrical components warranty coverage', category: 'Electrical', warranty_years: 5, warranty_kilometers: 100000, is_applicable: 1 },
+        { id: 5, name: 'Battery Hybrid', description: 'Hybrid battery warranty coverage', category: 'Battery', warranty_years: 8, warranty_kilometers: 150000, is_applicable: 0 }
+      ]
+      setWarrantyComponents(fallbackComponents)
+    }
+  }
 
   const loadCustomerData = async () => {
     if (!customerId) return
@@ -942,6 +1006,90 @@ export default function NewService() {
         }
       }
 
+      // Save warranty parts if configured
+      if (setWarrantyStartDate && selectedWarrantyParts && Object.keys(selectedWarrantyParts).length > 0 && created?.data?.id) {
+        try {
+          const warrantyPartsPayload = Object.entries(selectedWarrantyParts)
+            .filter(([_, selected]) => selected)
+            .map(([componentId, _]) => {
+              const componentIdNum = parseInt(componentId)
+              const component = warrantyComponents.find(c => c.id === componentIdNum)
+              const duration = warrantyDurations[componentIdNum]
+              
+              return {
+                warranty_component_id: componentIdNum,
+                warranty_years: duration?.years || component?.warranty_years || 0,
+                warranty_kilometers: duration?.kilometers || component?.warranty_kilometers || 0
+              }
+            })
+
+          const warrantyPartsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://api.gtvmotor.dev'}/api/vehicle_warranty_parts.php`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              vehicle_id: pendingServiceData.payload.vehicle_id,
+              start_date: pendingServiceData.payload.service_date,
+              warranty_parts: warrantyPartsPayload
+            })
+          })
+
+          if (!warrantyPartsResponse.ok) {
+            console.warn('Warning: Service created but warranty parts failed to save')
+          } else {
+            console.log('✅ Warranty parts saved successfully')
+            
+            // Update vehicle's warranty_start_date
+            try {
+              await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://api.gtvmotor.dev'}/api/vehicles.php/${pendingServiceData.payload.vehicle_id}`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  warranty_start_date: pendingServiceData.payload.service_date
+                })
+              })
+              console.log('✅ Vehicle warranty start date updated')
+            } catch (updateError) {
+              console.warn('Failed to update vehicle warranty start date:', updateError)
+            }
+
+            // Create warranty record
+            try {
+              const warrantyEndDate = new Date(pendingServiceData.payload.service_date)
+              warrantyEndDate.setFullYear(warrantyEndDate.getFullYear() + 5) // 5 years default
+              
+              const warrantyResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://api.gtvmotor.dev'}/api/warranties.php`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  vehicle_id: pendingServiceData.payload.vehicle_id,
+                  warranty_type: 'standard',
+                  start_date: pendingServiceData.payload.service_date,
+                  end_date: warrantyEndDate.toISOString().split('T')[0],
+                  km_limit: 200000,
+                  max_services: 10,
+                  terms_conditions: 'Standard warranty coverage with selected components'
+                })
+              })
+              
+              if (warrantyResponse.ok) {
+                console.log('✅ Warranty record created')
+              }
+            } catch (warrantyRecordError) {
+              console.warn('Failed to create warranty record:', warrantyRecordError)
+            }
+          }
+        } catch (warrantyError) {
+          console.warn('Failed to save warranty parts:', warrantyError)
+          // Don't fail the whole request if warranty parts fail to save
+        }
+      }
+
       console.log("✅ Service created successfully with exchange rate:", invoiceData.exchangeRate);
       console.log("✅ Total KHR:", invoiceCalculations.total * invoiceData.exchangeRate);
 
@@ -1307,6 +1455,115 @@ export default function NewService() {
               )}
             </CardContent>
           </Card>
+
+          {/* Warranty Details Section */}
+          {formData.model && (
+            <Card className="border-blue-200 bg-blue-50">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center space-x-2">
+                  <Shield className="h-5 w-5 text-blue-600" />
+                  <span>Warranty Details</span>
+                </CardTitle>
+                <CardDescription>
+                  {selectedVehicle?.warranty_start_date 
+                    ? "Vehicle has existing warranty. Configure warranty parts below."
+                    : "Configure warranty coverage for this vehicle."}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {!selectedVehicle?.warranty_start_date && (
+                  <div className="flex items-center space-x-2 p-3 bg-yellow-50 border-yellow-200 rounded-lg">
+                    <Checkbox
+                      id="set-warranty-start"
+                      checked={setWarrantyStartDate}
+                      onCheckedChange={(checked) => setSetWarrantyStartDate(checked as boolean)}
+                    />
+                    <Label htmlFor="set-warranty-start" className="cursor-pointer">
+                      <Calendar className="h-4 w-4 inline mr-2" />
+                      Set warranty start date to service date: {formData.warrantyStartDate || new Date().toISOString().split('T')[0]}
+                    </Label>
+                  </div>
+                )}
+
+                {(!selectedVehicle?.warranty_start_date ? setWarrantyStartDate : true) && (
+                  <div className="space-y-3 mt-4">
+                    <Label className="font-semibold text-sm">Select Warranty Parts and Set Duration:</Label>
+                    {warrantyComponents.length === 0 ? (
+                      <div className="text-sm text-gray-500 p-3 bg-gray-50 rounded">
+                        Loading warranty components...
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                      {warrantyComponents.filter(c => c.is_applicable).map((component) => (
+                        <div key={component.id} className="p-3 border rounded-lg hover:bg-gray-50 space-y-2">
+                          <div className="flex items-start space-x-2">
+                            <Checkbox
+                              checked={selectedWarrantyParts[component.id] || false}
+                              onCheckedChange={(checked) => {
+                                setSelectedWarrantyParts({...selectedWarrantyParts, [component.id]: checked as boolean})
+                                if (checked && !warrantyDurations[component.id]) {
+                                  setWarrantyDurations({...warrantyDurations, [component.id]: {
+                                    years: component.warranty_years,
+                                    kilometers: component.warranty_kilometers
+                                  }})
+                                }
+                              }}
+                            />
+                            <div className="flex-1">
+                              <div className="font-medium text-sm">{component.name}</div>
+                              <div className="text-xs text-gray-500">{component.description}</div>
+                            </div>
+                          </div>
+                          
+                          {selectedWarrantyParts[component.id] && (
+                            <div className="grid grid-cols-2 gap-3 ml-6 mt-2">
+                              <div className="space-y-1">
+                                <Label htmlFor={`years-${component.id}`} className="text-xs">Warranty Years</Label>
+                                <Input
+                                  id={`years-${component.id}`}
+                                  type="number"
+                                  min="0"
+                                  max="20"
+                                  value={warrantyDurations[component.id]?.years || component.warranty_years}
+                                  onChange={(e) => {
+                                    const years = parseInt(e.target.value) || component.warranty_years
+                                    setWarrantyDurations({...warrantyDurations, [component.id]: {
+                                      years,
+                                      kilometers: warrantyDurations[component.id]?.kilometers || component.warranty_kilometers
+                                    }})
+                                  }}
+                                  className="h-8 text-sm"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label htmlFor={`km-${component.id}`} className="text-xs">Warranty Kilometers</Label>
+                                <Input
+                                  id={`km-${component.id}`}
+                                  type="number"
+                                  min="0"
+                                  step="1000"
+                                  value={warrantyDurations[component.id]?.kilometers || component.warranty_kilometers}
+                                  onChange={(e) => {
+                                    const kilometers = parseInt(e.target.value) || component.warranty_kilometers
+                                    setWarrantyDurations({...warrantyDurations, [component.id]: {
+                                      years: warrantyDurations[component.id]?.years || component.warranty_years,
+                                      kilometers
+                                    }})
+                                  }}
+                                  className="h-8 text-sm"
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Customer Information */}
           <Card>

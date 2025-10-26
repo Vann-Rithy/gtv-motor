@@ -16,6 +16,11 @@ try {
 
     $method = Request::method();
     $action = Request::segment(2) ?? '';
+    
+    // Also support query parameter for action
+    if (empty($action)) {
+        $action = Request::get('action') ?? '';
+    }
 
     if ($method === 'GET') {
         if ($action === 'components') {

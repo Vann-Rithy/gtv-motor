@@ -27,3 +27,4 @@ SELECT id, invoice_number, total_amount, exchange_rate, total_khr
 FROM services 
 ORDER BY id DESC 
 LIMIT 3;
+

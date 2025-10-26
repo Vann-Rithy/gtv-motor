@@ -13,14 +13,50 @@ import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { API_ENDPOINTS } from "@/lib/api-config"
 
+interface WarrantyPart {
+  id: number
+  component_name: string
+  component_category: string
+  warranty_years: number
+  warranty_kilometers: number
+  start_date: string
+  end_date: string
+  status: string
+}
+
 export default function WarrantyPage() {
   const { t } = useLanguage()
   const router = useRouter()
   const [warranties, setWarranties] = useState<WarrantyWithDetails[]>([])
+  const [warrantyParts, setWarrantyParts] = useState<Record<number, WarrantyPart[]>>({})
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [refreshing, setRefreshing] = useState(false)
+
+  // Fetch warranty parts for vehicles
+  const fetchWarrantyParts = async (warrantiesList: WarrantyWithDetails[]) => {
+    // Temporarily disabled to prevent console errors
+    // Will be re-enabled once vehicle_warranty_parts table is set up
+    const partsMap: Record<number, WarrantyPart[]> = {}
+    
+    // Skip fetching for now
+    // for (const warranty of warrantiesList) {
+    //   try {
+    //     const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://api.gtvmotor.dev'}/api/vehicle_warranty_parts.php?vehicle_id=${warranty.vehicle_id}`)
+    //     if (response.ok) {
+    //       const data = await response.json()
+    //       if (data.success && data.data) {
+    //         partsMap[warranty.id] = data.data
+    //       }
+    //     }
+    //   } catch (error) {
+    //     // Silently handle errors
+    //   }
+    // }
+    
+    setWarrantyParts(partsMap)
+  }
 
   // Fetch warranties from API
   const fetchWarranties = async () => {
@@ -40,10 +76,11 @@ export default function WarrantyPage() {
       }
 
       const data = await response.json()
-      console.log("Warranty API response:", data) // Debug log
 
       if (data.success && data.data) {
         setWarranties(data.data)
+        // Fetch warranty parts for each vehicle
+        fetchWarrantyParts(data.data)
       } else {
         console.error("Invalid warranty data structure:", data)
         setWarranties([])
@@ -53,7 +90,6 @@ export default function WarrantyPage() {
       console.error("Error fetching warranties:", error)
       
       // Fallback to sample data when API fails
-      console.log("Using fallback warranty list data due to API error")
       const fallbackWarranties = [
         {
           id: 27,
@@ -416,6 +452,32 @@ export default function WarrantyPage() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Warranty Parts Display */}
+                    {warrantyParts[warranty.id] && warrantyParts[warranty.id].length > 0 && (
+                      <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                        <p className="text-xs font-semibold text-blue-900 dark:text-blue-300 mb-2 flex items-center">
+                          <Shield className="h-3 w-3 mr-1" />
+                          Warranty Components ({warrantyParts[warranty.id].length})
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {warrantyParts[warranty.id].slice(0, 5).map((part) => (
+                            <Badge 
+                              key={part.id} 
+                              variant="outline" 
+                              className="text-xs bg-white dark:bg-gray-800 border-blue-300 dark:border-blue-700"
+                            >
+                              {part.component_name} ({part.warranty_years}Y / {part.warranty_kilometers.toLocaleString()}km)
+                            </Badge>
+                          ))}
+                          {warrantyParts[warranty.id].length > 5 && (
+                            <Badge variant="outline" className="text-xs bg-white dark:bg-gray-800 border-blue-300 dark:border-blue-700">
+                              +{warrantyParts[warranty.id].length - 5} more
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex flex-row lg:flex-col space-x-2 lg:space-x-0 lg:space-y-2">

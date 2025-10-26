@@ -42,7 +42,6 @@ export default function WarrantyDetailsPage() {
           throw new Error("Failed to fetch warranty")
         }
         const responseData = await response.json()
-        console.log('Warranty API Response:', responseData) // Debug log
         
         // Extract warranty data from API response structure
         const warrantyData = responseData.data || responseData
@@ -58,13 +57,11 @@ export default function WarrantyDetailsPage() {
           warranty = warrantyData
         }
         
-        console.log('Extracted Warranty Data:', warranty) // Debug log
         setWarranty(warranty)
       } catch (error) {
         console.error("Error fetching warranty:", error)
         
         // Fallback to sample data when API fails
-        console.log("Using fallback warranty data due to API error")
         const fallbackWarranty = {
           id: parseInt(params.id as string) || 27,
           vehicle_id: 101,
@@ -329,54 +326,6 @@ export default function WarrantyDetailsPage() {
           </Button>
         </div>
       </div>
-
-      {/* Debug Information */}
-      <Card className="border-2 border-blue-200 bg-blue-50">
-        <CardHeader>
-          <CardTitle className="text-blue-800">Debug Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-sm space-y-2">
-            <p><strong>Raw Warranty Data:</strong></p>
-            <pre className="bg-white p-2 rounded text-xs overflow-auto max-h-40">
-              {JSON.stringify(warranty, null, 2)}
-            </pre>
-            <p><strong>Safe Warranty Data:</strong></p>
-            <pre className="bg-white p-2 rounded text-xs overflow-auto max-h-40">
-              {JSON.stringify(safeWarranty, null, 2)}
-            </pre>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Database Debug Information */}
-      <Card className="border-2 border-orange-200 bg-orange-50">
-        <CardHeader>
-          <CardTitle className="text-orange-800">Database Debug Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-sm space-y-2">
-            <p><strong>Vehicle Exists:</strong> {warranty.debug_vehicle_exists ? 'Yes' : 'No'}</p>
-            <p><strong>Customer Exists:</strong> {warranty.debug_customer_exists ? 'Yes' : 'No'}</p>
-            {warranty.debug_vehicle_data && (
-              <div>
-                <p><strong>Vehicle Data:</strong></p>
-                <pre className="bg-white p-2 rounded text-xs overflow-auto max-h-20">
-                  {JSON.stringify(warranty.debug_vehicle_data, null, 2)}
-                </pre>
-              </div>
-            )}
-            {warranty.debug_customer_data && (
-              <div>
-                <p><strong>Customer Data:</strong></p>
-                <pre className="bg-white p-2 rounded text-xs overflow-auto max-h-20">
-                  {JSON.stringify(warranty.debug_customer_data, null, 2)}
-                </pre>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Warranty Summary */}
       <Card className="border-2 border-green-200 bg-green-50">

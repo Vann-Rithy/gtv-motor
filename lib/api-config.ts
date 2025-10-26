@@ -36,6 +36,7 @@ export const API_ENDPOINTS = {
 
   // Warranties
   WARRANTIES: `${API_BASE_URL}/api/warranties.php`,
+  WARRANTY_PARTS: `${API_BASE_URL}/api/vehicle_warranty_parts.php`,
 
   // Alerts & Notifications
   ALERTS: `${API_BASE_URL}/api/alerts`,

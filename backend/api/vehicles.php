@@ -34,6 +34,7 @@ try {
             $stmt = $db->prepare("
                 SELECT
                     v.*,
+                    v.vehicle_model_id,
                     c.name as customer_name,
                     c.phone as customer_phone,
                     c.email as customer_email,
@@ -99,6 +100,7 @@ try {
         $query = "
             SELECT
                 v.*,
+                v.vehicle_model_id,
                 c.name as customer_name,
                 c.phone as customer_phone,
                 c.email as customer_email,
