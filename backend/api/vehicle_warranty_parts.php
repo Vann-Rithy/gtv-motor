@@ -16,7 +16,7 @@ try {
     $method = Request::method();
 
     if ($method === 'GET') {
-        $vehicleId = Request::get('vehicle_id');
+        $vehicleId = Request::query('vehicle_id');
         
         if (!$vehicleId) {
             Response::success([], 'No vehicle ID provided');

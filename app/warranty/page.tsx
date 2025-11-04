@@ -36,24 +36,42 @@ export default function WarrantyPage() {
 
   // Fetch warranty parts for vehicles
   const fetchWarrantyParts = async (warrantiesList: WarrantyWithDetails[]) => {
-    // Temporarily disabled to prevent console errors
-    // Will be re-enabled once vehicle_warranty_parts table is set up
     const partsMap: Record<number, WarrantyPart[]> = {}
     
-    // Skip fetching for now
-    // for (const warranty of warrantiesList) {
-    //   try {
-    //     const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://api.gtvmotor.dev'}/api/vehicle_warranty_parts.php?vehicle_id=${warranty.vehicle_id}`)
-    //     if (response.ok) {
-    //       const data = await response.json()
-    //       if (data.success && data.data) {
-    //         partsMap[warranty.id] = data.data
-    //       }
-    //     }
-    //   } catch (error) {
-    //     // Silently handle errors
-    //   }
-    // }
+    // Fetch warranty parts for each warranty's vehicle
+    for (const warranty of warrantiesList) {
+      if (!warranty.vehicle_id) {
+        continue
+      }
+      
+      try {
+        const response = await fetch(`${API_ENDPOINTS.WARRANTY_PARTS}?vehicle_id=${warranty.vehicle_id}`)
+        if (response.ok) {
+          const data = await response.json()
+          console.log(`Warranty parts API response for vehicle ${warranty.vehicle_id}:`, data)
+          if (data.success && data.data && Array.isArray(data.data) && data.data.length > 0) {
+            // Map parts by warranty ID so they display on the correct warranty card
+            partsMap[warranty.id] = data.data.map((part: any) => ({
+              id: part.id,
+              component_name: part.component_name || part.name || 'Unknown Component',
+              component_category: part.component_category || part.category || 'General',
+              warranty_years: part.warranty_years || 0,
+              warranty_kilometers: part.warranty_kilometers || part.km_limit || 0,
+              start_date: part.start_date || '',
+              end_date: part.end_date || '',
+              status: part.status || 'active'
+            }))
+            console.log(`Mapped ${partsMap[warranty.id].length} warranty parts for warranty ${warranty.id}`)
+          } else {
+            console.log(`No warranty parts found for vehicle ${warranty.vehicle_id}`)
+          }
+        } else {
+          console.warn(`Failed to fetch warranty parts for vehicle ${warranty.vehicle_id}:`, response.status)
+        }
+      } catch (error) {
+        console.error('Failed to fetch warranty parts for vehicle:', warranty.vehicle_id, error)
+      }
+    }
     
     setWarrantyParts(partsMap)
   }
@@ -63,7 +81,9 @@ export default function WarrantyPage() {
     try {
       setLoading(true)
       const params = new URLSearchParams()
-      if (statusFilter !== "all") {
+      // Only send basic status filters to API (active, expired, suspended, cancelled)
+      // Calculated statuses like "expiring_soon" will be filtered on client side
+      if (statusFilter !== "all" && ["active", "expired", "suspended", "cancelled"].includes(statusFilter)) {
         params.append("status", statusFilter)
       }
       if (searchTerm) {
@@ -78,9 +98,52 @@ export default function WarrantyPage() {
       const data = await response.json()
 
       if (data.success && data.data) {
-        setWarranties(data.data)
-        // Fetch warranty parts for each vehicle
-        fetchWarrantyParts(data.data)
+        let warranties = data.data
+        
+        // Filter by calculated status if needed (expiring_soon)
+        if (statusFilter === "expiring_soon") {
+          warranties = warranties.filter(w => {
+            const calculatedStatus = calculateWarrantyStatus(w)
+            return calculatedStatus.status === "expiring_soon"
+          })
+        }
+        
+        setWarranties(warranties)
+        
+        // Process warranty parts from response
+        const partsMap: Record<number, WarrantyPart[]> = {}
+        warranties.forEach((warranty: any) => {
+          // Check if warranty_parts exists and has data
+          if (warranty.warranty_parts !== undefined) {
+            if (Array.isArray(warranty.warranty_parts) && warranty.warranty_parts.length > 0) {
+              // Warranty parts are already included in the response
+              partsMap[warranty.id] = warranty.warranty_parts.map((part: any) => ({
+                id: part.id,
+                component_name: part.component_name || part.name || 'Unknown Component',
+                component_category: part.component_category || part.category || 'General',
+                warranty_years: part.warranty_years || 0,
+                warranty_kilometers: part.warranty_kilometers || part.km_limit || 0,
+                start_date: part.start_date || '',
+                end_date: part.end_date || '',
+                status: part.status || 'active'
+              }))
+              console.log(`Warranty ${warranty.id}: Found ${warranty.warranty_parts.length} warranty parts in response`)
+            } else {
+              // Empty array means no parts, but property exists
+              partsMap[warranty.id] = []
+            }
+          }
+        })
+        
+        // If no warranty parts found in response, try fetching separately
+        const hasAnyParts = Object.keys(partsMap).length > 0 && Object.values(partsMap).some(parts => parts.length > 0)
+        if (!hasAnyParts) {
+          console.log('No warranty parts in response, fetching separately...')
+          fetchWarrantyParts(warranties)
+        } else {
+          console.log(`Setting warranty parts: ${Object.keys(partsMap).length} warranties with parts`)
+          setWarrantyParts(partsMap)
+        }
       } else {
         console.error("Invalid warranty data structure:", data)
         setWarranties([])
@@ -358,16 +421,20 @@ export default function WarrantyPage() {
                   <div className="flex-1">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4">
                       <div>
-                        <h3 className="text-lg font-semibold">{warranty.customer_name}</h3>
+                        <h3 className="text-lg font-semibold">{warranty.customer_name || 'Unknown Customer'}</h3>
                         <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 text-sm text-gray-500 dark:text-gray-400">
-                          <div className="flex items-center">
-                            <Phone className="h-4 w-4 mr-1" />
-                            {warranty.customer_phone}
-                          </div>
-                          <div className="flex items-center">
-                            <Car className="h-4 w-4 mr-1" />
-                            {warranty.vehicle_plate} - {warranty.vehicle_model}
-                          </div>
+                          {warranty.customer_phone && (
+                            <div className="flex items-center">
+                              <Phone className="h-4 w-4 mr-1" />
+                              {warranty.customer_phone}
+                            </div>
+                          )}
+                          {(warranty.vehicle_plate || warranty.vehicle_model) && (
+                            <div className="flex items-center">
+                              <Car className="h-4 w-4 mr-1" />
+                              {warranty.vehicle_plate || 'N/A'} - {warranty.vehicle_model || 'N/A'}
+                            </div>
+                          )}
                           {warranty.customer_email && (
                             <div className="flex items-center">
                               <span className="text-xs">{warranty.customer_email}</span>
@@ -461,18 +528,34 @@ export default function WarrantyPage() {
                           Warranty Components ({warrantyParts[warranty.id].length})
                         </p>
                         <div className="flex flex-wrap gap-2">
-                          {warrantyParts[warranty.id].slice(0, 5).map((part) => (
-                            <Badge 
-                              key={part.id} 
-                              variant="outline" 
-                              className="text-xs bg-white dark:bg-gray-800 border-blue-300 dark:border-blue-700"
-                            >
-                              {part.component_name} ({part.warranty_years}Y / {part.warranty_kilometers.toLocaleString()}km)
-                            </Badge>
-                          ))}
-                          {warrantyParts[warranty.id].length > 5 && (
+                          {warrantyParts[warranty.id].slice(0, 6).map((part) => {
+                            // Calculate if part is expired or expiring soon
+                            const now = new Date()
+                            const endDate = part.end_date ? new Date(part.end_date) : null
+                            const isExpired = endDate && endDate < now
+                            const daysUntilExpiry = endDate ? Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null
+                            const isExpiringSoon = daysUntilExpiry !== null && daysUntilExpiry <= 30 && daysUntilExpiry > 0
+                            
+                            return (
+                              <Badge 
+                                key={part.id} 
+                                variant="outline" 
+                                className={`text-xs bg-white dark:bg-gray-800 ${
+                                  isExpired 
+                                    ? 'border-red-300 dark:border-red-700 text-red-700 dark:text-red-400' 
+                                    : isExpiringSoon
+                                      ? 'border-yellow-300 dark:border-yellow-700 text-yellow-700 dark:text-yellow-400'
+                                      : 'border-blue-300 dark:border-blue-700'
+                                }`}
+                                title={`${part.component_name} - ${part.component_category || 'General'}\nWarranty: ${part.warranty_years} years / ${part.warranty_kilometers.toLocaleString()} km\nStatus: ${part.status}\n${endDate ? `Expires: ${endDate.toLocaleDateString()}` : ''}`}
+                              >
+                                {part.component_name} ({part.warranty_years}Y / {part.warranty_kilometers.toLocaleString()}km)
+                              </Badge>
+                            )
+                          })}
+                          {warrantyParts[warranty.id].length > 6 && (
                             <Badge variant="outline" className="text-xs bg-white dark:bg-gray-800 border-blue-300 dark:border-blue-700">
-                              +{warrantyParts[warranty.id].length - 5} more
+                              +{warrantyParts[warranty.id].length - 6} more
                             </Badge>
                           )}
                         </div>
@@ -493,11 +576,11 @@ export default function WarrantyPage() {
                     </Button>
                     <Button
                       size="sm"
-                      disabled={calculatedStatus.status === "expired" || calculatedStatus.status === "cancelled"}
-                      title={calculatedStatus.status === "expired" || calculatedStatus.status === "cancelled" ? "Warranty not eligible for service" : "Create new service"}
+                      disabled={calculatedStatus.status === "active"}
+                      title={calculatedStatus.status === "active" ? "Cannot add services to active warranties" : "Create new service"}
                       onClick={(e) => {
                         e.stopPropagation()
-                        if (calculatedStatus.status !== "expired" && calculatedStatus.status !== "cancelled") {
+                        if (calculatedStatus.status !== "active") {
                           router.push(`/services/new?warranty_id=${warranty.id}`)
                         }
                       }}

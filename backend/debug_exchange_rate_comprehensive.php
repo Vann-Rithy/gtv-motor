@@ -190,3 +190,6 @@ try {
 echo "\nDebug session completed. Check the log file: exchange_rate_debug.log\n";
 ?>
 
+
+
+

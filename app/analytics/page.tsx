@@ -461,7 +461,7 @@ export default function Analytics() {
                             className="text-xs fill-gray-500 dark:fill-gray-400"
                             textAnchor="end"
                           >
-                            ${Math.round(maxRevenue - (i * maxRevenue / 4) / 1000)}k
+                            ${Math.round((maxRevenue - (i * maxRevenue / 4)) / 1000) || 0}k
                           </text>
                         </g>
                       ))}
@@ -474,16 +474,16 @@ export default function Analytics() {
                         </linearGradient>
                       </defs>
 
-                                             <path
-                         d={`M60,160 ${revenueData.map((data, index) => {
-                           const x = revenueData.length > 1
-                             ? 60 + (index * 680) / (revenueData.length - 1)
-                             : 60 + (index * 680)
-                           const y = 160 - ((parseFloat(data.revenue) / maxRevenue) * 120)
-                           return `L${x},${y}`
-                         }).join(" ")} L740,160 Z`}
-                         fill="url(#revenueGradient)"
-                       />
+                      <path
+                        d={`M60,160 ${revenueData.map((data, index) => {
+                          const x = revenueData.length > 1
+                            ? 60 + (index * 680) / (revenueData.length - 1)
+                            : 60 + (index * 680)
+                          const y = 160 - ((parseFloat(data.revenue) / maxRevenue) * 120)
+                          return `L${x},${y}`
+                        }).join(" ")} L740,160 Z`}
+                        fill="url(#revenueGradient)"
+                      />
 
                       {/* Revenue line */}
                       <polyline
@@ -599,43 +599,43 @@ export default function Analytics() {
                         </linearGradient>
                       </defs>
 
-                                             <path
-                         d={`M60,160 ${revenueData.map((data, index) => {
-                           const x = revenueData.length > 1
-                             ? 60 + (index * 680) / (revenueData.length - 1)
-                             : 60 + (index * 680)
-                           const y = 160 - ((parseInt(data.services) / maxServices) * 120)
-                           return `L${x},${y}`
-                         }).join(" ")} L740,160 Z`}
-                         fill="url(#serviceGradient)"
-                       />
+                      <path
+                        d={`M60,160 ${revenueData.map((data, index) => {
+                          const x = revenueData.length > 1
+                            ? 60 + (index * 680) / (revenueData.length - 1)
+                            : 60 + (index * 680)
+                          const y = 160 - ((parseInt(data.services) / maxServices) * 120)
+                          return `L${x},${y}`
+                        }).join(" ")} L740,160 Z`}
+                        fill="url(#serviceGradient)"
+                      />
 
-                                             {/* Service volume line */}
-                       <polyline
-                         fill="none"
-                         stroke="#10b981"
-                         strokeWidth="3"
-                         strokeLinecap="round"
-                         strokeLinejoin="round"
-                         points={revenueData
-                           .map((data, index) => {
-                             const x = revenueData.length > 1
-                               ? 60 + (index * 680) / (revenueData.length - 1)
-                               : 60 + (index * 680)
-                             const y = 160 - ((parseInt(data.services) / maxServices) * 120)
-                             return `${x},${y}`
-                           })
-                           .join(" ")}
-                       />
+                      {/* Service volume line */}
+                      <polyline
+                        fill="none"
+                        stroke="#10b981"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        points={revenueData
+                          .map((data, index) => {
+                            const x = revenueData.length > 1
+                              ? 60 + (index * 680) / (revenueData.length - 1)
+                              : 60 + (index * 680)
+                            const y = 160 - ((parseInt(data.services) / maxServices) * 120)
+                            return `${x},${y}`
+                          })
+                          .join(" ")}
+                      />
 
-                                             {/* Data points */}
-                       {revenueData.map((data, index) => {
-                         const x = revenueData.length > 1
-                           ? 60 + (index * 680) / (revenueData.length - 1)
-                           : 60 + (index * 680)
-                         const y = 160 - ((parseInt(data.services) / maxServices) * 120)
-                         return (
-                           <g key={index}>
+                      {/* Data points */}
+                      {revenueData.map((data, index) => {
+                        const x = revenueData.length > 1
+                          ? 60 + (index * 680) / (revenueData.length - 1)
+                          : 60 + (index * 680)
+                        const y = 160 - ((parseInt(data.services) / maxServices) * 120)
+                        return (
+                          <g key={index}>
                              <circle
                                cx={x}
                                cy={y}
@@ -653,9 +653,9 @@ export default function Analytics() {
                              >
                                {data.period}
                              </text>
-                           </g>
-                         )
-                       })}
+                          </g>
+                        )
+                      })}
                     </svg>
                   </div>
 

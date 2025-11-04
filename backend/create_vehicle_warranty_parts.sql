@@ -25,3 +25,6 @@ CREATE TABLE IF NOT EXISTS `vehicle_warranty_parts` (
 -- Success message
 SELECT 'Vehicle warranty parts table created successfully!' as status;
 
+
+
+

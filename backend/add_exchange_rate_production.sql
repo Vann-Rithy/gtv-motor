@@ -63,3 +63,6 @@ LIMIT 5;
 -- Success message
 SELECT 'Exchange rate columns added successfully!' as status;
 
+
+
+

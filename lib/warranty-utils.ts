@@ -19,14 +19,14 @@ export function calculateWarrantyStatus(warranty: WarrantyWithDetails): {
   const kmRemaining = Math.max(0, kmLimit - currentKm)
   const servicesRemaining = Math.max(0, maxServices - servicesUsed)
   
-  // Determine status
+  // Determine status - respect backend status first, then calculate if needed
   let status: "active" | "expired" | "expiring_soon" | "suspended" | "cancelled" = "active"
   
-  if (warranty.status === "cancelled") {
-    status = "cancelled"
-  } else if (warranty.status === "suspended") {
-    status = "suspended"
+  // If backend provides a status, use it (backend already calculates based on dates)
+  if (warranty.status && ["active", "expired", "expiring_soon", "suspended", "cancelled"].includes(warranty.status)) {
+    status = warranty.status as "active" | "expired" | "expiring_soon" | "suspended" | "cancelled"
   } else if (daysUntilExpiry < 0) {
+    // Only calculate if backend didn't provide status
     status = "expired"
   } else if (daysUntilExpiry <= 30) {
     status = "expiring_soon"

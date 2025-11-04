@@ -37,7 +37,11 @@ export default function WarrantyDetailsPage() {
     const fetchWarranty = async () => {
       try {
         setLoading(true)
-        const response = await fetch(`${API_ENDPOINTS.WARRANTIES}?id=${params.id}`)
+        // Fetch warranty by ID (which is now vehicle_id) from vehicle_warranty_parts table
+        // The backend parses the ID from URL segments: /api/warranties.php/{id}
+        const warrantyId = params.id
+        const apiUrl = `${API_ENDPOINTS.WARRANTIES}/${warrantyId}`
+        const response = await fetch(apiUrl)
         if (!response.ok) {
           throw new Error("Failed to fetch warranty")
         }
@@ -46,18 +50,8 @@ export default function WarrantyDetailsPage() {
         // Extract warranty data from API response structure
         const warrantyData = responseData.data || responseData
         
-        // If data is an array, find the specific warranty by ID
-        let warranty
-        if (Array.isArray(warrantyData)) {
-          warranty = warrantyData.find(w => w.id === params.id)
-          if (!warranty) {
-            throw new Error("Warranty not found")
-          }
-        } else {
-          warranty = warrantyData
-        }
-        
-        setWarranty(warranty)
+        // The API now returns warranty data built from vehicle_warranty_parts
+        setWarranty(warrantyData)
       } catch (error) {
         console.error("Error fetching warranty:", error)
         
@@ -263,8 +257,14 @@ export default function WarrantyDetailsPage() {
     claims: warranty.claims || []
   }
 
-  // Calculate warranty status
+  // Use warranty status from API, or calculate if not provided
   const getWarrantyStatus = () => {
+    // First, check if status is provided from backend API
+    if (warranty?.status && ['active', 'expired', 'expiring_soon', 'suspended', 'cancelled'].includes(warranty.status)) {
+      return warranty.status
+    }
+    
+    // Otherwise, calculate based on dates
     const now = new Date()
     const endDate = new Date(safeWarranty.end_date)
     const daysUntilExpiry = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
@@ -534,7 +534,7 @@ export default function WarrantyDetailsPage() {
           )}
         </TabsContent>
 
-        {/* Components Tab */}
+        {/* Components Tab - Display warranty parts from vehicle_warranty_parts table */}
         <TabsContent value="components" className="space-y-6">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold">Warranty Components</h3>
@@ -543,79 +543,115 @@ export default function WarrantyDetailsPage() {
             </Badge>
           </div>
           
-          {warranty.warranty_components ? (
+          {warranty?.warranty_parts && Array.isArray(warranty.warranty_parts) && warranty.warranty_parts.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {Object.entries(warranty.warranty_components).map(([componentName, component]) => (
-                <Card key={componentName} className={`border-l-4 ${
-                  component.status === 'active' ? 'border-l-green-500' :
-                  component.status === 'expired' ? 'border-l-red-500' :
-                  component.status === 'not_applicable' ? 'border-l-gray-500' :
-                  'border-l-yellow-500'
-                }`}>
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <span>{componentName}</span>
-                      <Badge className={
-                        component.status === 'active' ? 'bg-green-100 text-green-800' :
-                        component.status === 'expired' ? 'bg-red-100 text-red-800' :
-                        component.status === 'not_applicable' ? 'bg-gray-100 text-gray-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }>
-                        {component.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      </Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {component.applicable ? (
+              {warranty.warranty_parts.map((part: any) => {
+                const now = new Date()
+                const endDate = part.end_date ? new Date(part.end_date) : null
+                const startDate = part.start_date ? new Date(part.start_date) : null
+                const isExpired = endDate && endDate < now
+                const daysUntilExpiry = endDate ? Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null
+                const isExpiringSoon = daysUntilExpiry !== null && daysUntilExpiry <= 30 && daysUntilExpiry > 0
+                
+                // Calculate remaining time and km
+                const remainingYears = startDate && endDate ? Math.max(0, (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 365.25)) : 0
+                const remainingKm = Math.max(0, (part.km_limit || part.warranty_kilometers || 0) - (safeWarranty.current_km || 0))
+                const timePercentage = part.warranty_years > 0 ? Math.min(100, Math.max(0, (remainingYears / part.warranty_years) * 100)) : 0
+                const kmPercentage = part.warranty_kilometers > 0 ? Math.min(100, Math.max(0, (remainingKm / part.warranty_kilometers) * 100)) : 0
+                
+                const status = isExpired ? 'expired' : isExpiringSoon ? 'expiring_soon' : part.status || 'active'
+                
+                return (
+                  <Card key={part.id} className={`border-l-4 ${
+                    status === 'active' ? 'border-l-green-500' :
+                    status === 'expired' ? 'border-l-red-500' :
+                    status === 'suspended' ? 'border-l-gray-500' :
+                    'border-l-yellow-500'
+                  }`}>
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        <span>{part.component_name || 'Unknown Component'}</span>
+                        <Badge className={
+                          status === 'active' ? 'bg-green-100 text-green-800' :
+                          status === 'expired' ? 'bg-red-100 text-red-800' :
+                          status === 'suspended' ? 'bg-gray-100 text-gray-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }>
+                          {status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </Badge>
+                      </CardTitle>
+                      {part.component_category && (
+                        <p className="text-sm text-gray-500 mt-1">{part.component_category}</p>
+                      )}
+                    </CardHeader>
+                    <CardContent>
                       <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <p className="text-sm text-gray-500">Original Warranty</p>
-                            <p className="font-medium">{component.years} Years / {component.kilometers.toLocaleString()} km</p>
+                            <p className="text-sm text-gray-500">Warranty Period</p>
+                            <p className="font-medium">{part.warranty_years} Years / {part.warranty_kilometers?.toLocaleString() || part.km_limit?.toLocaleString() || 0} km</p>
                           </div>
                           <div>
                             <p className="text-sm text-gray-500">Remaining</p>
-                            <p className="font-medium">{component.remaining_years} Years / {component.remaining_km.toLocaleString()} km</p>
+                            <p className="font-medium">{remainingYears.toFixed(1)} Years / {remainingKm.toLocaleString()} km</p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-sm text-gray-500">Start Date</p>
+                            <p className="font-medium text-xs">{startDate ? startDate.toLocaleDateString() : 'N/A'}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">End Date</p>
+                            <p className="font-medium text-xs">{endDate ? endDate.toLocaleDateString() : 'N/A'}</p>
                           </div>
                         </div>
                         <div className="space-y-2">
                           <div className="flex justify-between text-sm">
                             <span>Time Coverage</span>
-                            <span>{Math.round((component.remaining_years / component.years) * 100)}%</span>
+                            <span>{timePercentage.toFixed(0)}%</span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-2">
                             <div 
-                              className="bg-blue-600 h-2 rounded-full" 
-                              style={{ width: `${Math.round((component.remaining_years / component.years) * 100)}%` }}
+                              className={`h-2 rounded-full ${
+                                timePercentage >= 50 ? 'bg-blue-600' :
+                                timePercentage >= 25 ? 'bg-yellow-600' :
+                                'bg-red-600'
+                              }`}
+                              style={{ width: `${timePercentage}%` }}
                             ></div>
                           </div>
                           <div className="flex justify-between text-sm">
                             <span>KM Coverage</span>
-                            <span>{Math.round((component.remaining_km / component.kilometers) * 100)}%</span>
+                            <span>{kmPercentage.toFixed(0)}%</span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-2">
                             <div 
-                              className="bg-green-600 h-2 rounded-full" 
-                              style={{ width: `${Math.round((component.remaining_km / component.kilometers) * 100)}%` }}
+                              className={`h-2 rounded-full ${
+                                kmPercentage >= 50 ? 'bg-green-600' :
+                                kmPercentage >= 25 ? 'bg-yellow-600' :
+                                'bg-red-600'
+                              }`}
+                              style={{ width: `${kmPercentage}%` }}
                             ></div>
                           </div>
                         </div>
+                        {part.component_description && (
+                          <div className="mt-4 pt-4 border-t">
+                            <p className="text-xs text-gray-500">{part.component_description}</p>
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <div className="text-center py-4">
-                        <Settings className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                        <p className="text-gray-500">Not applicable for this vehicle model</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                )
+              })}
             </div>
           ) : (
             <Card>
               <CardContent className="pt-6 text-center">
                 <Settings className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">Component warranty information not available</p>
+                <p className="text-gray-500">No warranty parts found for this vehicle</p>
               </CardContent>
             </Card>
           )}
@@ -625,7 +661,11 @@ export default function WarrantyDetailsPage() {
         <TabsContent value="services" className="space-y-6">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold">Warranty Services</h3>
-            <Button size="sm">
+            <Button 
+              size="sm" 
+              disabled={warrantyStatus === "active"}
+              title={warrantyStatus === "active" ? "Cannot add services to active warranties" : "Add new service"}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Add Service
             </Button>

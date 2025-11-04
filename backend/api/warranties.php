@@ -29,240 +29,344 @@ try {
         }
 
         if ($warrantyId && is_numeric($warrantyId)) {
-            // Get individual warranty by ID with customer and vehicle details
+            // Get warranty data from vehicle_warranty_parts table using vehicle_id
+            // The warrantyId is actually the vehicle_id now
+            $vehicleId = $warrantyId;
+            
+            // Check if vehicle_warranty_parts table exists
+            $tableCheck = $db->query("SHOW TABLES LIKE 'vehicle_warranty_parts'");
+            if ($tableCheck->rowCount() === 0) {
+                Response::error('Warranty parts table not available', 404);
+                exit;
+            }
+            
+            // Get all warranty parts for this vehicle
             $stmt = $db->prepare("
                 SELECT 
-                    w.*,
-                    c.name as customer_name,
-                    c.phone as customer_phone,
-                    c.email as customer_email,
-                    c.address as customer_address,
+                    vwp.id as warranty_part_id,
+                    vwp.vehicle_id,
+                    vwp.warranty_component_id,
+                    vwp.warranty_years,
+                    vwp.warranty_kilometers,
+                    vwp.start_date,
+                    vwp.end_date,
+                    vwp.km_limit,
+                    vwp.status,
+                    vwp.created_at,
+                    vwp.updated_at,
                     v.plate_number as vehicle_plate,
                     v.vin_number as vehicle_vin,
                     v.year as vehicle_year,
                     v.current_km,
+                    c.id as customer_id,
+                    c.name as customer_name,
+                    c.phone as customer_phone,
+                    c.email as customer_email,
+                    c.address as customer_address,
                     vm.name as vehicle_model,
-                    vm.category as vehicle_category
-                FROM warranties w
-                LEFT JOIN vehicles v ON w.vehicle_id = v.id
+                    vm.category as vehicle_category,
+                    COALESCE(wc.name, 'Unknown Component') as component_name,
+                    wc.description as component_description,
+                    COALESCE(wc.category, 'General') as component_category
+                FROM vehicle_warranty_parts vwp
+                LEFT JOIN vehicles v ON vwp.vehicle_id = v.id
                 LEFT JOIN customers c ON v.customer_id = c.id
                 LEFT JOIN vehicle_models vm ON v.vehicle_model_id = vm.id
-                WHERE w.id = ?
+                LEFT JOIN warranty_components wc ON vwp.warranty_component_id = wc.id
+                WHERE vwp.vehicle_id = ?
+                ORDER BY vwp.created_at DESC
             ");
-            $stmt->execute([$warrantyId]);
-            $warranty = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            // Debug: Check if vehicle exists
-            if ($warranty['vehicle_id']) {
-                $debugStmt = $db->prepare("SELECT * FROM vehicles WHERE id = ?");
-                $debugStmt->execute([$warranty['vehicle_id']]);
-                $vehicleDebug = $debugStmt->fetch(PDO::FETCH_ASSOC);
+            $stmt->execute([$vehicleId]);
+            $warrantyPartsData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            if (empty($warrantyPartsData)) {
+                Response::error('Warranty not found for this vehicle', 404);
+                exit;
+            }
+            
+            // Build warranty object from warranty parts data
+            $firstPart = $warrantyPartsData[0];
+            $warranty = [
+                'id' => $vehicleId, // Use vehicle_id as warranty ID
+                'vehicle_id' => $vehicleId,
+                'customer_id' => $firstPart['customer_id'],
+                'customer_name' => $firstPart['customer_name'],
+                'customer_phone' => $firstPart['customer_phone'],
+                'customer_email' => $firstPart['customer_email'],
+                'customer_address' => $firstPart['customer_address'],
+                'vehicle_plate' => $firstPart['vehicle_plate'],
+                'vehicle_vin' => $firstPart['vehicle_vin'],
+                'vehicle_year' => $firstPart['vehicle_year'],
+                'current_km' => $firstPart['current_km'],
+                'vehicle_model' => $firstPart['vehicle_model'],
+                'vehicle_category' => $firstPart['vehicle_category'],
+                'warranty_type' => 'standard',
+                'status' => 'active',
+                'start_date' => null,
+                'end_date' => null,
+                'km_limit' => 0,
+                'max_services' => 0,
+                'services_used' => 0,
+                'total_services_amount' => 0,
+                'last_service_date' => null,
+                'warranty_parts' => []
+            ];
+            
+            // Add warranty parts and calculate overall dates
+            foreach ($warrantyPartsData as $part) {
+                $warranty['warranty_parts'][] = [
+                    'id' => $part['warranty_part_id'],
+                    'vehicle_id' => $part['vehicle_id'],
+                    'warranty_component_id' => $part['warranty_component_id'],
+                    'warranty_years' => $part['warranty_years'],
+                    'warranty_kilometers' => $part['warranty_kilometers'],
+                    'start_date' => $part['start_date'],
+                    'end_date' => $part['end_date'],
+                    'km_limit' => $part['km_limit'],
+                    'status' => $part['status'],
+                    'component_name' => $part['component_name'],
+                    'component_description' => $part['component_description'],
+                    'component_category' => $part['component_category'],
+                    'created_at' => $part['created_at'],
+                    'updated_at' => $part['updated_at']
+                ];
                 
-                if ($vehicleDebug) {
-                    $warranty['debug_vehicle_exists'] = true;
-                    $warranty['debug_vehicle_data'] = $vehicleDebug;
-                    
-                    // Check if customer exists
-                    if ($vehicleDebug['customer_id']) {
-                        $customerStmt = $db->prepare("SELECT * FROM customers WHERE id = ?");
-                        $customerStmt->execute([$vehicleDebug['customer_id']]);
-                        $customerDebug = $customerStmt->fetch(PDO::FETCH_ASSOC);
-                        $warranty['debug_customer_exists'] = $customerDebug ? true : false;
-                        $warranty['debug_customer_data'] = $customerDebug;
-                    } else {
-                        $warranty['debug_customer_exists'] = false;
-                        $warranty['debug_customer_id'] = null;
-                    }
-                } else {
-                    $warranty['debug_vehicle_exists'] = false;
-                    
-                    // Provide fallback data for missing vehicle with Excel warranty data
-                    $warranty['customer_name'] = 'Demo Customer';
-                    $warranty['customer_phone'] = '012345678';
-                    $warranty['customer_email'] = 'demo@example.com';
-                    $warranty['customer_address'] = 'Phnom Penh, Cambodia';
-                    $warranty['vehicle_plate'] = 'DEMO-101';
-                    $warranty['vehicle_vin'] = 'VIN123456789';
-                    $warranty['vehicle_year'] = 2023;
-                    $warranty['vehicle_model'] = 'SOBEN';
-                    $warranty['vehicle_category'] = 'SUV';
-                    $warranty['current_km'] = 25000;
-                    
-                    // Add Excel warranty data for SOBEN model
-                    $warranty['warranty_components'] = [
-                        'Engine' => [
-                            'years' => 10,
-                            'kilometers' => 200000,
-                            'applicable' => true,
-                            'remaining_years' => 9.5,
-                            'remaining_km' => 175000,
-                            'status' => 'active'
-                        ],
-                        'Car Paint' => [
-                            'years' => 10,
-                            'kilometers' => 200000,
-                            'applicable' => true,
-                            'remaining_years' => 9.5,
-                            'remaining_km' => 175000,
-                            'status' => 'active'
-                        ],
-                        'Transmission (gearbox)' => [
-                            'years' => 5,
-                            'kilometers' => 100000,
-                            'applicable' => true,
-                            'remaining_years' => 4.5,
-                            'remaining_km' => 75000,
-                            'status' => 'active'
-                        ],
-                        'Electrical System' => [
-                            'years' => 5,
-                            'kilometers' => 100000,
-                            'applicable' => true,
-                            'remaining_years' => 4.5,
-                            'remaining_km' => 75000,
-                            'status' => 'active'
-                        ],
-                        'Battery Hybrid' => [
-                            'years' => 0,
-                            'kilometers' => 0,
-                            'applicable' => false,
-                            'remaining_years' => 0,
-                            'remaining_km' => 0,
-                            'status' => 'not_applicable'
-                        ]
-                    ];
-                    
-                    $warranty['debug_fallback_data'] = true;
+                // Calculate overall warranty period from parts
+                if ($warranty['start_date'] === null || $part['start_date'] < $warranty['start_date']) {
+                    $warranty['start_date'] = $part['start_date'];
+                }
+                if ($warranty['end_date'] === null || $part['end_date'] > $warranty['end_date']) {
+                    $warranty['end_date'] = $part['end_date'];
+                }
+                if ($part['km_limit'] > $warranty['km_limit']) {
+                    $warranty['km_limit'] = $part['km_limit'];
+                }
+            }
+            
+            $warranty['max_services'] = count($warrantyPartsData) * 2; // Default calculation
+
+            // Check warranty status based on end_date
+            if ($warranty['end_date']) {
+                $currentDate = date('Y-m-d');
+                if ($warranty['end_date'] < $currentDate) {
+                    $warranty['status'] = 'expired';
                 }
             }
 
-            if (!$warranty) {
-                Response::error('Warranty not found', 404);
+            // Warranty data is already built from vehicle_warranty_parts
+
+            // Get services for this vehicle
+            try {
+                $stmt = $db->prepare("
+                    SELECT 
+                        s.id,
+                        s.service_date,
+                        s.total_amount,
+                        s.service_status,
+                        s.current_km_at_service,
+                        s.warranty_used,
+                        s.cost_covered,
+                        st.service_type_name
+                    FROM services s
+                    LEFT JOIN service_types st ON s.service_type_id = st.id
+                    WHERE s.vehicle_id = ? AND s.warranty_used = 1
+                    ORDER BY s.service_date DESC
+                ");
+                $stmt->execute([$vehicleId]);
+                $services = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                $warranty['services'] = $services ?: [];
+                $warranty['services_used'] = count($services);
+                $warranty['total_services_amount'] = array_sum(array_column($services, 'total_amount'));
+                
+                // Get last service date
+                if (!empty($services)) {
+                    $warranty['last_service_date'] = $services[0]['service_date'];
+                }
+            } catch (Exception $e) {
+                $warranty['services'] = [];
+                $warranty['services_used'] = 0;
+                $warranty['total_services_amount'] = 0;
+                $warranty['last_service_date'] = null;
+                error_log("Error fetching services: " . $e->getMessage());
             }
 
-            // Get services under this warranty
-            $stmt = $db->prepare("
-                SELECT 
-                    s.id,
-                    s.service_date,
-                    s.total_amount,
-                    s.service_status,
-                    s.current_km_at_service,
-                    s.warranty_used,
-                    s.cost_covered,
-                    st.service_type_name
-                FROM services s
-                LEFT JOIN service_types st ON s.service_type_id = st.id
-                WHERE s.vehicle_id = ? AND s.warranty_used = 1
-                ORDER BY s.service_date DESC
-            ");
-            $stmt->execute([$warranty['vehicle_id']]);
-            $services = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            // Get claims for this warranty
-            $stmt = $db->prepare("
-                SELECT 
-                    wc.id,
-                    wc.claim_type,
-                    wc.claim_date,
-                    wc.description,
-                    wc.status,
-                    wc.estimated_cost,
-                    wc.approved_amount
-                FROM warranty_claims wc
-                WHERE wc.warranty_id = ?
-                ORDER BY wc.claim_date DESC
-            ");
-            $stmt->execute([$warrantyId]);
-            $claims = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            // Add services and claims to warranty data
-            $warranty['services'] = $services;
-            $warranty['claims'] = $claims;
-            $warranty['services_used'] = count($services);
-            $warranty['total_services_amount'] = array_sum(array_column($services, 'total_amount'));
-            
-            // If no services exist, add sample data for demonstration
-            if (empty($services) && isset($warranty['debug_fallback_data'])) {
-                $warranty['services'] = [
-                    [
-                        'id' => 1,
-                        'service_date' => '2025-09-15',
-                        'total_amount' => 150.00,
-                        'service_status' => 'completed',
-                        'current_km_at_service' => 20000,
-                        'warranty_used' => 1,
-                        'cost_covered' => 150.00,
-                        'service_type_name' => 'Oil Change'
-                    ],
-                    [
-                        'id' => 2,
-                        'service_date' => '2025-08-10',
-                        'total_amount' => 300.00,
-                        'service_status' => 'completed',
-                        'current_km_at_service' => 15000,
-                        'warranty_used' => 1,
-                        'cost_covered' => 300.00,
-                        'service_type_name' => 'Maintenance'
-                    ]
-                ];
-                $warranty['services_used'] = 2;
-                $warranty['total_services_amount'] = 450.00;
-            }
-            
-            // If no claims exist, add sample data for demonstration
-            if (empty($claims) && isset($warranty['debug_fallback_data'])) {
-                $warranty['claims'] = [
-                    [
-                        'id' => 1,
-                        'claim_type' => 'engine_repair',
-                        'claim_date' => '2025-09-20',
-                        'description' => 'Engine noise complaint',
-                        'status' => 'pending',
-                        'estimated_cost' => 500.00,
-                        'approved_amount' => null
-                    ]
-                ];
+            // Get claims for this vehicle (using vehicle_id since we don't have warranty_id in vehicle_warranty_parts)
+            try {
+                // Claims are linked to warranties table, so we'll need to check if there's a warranty record
+                // For now, return empty array since we're using vehicle_warranty_parts as primary
+                $warranty['claims'] = [];
+            } catch (Exception $e) {
+                $warranty['claims'] = [];
+                error_log("Error fetching claims: " . $e->getMessage());
             }
 
             Response::success($warranty, 'Warranty retrieved successfully');
             return;
         }
 
-        // Get warranties with pagination and customer/vehicle details
+        // Get warranty data from vehicle_warranty_parts table as primary source
         $pagination = Request::getPagination();
 
-        $limit = isset($pagination['limit']) && $pagination['limit'] > 0 ? (int)$pagination['limit'] : 10;
+        $limit = isset($pagination['limit']) && $pagination['limit'] > 0 ? (int)$pagination['limit'] : 100;
         $offset = isset($pagination['offset']) && $pagination['offset'] >= 0 ? (int)$pagination['offset'] : 0;
         
+        // Get filter parameters
+        $statusFilter = Request::query('status') ?? 'all';
+        $searchTerm = Request::query('search') ?? '';
+        
+        // Check if vehicle_warranty_parts table exists
+        $tableCheck = $db->query("SHOW TABLES LIKE 'vehicle_warranty_parts'");
+        if ($tableCheck->rowCount() === 0) {
+            Response::success([], 'Warranty parts table not available');
+            exit;
+        }
+        
+        // Build WHERE conditions
+        $conditions = [];
+        $params = [];
+        
+        // Status filter
+        if ($statusFilter && $statusFilter !== 'all') {
+            // For calculated statuses like 'expiring_soon', we'll handle it in the application logic
+            // For now, handle basic status filters
+            if (in_array($statusFilter, ['active', 'expired', 'suspended', 'cancelled'])) {
+                $conditions[] = "vwp.status = ?";
+                $params[] = $statusFilter;
+            }
+        }
+        
+        // Search filter
+        if ($searchTerm && trim($searchTerm) !== '') {
+            $conditions[] = "(c.name LIKE ? OR c.phone LIKE ? OR v.plate_number LIKE ? OR vm.name LIKE ?)";
+            $searchPattern = '%' . $searchTerm . '%';
+            $params[] = $searchPattern;
+            $params[] = $searchPattern;
+            $params[] = $searchPattern;
+            $params[] = $searchPattern;
+        }
+        
+        $whereClause = !empty($conditions) ? 'WHERE ' . implode(' AND ', $conditions) : '';
+        
+        // Query vehicle_warranty_parts as primary table, join with vehicles, customers, and components
         $query = "
             SELECT 
-                w.*,
-                c.name as customer_name,
-                c.phone as customer_phone,
-                c.email as customer_email,
-                c.address as customer_address,
+                vwp.id as warranty_part_id,
+                vwp.vehicle_id,
+                vwp.warranty_component_id,
+                vwp.warranty_years,
+                vwp.warranty_kilometers,
+                vwp.start_date,
+                vwp.end_date,
+                vwp.km_limit,
+                vwp.status,
+                vwp.created_at,
+                vwp.updated_at,
                 v.plate_number as vehicle_plate,
                 v.vin_number as vehicle_vin,
                 v.year as vehicle_year,
                 v.current_km,
-                v.warranty_start_date,
-                v.warranty_end_date,
+                c.id as customer_id,
+                c.name as customer_name,
+                c.phone as customer_phone,
+                c.email as customer_email,
+                c.address as customer_address,
                 vm.name as vehicle_model,
-                vm.category as vehicle_category
-            FROM warranties w
-            LEFT JOIN vehicles v ON w.vehicle_id = v.id
+                vm.category as vehicle_category,
+                COALESCE(wc.name, 'Unknown Component') as component_name,
+                wc.description as component_description,
+                COALESCE(wc.category, 'General') as component_category
+            FROM vehicle_warranty_parts vwp
+            LEFT JOIN vehicles v ON vwp.vehicle_id = v.id
             LEFT JOIN customers c ON v.customer_id = c.id
             LEFT JOIN vehicle_models vm ON v.vehicle_model_id = vm.id
-            ORDER BY w.created_at DESC
+            LEFT JOIN warranty_components wc ON vwp.warranty_component_id = wc.id
+            {$whereClause}
+            ORDER BY vwp.created_at DESC
             LIMIT {$limit} OFFSET {$offset}
         ";
 
         $stmt = $db->prepare($query);
-        $stmt->execute();
-        $warranties = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $stmt->execute($params);
+        $warrantyPartsData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Group warranty parts by vehicle to create warranty records
+        $warrantiesByVehicle = [];
+        foreach ($warrantyPartsData as $part) {
+            $vehicleId = $part['vehicle_id'];
+            
+            if (!isset($warrantiesByVehicle[$vehicleId])) {
+                // Create a warranty record for this vehicle
+                $warrantiesByVehicle[$vehicleId] = [
+                    'id' => $vehicleId, // Use vehicle_id as warranty ID
+                    'vehicle_id' => $vehicleId,
+                    'customer_id' => $part['customer_id'],
+                    'customer_name' => $part['customer_name'],
+                    'customer_phone' => $part['customer_phone'],
+                    'customer_email' => $part['customer_email'],
+                    'customer_address' => $part['customer_address'],
+                    'vehicle_plate' => $part['vehicle_plate'],
+                    'vehicle_vin' => $part['vehicle_vin'],
+                    'vehicle_year' => $part['vehicle_year'],
+                    'current_km' => $part['current_km'],
+                    'vehicle_model' => $part['vehicle_model'],
+                    'vehicle_category' => $part['vehicle_category'],
+                    'warranty_type' => 'standard', // Default since we don't have this in vehicle_warranty_parts
+                    'start_date' => null,
+                    'end_date' => null,
+                    'km_limit' => 0,
+                    'max_services' => 0,
+                    'services_used' => 0,
+                    'total_services_amount' => 0,
+                    'last_service_date' => null,
+                    'status' => 'active',
+                    'warranty_parts' => []
+                ];
+            }
+            
+            // Add this warranty part to the vehicle's warranty
+            $warrantiesByVehicle[$vehicleId]['warranty_parts'][] = [
+                'id' => $part['warranty_part_id'],
+                'vehicle_id' => $part['vehicle_id'],
+                'warranty_component_id' => $part['warranty_component_id'],
+                'warranty_years' => $part['warranty_years'],
+                'warranty_kilometers' => $part['warranty_kilometers'],
+                'start_date' => $part['start_date'],
+                'end_date' => $part['end_date'],
+                'km_limit' => $part['km_limit'],
+                'status' => $part['status'],
+                'component_name' => $part['component_name'],
+                'component_description' => $part['component_description'],
+                'component_category' => $part['component_category'],
+                'created_at' => $part['created_at'],
+                'updated_at' => $part['updated_at']
+            ];
+            
+            // Update warranty start/end dates based on parts
+            if ($warrantiesByVehicle[$vehicleId]['start_date'] === null || 
+                $part['start_date'] < $warrantiesByVehicle[$vehicleId]['start_date']) {
+                $warrantiesByVehicle[$vehicleId]['start_date'] = $part['start_date'];
+            }
+            if ($warrantiesByVehicle[$vehicleId]['end_date'] === null || 
+                $part['end_date'] > $warrantiesByVehicle[$vehicleId]['end_date']) {
+                $warrantiesByVehicle[$vehicleId]['end_date'] = $part['end_date'];
+            }
+            if ($part['km_limit'] > $warrantiesByVehicle[$vehicleId]['km_limit']) {
+                $warrantiesByVehicle[$vehicleId]['km_limit'] = $part['km_limit'];
+            }
+        }
+        
+        $warranties = array_values($warrantiesByVehicle);
 
-        // Add service statistics for each warranty
+        // Check warranty status based on end_date for each warranty
+        $currentDate = date('Y-m-d');
+        foreach ($warranties as &$warranty) {
+            if ($warranty['end_date'] && $warranty['end_date'] < $currentDate) {
+                $warranty['status'] = 'expired';
+            }
+        }
+        unset($warranty);
+
+        // Add service statistics for each warranty (warranty parts already included)
         foreach ($warranties as &$warranty) {
             $vehicleId = $warranty['vehicle_id'] ?? null;
             
@@ -291,30 +395,36 @@ try {
                 $stmt->execute([$vehicleId]);
                 $lastDate = $stmt->fetch(PDO::FETCH_ASSOC);
                 $warranty['last_service_date'] = $lastDate['last_date'] ?? null;
+                
+                // Calculate max_services from warranty parts count
+                $warranty['max_services'] = count($warranty['warranty_parts']) * 2; // Default calculation
             } catch (Exception $e) {
                 // If service statistics fail, just set defaults
                 $warranty['services_used'] = 0;
                 $warranty['total_services_amount'] = 0;
                 $warranty['last_service_date'] = null;
+                $warranty['max_services'] = 0;
                 error_log("Error fetching service statistics: " . $e->getMessage());
             }
         }
         unset($warranty);
 
-        // Get total count
-        $countQuery = "SELECT COUNT(*) as total FROM warranties";
-        $stmt = $db->prepare($countQuery);
-        $stmt->execute();
-        $total = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+        // Get total count with same filters (count distinct vehicles with warranty parts)
+        $countQuery = "
+            SELECT COUNT(DISTINCT vwp.vehicle_id) as total 
+            FROM vehicle_warranty_parts vwp
+            LEFT JOIN vehicles v ON vwp.vehicle_id = v.id
+            LEFT JOIN customers c ON v.customer_id = c.id
+            LEFT JOIN vehicle_models vm ON v.vehicle_model_id = vm.id
+            {$whereClause}
+        ";
+        $countStmt = $db->prepare($countQuery);
+        $countStmt->execute($params);
+        $total = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
         
-        $paginationData = [
-            'total' => (int)$total,
-            'page' => $pagination['page'] ?? 1,
-            'limit' => $limit,
-            'totalPages' => $limit > 0 ? ceil($total / $limit) : 1
-        ];
-
-        Response::paginated($warranties, $paginationData, 'Warranties retrieved successfully');
+        // Return data in format expected by frontend
+        // Frontend expects { success: true, data: warranties }
+        Response::success($warranties, 'Warranties retrieved successfully');
 
     } elseif ($method === 'POST') {
         // Create new warranty
