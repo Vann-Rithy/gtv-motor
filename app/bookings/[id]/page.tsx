@@ -75,8 +75,8 @@ export default function BookingDetail() {
     if (!booking) return
 
     try {
+      // Only update status - partial update
       await apiClient.updateBooking(booking.id, {
-        ...booking,
         status: "in_progress"
       })
       

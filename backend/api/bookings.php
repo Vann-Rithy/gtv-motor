@@ -272,7 +272,7 @@ try {
         Response::created($booking, 'Booking created successfully');
 
     } elseif ($method === 'PUT') {
-        // Update booking
+        // Update booking - supports partial updates
         $uri = $_SERVER['REQUEST_URI'];
         $path = parse_url($uri, PHP_URL_PATH);
         $segments = explode('/', trim($path, '/'));
@@ -289,80 +289,148 @@ try {
         }
 
         $data = Request::body();
-        Request::validateRequired($data, ['customer_id', 'vehicle_id', 'service_type_id', 'booking_date', 'booking_time', 'status']);
+        
+        // Check if this is a partial update (only status) or full update
+        // Partial update: only status field, or status + notes (which is optional)
+        $hasStatus = isset($data['status']);
+        $hasOnlyStatusFields = $hasStatus && 
+            (!isset($data['customer_id']) && !isset($data['vehicle_id']) && 
+             !isset($data['service_type_id']) && !isset($data['booking_date']) && 
+             !isset($data['booking_time']));
+        
+        if ($hasOnlyStatusFields) {
+            // Partial update - only update status (and optionally notes)
+            $status = Request::sanitize($data['status']);
+            $notes = isset($data['notes']) ? Request::sanitize($data['notes']) : null;
+            
+            if ($notes !== null) {
+                $stmt = $db->prepare("
+                    UPDATE bookings
+                    SET status = ?, notes = ?, updated_at = NOW()
+                    WHERE id = ?
+                ");
+                $stmt->execute([$status, $notes, $bookingId]);
+            } else {
+                $stmt = $db->prepare("
+                    UPDATE bookings
+                    SET status = ?, updated_at = NOW()
+                    WHERE id = ?
+                ");
+                $stmt->execute([$status, $bookingId]);
+            }
+            
+            // Get updated booking
+            $stmt = $db->prepare("
+                SELECT
+                    b.*,
+                    st.service_type_name
+                FROM bookings b
+                LEFT JOIN service_types st ON b.service_type_id = st.id
+                WHERE b.id = ?
+            ");
+            $stmt->execute([$bookingId]);
+            $booking = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            // Parse JSON data
+            if ($booking['customer_data']) {
+                $customerData = json_decode($booking['customer_data'], true);
+                if ($customerData) {
+                    $booking['customer_name'] = $customerData['name'] ?? '';
+                    $booking['customer_phone'] = $customerData['phone'] ?? '';
+                    $booking['customer_email'] = $customerData['email'] ?? '';
+                    $booking['customer_address'] = $customerData['address'] ?? '';
+                }
+            }
+            
+            if ($booking['vehicle_data']) {
+                $vehicleData = json_decode($booking['vehicle_data'], true);
+                if ($vehicleData) {
+                    $booking['vehicle_plate'] = $vehicleData['plate_number'] ?? '';
+                    $booking['vehicle_model'] = $vehicleData['model'] ?? '';
+                    $booking['vehicle_vin'] = $vehicleData['vin_number'] ?? '';
+                    $booking['vehicle_year'] = $vehicleData['year'] ?? '';
+                    $booking['vehicle_km'] = $vehicleData['current_km'] ?? '';
+                }
+            }
+            
+            Response::success($booking, 'Booking status updated successfully');
+        } else {
+            // Full update - require all fields
+            Request::validateRequired($data, ['customer_id', 'vehicle_id', 'service_type_id', 'booking_date', 'booking_time', 'status']);
 
-        // Get customer and vehicle data
-        $customerStmt = $db->prepare("SELECT name, phone, email, address FROM customers WHERE id = ?");
-        $customerStmt->execute([$data['customer_id']]);
-        $customer = $customerStmt->fetch(PDO::FETCH_ASSOC);
+            // Get customer and vehicle data
+            $customerStmt = $db->prepare("SELECT name, phone, email, address FROM customers WHERE id = ?");
+            $customerStmt->execute([$data['customer_id']]);
+            $customer = $customerStmt->fetch(PDO::FETCH_ASSOC);
 
-        if (!$customer) {
-            Response::error('Customer not found', 404);
+            if (!$customer) {
+                Response::error('Customer not found', 404);
+            }
+
+            $vehicleStmt = $db->prepare("SELECT plate_number, model, vin_number, year, current_km, customer_id FROM vehicles WHERE id = ?");
+            $vehicleStmt->execute([$data['vehicle_id']]);
+            $vehicle = $vehicleStmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$vehicle) {
+                Response::error('Vehicle not found', 404);
+            }
+
+            // Validate that the vehicle belongs to the selected customer
+            if ($vehicle['customer_id'] != $data['customer_id']) {
+                Response::error('Vehicle does not belong to the selected customer', 400);
+            }
+
+            // Validate service type exists
+            $stmt = $db->prepare("SELECT id FROM service_types WHERE id = ?");
+            $stmt->execute([$data['service_type_id']]);
+            if (!$stmt->fetch()) {
+                Response::error('Service type not found', 404);
+            }
+
+            // Check for conflicting bookings at the same time (excluding current booking)
+            $stmt = $db->prepare("
+                SELECT id FROM bookings
+                WHERE booking_date = ? AND booking_time = ? AND status IN ('confirmed', 'in_progress') AND id != ?
+            ");
+            $stmt->execute([$data['booking_date'], $data['booking_time'], $bookingId]);
+            if ($stmt->fetch()) {
+                Response::error('Time slot already booked', 409);
+            }
+
+            // Prepare customer and vehicle data as JSON
+            $customerData = json_encode([
+                'name' => $customer['name'],
+                'phone' => $customer['phone'],
+                'email' => $customer['email'],
+                'address' => $customer['address']
+            ]);
+
+            $vehicleData = json_encode([
+                'plate_number' => $vehicle['plate_number'],
+                'model' => $vehicle['model'],
+                'vin_number' => $vehicle['vin_number'],
+                'year' => $vehicle['year'],
+                'current_km' => $vehicle['current_km']
+            ]);
+
+            $stmt = $db->prepare("
+                UPDATE bookings
+                SET customer_data = ?, vehicle_data = ?, service_type_id = ?, booking_date = ?, booking_time = ?, status = ?, notes = ?, updated_at = NOW()
+                WHERE id = ?
+            ");
+            $stmt->execute([
+                $customerData,
+                $vehicleData,
+                $data['service_type_id'],
+                $data['booking_date'],
+                $data['booking_time'],
+                $data['status'],
+                $data['notes'] ?? null,
+                $bookingId
+            ]);
+
+            Response::success(null, 'Booking updated successfully');
         }
-
-        $vehicleStmt = $db->prepare("SELECT plate_number, model, vin_number, year, current_km, customer_id FROM vehicles WHERE id = ?");
-        $vehicleStmt->execute([$data['vehicle_id']]);
-        $vehicle = $vehicleStmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$vehicle) {
-            Response::error('Vehicle not found', 404);
-        }
-
-        // Validate that the vehicle belongs to the selected customer
-        if ($vehicle['customer_id'] != $data['customer_id']) {
-            Response::error('Vehicle does not belong to the selected customer', 400);
-        }
-
-        // Validate service type exists
-        $stmt = $db->prepare("SELECT id FROM service_types WHERE id = ?");
-        $stmt->execute([$data['service_type_id']]);
-        if (!$stmt->fetch()) {
-            Response::error('Service type not found', 404);
-        }
-
-        // Check for conflicting bookings at the same time (excluding current booking)
-        $stmt = $db->prepare("
-            SELECT id FROM bookings
-            WHERE booking_date = ? AND booking_time = ? AND status IN ('confirmed', 'in_progress') AND id != ?
-        ");
-        $stmt->execute([$data['booking_date'], $data['booking_time'], $bookingId]);
-        if ($stmt->fetch()) {
-            Response::error('Time slot already booked', 409);
-        }
-
-        // Prepare customer and vehicle data as JSON
-        $customerData = json_encode([
-            'name' => $customer['name'],
-            'phone' => $customer['phone'],
-            'email' => $customer['email'],
-            'address' => $customer['address']
-        ]);
-
-        $vehicleData = json_encode([
-            'plate_number' => $vehicle['plate_number'],
-            'model' => $vehicle['model'],
-            'vin_number' => $vehicle['vin_number'],
-            'year' => $vehicle['year'],
-            'current_km' => $vehicle['current_km']
-        ]);
-
-        $stmt = $db->prepare("
-            UPDATE bookings
-            SET customer_data = ?, vehicle_data = ?, service_type_id = ?, booking_date = ?, booking_time = ?, status = ?, notes = ?, updated_at = NOW()
-            WHERE id = ?
-        ");
-        $stmt->execute([
-            $customerData,
-            $vehicleData,
-            $data['service_type_id'],
-            $data['booking_date'],
-            $data['booking_time'],
-            $data['status'],
-            $data['notes'] ?? null,
-            $bookingId
-        ]);
-
-        Response::success(null, 'Booking updated successfully');
 
     } elseif ($method === 'DELETE') {
         // Delete booking
