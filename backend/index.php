@@ -170,12 +170,22 @@ try {
                 require_once __DIR__ . '/api/stock-movements.php';
                 break;
 
+            case 'restock':
+                require_once __DIR__ . '/api/restock.php';
+                break;
+
+            case (strpos($apiPath, 'images/') === 0):
+                // Handle image serving
+                require_once __DIR__ . '/api/images.php';
+                break;
+
             case (strpos($apiPath, 'bookings') === 0):
                 // Handle bookings requests (both /api/bookings and /api/bookings/1)
                 require_once __DIR__ . '/api/bookings.php';
                 break;
 
-            case 'inventory':
+            case (strpos($apiPath, 'inventory') === 0 && $apiPath !== 'inventory/categories'):
+                // Handle inventory requests (both /api/inventory and /api/inventory/1)
                 require_once __DIR__ . '/api/inventory.php';
                 break;
 

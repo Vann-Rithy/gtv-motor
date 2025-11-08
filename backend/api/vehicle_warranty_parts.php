@@ -61,7 +61,7 @@ try {
         $warrantyParts = isset($data['warranty_parts']) ? $data['warranty_parts'] : [];
 
         if (!$vehicleId || !$startDate || empty($warrantyParts)) {
-            Response::success(null, 'Missing required data');
+            Response::error('Missing required data: vehicle_id, start_date, and warranty_parts are required', 400);
             exit;
         }
 
@@ -80,8 +80,10 @@ try {
                 $years = (int)$part['warranty_years'];
                 $kilometers = (int)$part['warranty_kilometers'];
                 
+                // Create a new DateTime object for each part to avoid modification issues
                 $startDateObj = new DateTime($startDate);
-                $endDate = $startDateObj->modify("+{$years} years")->format('Y-m-d');
+                $endDateObj = clone $startDateObj; // Clone to avoid modifying the original
+                $endDate = $endDateObj->modify("+{$years} years")->format('Y-m-d');
                 
                 $stmt = $db->prepare("
                     INSERT INTO vehicle_warranty_parts (
@@ -108,7 +110,8 @@ try {
             if (isset($db) && $db->inTransaction()) {
                 $db->rollBack();
             }
-            Response::success(null, 'Failed to create warranty parts');
+            error_log("Vehicle warranty parts creation error: " . $e->getMessage());
+            Response::error('Failed to create warranty parts: ' . $e->getMessage(), 500);
         }
 
     } else {

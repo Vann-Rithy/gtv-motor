@@ -66,3 +66,5 @@ SELECT 'Exchange rate columns added successfully!' as status;
 
 
 
+
+

@@ -2,7 +2,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command"
 import { ArrowLeft, Search, Plus, Trash2, Loader2, Package, User, Car, X, DollarSign, Shield, Calendar } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
 import { useSearchParams } from "next/navigation"
@@ -54,6 +56,7 @@ interface Vehicle {
   model: string
   model_name?: string
   model_category?: string
+  vehicle_model_id?: number
   vin_number: string
   year: number
   customer_id: number
@@ -73,6 +76,8 @@ interface Vehicle {
   total_service_amount?: string
   completed_services?: number
   pending_services?: number
+  technician_id?: number
+  sales_rep_id?: number
 }
 
 interface InventoryItem {
@@ -159,6 +164,13 @@ export default function NewService() {
     notes: "",
   })
 
+  // Track which fields were auto-filled from plate number
+  const [autoFilledFields, setAutoFilledFields] = useState<Set<string>>(new Set())
+  const plateNumberTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const [plateNumberSuggestions, setPlateNumberSuggestions] = useState<Array<{plate_number: string, model_name?: string, customer_name?: string}>>([])
+  const [showPlateSuggestions, setShowPlateSuggestions] = useState(false)
+  const plateSearchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
 
 
   const serviceTypes = [
@@ -203,8 +215,21 @@ export default function NewService() {
 
   const fetchWarrantyComponents = async () => {
     try {
-      const modelId = selectedVehicle?.model || formData.model || ''
-      const response = await fetch('/api/warranty-parts?vehicle_model_id=' + modelId)
+      // Get vehicle_model_id from selectedVehicle if available
+      const vehicleModelId = selectedVehicle?.vehicle_model_id || null
+      const vehicleId = selectedVehicle?.id || null
+      
+      // Build query string with available parameters
+      const params = new URLSearchParams()
+      if (vehicleModelId) {
+        params.append('vehicle_model_id', vehicleModelId.toString())
+      }
+      if (vehicleId) {
+        params.append('vehicle_id', vehicleId.toString())
+      }
+      
+      // Call API (it will return default components if no IDs provided)
+      const response = await fetch('/api/warranty-parts?' + params.toString())
       const data = await response.json()
       
       if (data.success && data.data) {
@@ -599,19 +624,246 @@ export default function NewService() {
     toast.success("Existing booking selected! Service form has been pre-filled with booking data.")
   }
 
-  // Handle plate number change without auto-completion
-  const handlePlateNumberChange = async (plateNumber: string) => {
-    setFormData({ ...formData, plateNumber })
+  // Search for plate number suggestions
+  const searchPlateNumbers = async (searchTerm: string) => {
+    if (!searchTerm || searchTerm.trim().length < 2) {
+      setPlateNumberSuggestions([])
+      return
+    }
+
+    try {
+      const response = await apiClient.getVehicles({ search: searchTerm.trim(), limit: 10 })
+      if (response.success && response.data) {
+        const suggestions = response.data.map((v: any) => ({
+          plate_number: v.plate_number,
+          model_name: v.model_name || v.model,
+          customer_name: v.customer_name
+        }))
+        setPlateNumberSuggestions(suggestions)
+        setShowPlateSuggestions(true)
+      }
+    } catch (error) {
+      console.error('Error searching plate numbers:', error)
+      setPlateNumberSuggestions([])
+    }
   }
 
-  // Handle customer name change without auto-completion
+  // Fetch and auto-fill vehicle data by plate number
+  const fetchAndAutoFillVehicle = async (plateNumber: string, suppressErrors: boolean = false) => {
+    if (!plateNumber || plateNumber.trim() === '') {
+      return
+    }
+
+    const trimmedPlate = plateNumber.trim()
+    
+    // Only attempt auto-fill if plate number has minimum length (e.g., at least 4 characters)
+    // This prevents unnecessary API calls for incomplete plate numbers
+    if (trimmedPlate.length < 4) {
+      return
+    }
+
+    setSearchingPlate(true)
+    try {
+      const response = await apiClient.getVehicleByPlateNumber(trimmedPlate)
+      
+      if (response.success && response.data) {
+        const vehicle = response.data
+        
+        console.log('Vehicle data received:', vehicle)
+        
+        // Track which fields will be auto-filled
+        const newAutoFilledFields = new Set<string>()
+        
+        // Auto-fill vehicle information
+        const updates: any = {}
+        
+        // Always set plate number (it's the trigger)
+        if (vehicle.plate_number) {
+          updates.plateNumber = String(vehicle.plate_number).trim()
+          newAutoFilledFields.add('plateNumber')
+        }
+        
+        // Vehicle model - check both model_name and model
+        const modelValue = vehicle.model_name || vehicle.model || ''
+        if (modelValue) {
+          updates.model = String(modelValue).trim()
+          newAutoFilledFields.add('model')
+        }
+        
+        // VIN Number
+        if (vehicle.vin_number) {
+          updates.vinNumber = String(vehicle.vin_number).trim()
+          newAutoFilledFields.add('vinNumber')
+        }
+        
+        // Year
+        if (vehicle.year) {
+          updates.year = String(vehicle.year).trim()
+          newAutoFilledFields.add('year')
+        }
+        
+        // Volume (L) - convert cc_displacement to liters if available
+        if (vehicle.cc_displacement) {
+          const volumeL = (parseFloat(String(vehicle.cc_displacement)) / 1000).toFixed(1)
+          updates.volumeL = volumeL
+          newAutoFilledFields.add('volumeL')
+        }
+        
+        // Auto-fill customer information
+        if (vehicle.customer_name) {
+          updates.customerName = String(vehicle.customer_name).trim()
+          newAutoFilledFields.add('customerName')
+        }
+        
+        if (vehicle.customer_phone) {
+          updates.phone = String(vehicle.customer_phone).trim()
+          newAutoFilledFields.add('phone')
+        }
+        
+        if (vehicle.customer_email) {
+          updates.email = String(vehicle.customer_email).trim()
+          newAutoFilledFields.add('email')
+        }
+        
+        if (vehicle.customer_address) {
+          updates.address = String(vehicle.customer_address).trim()
+          newAutoFilledFields.add('address')
+        }
+        
+        // Auto-fill service details (technician and sales rep from latest service)
+        if (vehicle.technician_id) {
+          updates.technicianId = String(vehicle.technician_id).trim()
+          newAutoFilledFields.add('technicianId')
+        }
+        
+        if (vehicle.sales_rep_id) {
+          updates.salesRepId = String(vehicle.sales_rep_id).trim()
+          newAutoFilledFields.add('salesRepId')
+        }
+        
+        console.log('Auto-fill updates:', updates)
+        console.log('Auto-filled fields:', Array.from(newAutoFilledFields))
+        
+        // Update form data with auto-filled values - use functional update to ensure state is current
+        setFormData(prev => {
+          const updated = { ...prev, ...updates }
+          console.log('Previous formData:', prev)
+          console.log('Updated formData:', updated)
+          return updated
+        })
+        setAutoFilledFields(newAutoFilledFields)
+        
+        // Set selected vehicle for UI display
+        setSelectedVehicle(vehicle)
+        
+        // Set selected customer for UI display
+        if (vehicle.customer_name || vehicle.customer_phone) {
+          setSelectedCustomer({
+            id: vehicle.customer_id || 0,
+            name: vehicle.customer_name || '',
+            phone: vehicle.customer_phone || '',
+            email: vehicle.customer_email || '',
+            address: vehicle.customer_address || ''
+          })
+        }
+        
+        toast.success('Vehicle data auto-completed successfully')
+      } else {
+        // Vehicle not found - only clear if we're confident it should exist
+        if (!suppressErrors) {
+          setAutoFilledFields(new Set())
+          setSelectedVehicle(null)
+          setSelectedCustomer(null)
+        }
+      }
+    } catch (error: any) {
+      // Only log/show errors if suppressErrors is false
+      if (!suppressErrors) {
+        console.error('Error fetching vehicle by plate number:', error)
+        setAutoFilledFields(new Set())
+        setSelectedVehicle(null)
+        setSelectedCustomer(null)
+      }
+      // Silently ignore errors when suppressErrors is true (user is still typing)
+    } finally {
+      setSearchingPlate(false)
+    }
+  }
+
+  // Handle plate number change with auto-completion
+  const handlePlateNumberChange = async (plateNumber: string, skipSearch: boolean = false) => {
+    // Update plate number in form
+    setFormData(prev => ({ ...prev, plateNumber }))
+
+    // Clear any existing timeout
+    if (plateNumberTimeoutRef.current) {
+      clearTimeout(plateNumberTimeoutRef.current)
+    }
+    if (plateSearchTimeoutRef.current) {
+      clearTimeout(plateSearchTimeoutRef.current)
+    }
+
+    // If plate number is empty, clear all auto-filled fields
+    if (!plateNumber || plateNumber.trim() === '') {
+      setFormData(prev => {
+        const clearedFields: any = { plateNumber: '' }
+        autoFilledFields.forEach(field => {
+          clearedFields[field] = ''
+        })
+        return { ...prev, ...clearedFields }
+      })
+      setAutoFilledFields(new Set())
+      setSelectedVehicle(null)
+      setSelectedCustomer(null)
+      setPlateNumberSuggestions([])
+      setShowPlateSuggestions(false)
+      return
+    }
+
+    // If skipSearch is true (e.g., when selecting from dropdown), fetch immediately
+    if (skipSearch) {
+      setShowPlateSuggestions(false)
+      await fetchAndAutoFillVehicle(plateNumber, false) // Don't suppress errors when selecting from dropdown
+      return
+    }
+
+    // Search for suggestions as user types (only if not skipping search)
+    plateSearchTimeoutRef.current = setTimeout(() => {
+      searchPlateNumbers(plateNumber)
+    }, 300)
+
+    // Debounce the API call for auto-fill - only fetch if plate number is long enough
+    // Use longer debounce and suppress errors for incomplete plate numbers
+    plateNumberTimeoutRef.current = setTimeout(async () => {
+      // Suppress errors while user is typing (incomplete plate numbers are expected to return 404)
+      await fetchAndAutoFillVehicle(plateNumber, true)
+    }, 800) // Longer debounce (800ms) to wait for user to finish typing
+  }
+
+  // Handle customer name change - preserve other auto-filled fields
   const handleCustomerNameChange = async (customerName: string) => {
     setFormData({ ...formData, customerName })
+    // Remove from auto-filled if user manually edits
+    if (autoFilledFields.has('customerName')) {
+      setAutoFilledFields(prev => {
+        const newSet = new Set(prev)
+        newSet.delete('customerName')
+        return newSet
+      })
+    }
   }
 
-  // Handle phone change without auto-completion
+  // Handle phone change - preserve other auto-filled fields
   const handlePhoneChange = async (phone: string) => {
     setFormData({ ...formData, phone })
+    // Remove from auto-filled if user manually edits
+    if (autoFilledFields.has('phone')) {
+      setAutoFilledFields(prev => {
+        const newSet = new Set(prev)
+        newSet.delete('phone')
+        return newSet
+      })
+    }
   }
 
   // Function to handle service type selection
@@ -1007,7 +1259,16 @@ export default function NewService() {
       }
 
       // Save warranty parts if configured
-      if (setWarrantyStartDate && selectedWarrantyParts && Object.keys(selectedWarrantyParts).length > 0 && created?.data?.id) {
+      console.log('🔍 Warranty parts check:', {
+        setWarrantyStartDate,
+        selectedWarrantyParts,
+        selectedWarrantyPartsKeys: Object.keys(selectedWarrantyParts || {}),
+        selectedWarrantyPartsLength: Object.keys(selectedWarrantyParts || {}).length,
+        createdData: created?.data,
+        serviceId: created?.data?.id
+      })
+
+      if (setWarrantyStartDate && selectedWarrantyParts && Object.keys(selectedWarrantyParts).length > 0) {
         try {
           const warrantyPartsPayload = Object.entries(selectedWarrantyParts)
             .filter(([_, selected]) => selected)
@@ -1023,6 +1284,18 @@ export default function NewService() {
               }
             })
 
+          if (warrantyPartsPayload.length === 0) {
+            console.warn('⚠️ No warranty parts selected after filtering')
+            return
+          }
+
+          console.log('📦 Saving warranty parts:', {
+            vehicle_id: pendingServiceData.payload.vehicle_id,
+            start_date: pendingServiceData.payload.service_date,
+            warranty_parts: warrantyPartsPayload,
+            payload_count: warrantyPartsPayload.length
+          })
+
           const warrantyPartsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://api.gtvmotor.dev'}/api/vehicle_warranty_parts.php`, {
             method: 'POST',
             headers: {
@@ -1035,10 +1308,15 @@ export default function NewService() {
             })
           })
 
-          if (!warrantyPartsResponse.ok) {
-            console.warn('Warning: Service created but warranty parts failed to save')
+          const warrantyPartsResult = await warrantyPartsResponse.json()
+          console.log('📦 Warranty parts API response:', warrantyPartsResult)
+
+          if (!warrantyPartsResponse.ok || !warrantyPartsResult.success) {
+            console.error('❌ Warranty parts save failed:', warrantyPartsResult)
+            toast.error('Service created but warranty parts failed to save: ' + (warrantyPartsResult.message || 'Unknown error'))
           } else {
-            console.log('✅ Warranty parts saved successfully')
+            console.log('✅ Warranty parts saved successfully:', warrantyPartsResult)
+            toast.success('Warranty parts saved successfully')
             
             // Update vehicle's warranty_start_date
             try {
@@ -1297,19 +1575,70 @@ export default function NewService() {
                     {!formData.plateNumber && <span className="text-red-500 ml-1">(Required)</span>}
                   </Label>
                   <div className="relative">
-                    <Input
-                      id="plateNumber"
-                      value={formData.plateNumber}
-                      onChange={(e) => handlePlateNumberChange(e.target.value)}
-                      placeholder="2CD-7960"
-                      required
-                      className={`${selectedVehicle ? "bg-green-50 border-green-300" : ""} ${!formData.plateNumber ? "border-red-300 focus:border-red-500 ring-red-200" : ""}`}
-                    />
-                    {searchingPlate && (
-                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      </div>
-                    )}
+                    <Popover open={showPlateSuggestions && plateNumberSuggestions.length > 0} onOpenChange={setShowPlateSuggestions}>
+                      <PopoverTrigger asChild>
+                        <div className="relative">
+                          <Input
+                            id="plateNumber"
+                            value={formData.plateNumber}
+                            onChange={(e) => handlePlateNumberChange(e.target.value)}
+                            onFocus={() => {
+                              if (plateNumberSuggestions.length > 0 && formData.plateNumber.length >= 2) {
+                                setShowPlateSuggestions(true)
+                              }
+                            }}
+                            onBlur={() => {
+                              // Delay closing to allow click on suggestion
+                              setTimeout(() => {
+                                if (!document.activeElement?.closest('[role="option"]')) {
+                                  setShowPlateSuggestions(false)
+                                }
+                              }, 200)
+                            }}
+                            placeholder="2CD-7960"
+                            required
+                            className={`${selectedVehicle ? "bg-green-50 border-green-300" : ""} ${!formData.plateNumber ? "border-red-300 focus:border-red-500 ring-red-200" : ""}`}
+                          />
+                          {searchingPlate && (
+                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            </div>
+                          )}
+                        </div>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[400px] p-0" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
+                        <Command shouldFilter={false}>
+                          <CommandList>
+                            <CommandEmpty>No plate numbers found.</CommandEmpty>
+                            <CommandGroup>
+                              {plateNumberSuggestions.map((suggestion, index) => (
+                                <CommandItem
+                                  key={index}
+                                  value={suggestion.plate_number}
+                                  onSelect={() => {
+                                    // Skip search suggestions and immediately fetch full vehicle data
+                                    handlePlateNumberChange(suggestion.plate_number, true)
+                                  }}
+                                  className="cursor-pointer"
+                                >
+                                  <div className="flex flex-col w-full">
+                                    <span className="font-medium">{suggestion.plate_number}</span>
+                                    <div className="flex gap-2 text-xs text-gray-500">
+                                      {suggestion.model_name && (
+                                        <span>Model: {suggestion.model_name}</span>
+                                      )}
+                                      {suggestion.customer_name && (
+                                        <span>• Customer: {suggestion.customer_name}</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   {selectedVehicle && (
                     <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm text-green-700">
@@ -1327,6 +1656,7 @@ export default function NewService() {
                     {!formData.model && <span className="text-red-500 ml-1">(Required)</span>}
                   </Label>
                   <Select
+                    key={formData.model || 'model-select'} // Force re-render when value changes
                     value={formData.model}
                     onValueChange={(value) => setFormData({ ...formData, model: value })}
                   >
@@ -1746,10 +2076,11 @@ export default function NewService() {
                 <div>
                   <Label htmlFor="technicianId">Technician</Label>
                   <Select
-                    value={formData.technicianId}
+                    key={`technician-${formData.technicianId || 'empty'}`} // Force re-render when value changes
+                    value={formData.technicianId || ''}
                     onValueChange={(value) => setFormData({ ...formData, technicianId: value })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={selectedVehicle && formData.technicianId ? "bg-green-50 border-green-300" : ""}>
                       <SelectValue placeholder="Select technician" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1764,14 +2095,15 @@ export default function NewService() {
                 <div>
                   <Label htmlFor="salesRepId">Sales Representative</Label>
                   <Select
-                    value={formData.salesRepId}
+                    key={`salesrep-${formData.salesRepId || 'empty'}`} // Force re-render when value changes
+                    value={formData.salesRepId || ''}
                     onValueChange={(value) => setFormData({ ...formData, salesRepId: value })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={selectedVehicle && formData.salesRepId ? "bg-green-50 border-green-300" : ""}>
                       <SelectValue placeholder="Select sales rep" />
                     </SelectTrigger>
                     <SelectContent>
-                      {staffMembers.filter(staff => staff.role === 'service_advisor' || staff.role === 'manager').map((staff) => (
+                      {staffMembers.filter(staff => staff.role === 'service_advisor' || staff.role === 'manager' || staff.role === 'sales' || staff.role === 'sales_rep').map((staff) => (
                         <SelectItem key={staff.id} value={staff.id.toString()}>
                           {staff.name}
                         </SelectItem>

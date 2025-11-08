@@ -6,8 +6,20 @@ export async function GET(request: NextRequest) {
     const vehicleModelId = searchParams.get('vehicle_model_id')
     const vehicleId = searchParams.get('vehicle_id')
 
+    // If neither vehicleModelId nor vehicleId is provided, return default components
     if (!vehicleModelId && !vehicleId) {
-      return NextResponse.json({ error: 'Vehicle model ID or vehicle ID is required' }, { status: 400 })
+      // Return default warranty components instead of error
+      const defaultComponents = [
+        { id: 1, name: 'Engine', description: 'Engine warranty coverage', category: 'Engine', warranty_years: 10, warranty_kilometers: 200000, is_applicable: 1 },
+        { id: 2, name: 'Car Paint', description: 'Paint and body warranty coverage', category: 'Body', warranty_years: 10, warranty_kilometers: 200000, is_applicable: 1 },
+        { id: 3, name: 'Transmission (gearbox)', description: 'Transmission and gearbox warranty coverage', category: 'Transmission', warranty_years: 5, warranty_kilometers: 100000, is_applicable: 1 },
+        { id: 4, name: 'Electrical System', description: 'Electrical components warranty coverage', category: 'Electrical', warranty_years: 5, warranty_kilometers: 100000, is_applicable: 1 },
+        { id: 5, name: 'Battery Hybrid', description: 'Hybrid battery warranty coverage', category: 'Battery', warranty_years: 8, warranty_kilometers: 150000, is_applicable: 0 }
+      ]
+      return NextResponse.json({
+        success: true,
+        data: defaultComponents
+      })
     }
 
     let components = []

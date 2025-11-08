@@ -17,6 +17,66 @@ try {
     $method = Request::method();
 
     if ($method === 'GET') {
+        // Check if requesting vehicle by plate number
+        $plateNumber = Request::query('plate_number');
+        
+        if ($plateNumber) {
+            // Get vehicle by plate number with customer info and latest service details
+            $stmt = $db->prepare("
+                SELECT
+                    v.*,
+                    v.vehicle_model_id,
+                    v.plate_number,
+                    v.vin_number,
+                    v.year,
+                    c.name as customer_name,
+                    c.phone as customer_phone,
+                    c.email as customer_email,
+                    c.address as customer_address,
+                    vm.name as model_name,
+                    vm.name as model,
+                    vm.category as model_category,
+                    vm.base_price as model_base_price,
+                    vm.cc_displacement,
+                    vm.engine_type,
+                    vm.fuel_type,
+                    vm.transmission,
+                    latest_service.technician_id,
+                    latest_service.sales_rep_id,
+                    tech.name as technician_name,
+                    sales.name as sales_rep_name
+                FROM vehicles v
+                LEFT JOIN customers c ON v.customer_id = c.id
+                LEFT JOIN vehicle_models vm ON v.vehicle_model_id = vm.id
+                LEFT JOIN (
+                    SELECT s.vehicle_id, s.technician_id, s.sales_rep_id
+                    FROM services s
+                    INNER JOIN (
+                        SELECT vehicle_id, MAX(service_date) as max_date
+                        FROM services
+                        WHERE vehicle_id = (SELECT id FROM vehicles WHERE plate_number = ? LIMIT 1)
+                        GROUP BY vehicle_id
+                    ) latest ON s.vehicle_id = latest.vehicle_id AND s.service_date = latest.max_date
+                    ORDER BY s.id DESC
+                    LIMIT 1
+                ) latest_service ON v.id = latest_service.vehicle_id
+                LEFT JOIN staff tech ON latest_service.technician_id = tech.id
+                LEFT JOIN staff sales ON latest_service.sales_rep_id = sales.id
+                WHERE v.plate_number = ?
+                ORDER BY v.id DESC
+                LIMIT 1
+            ");
+            $stmt->execute([$plateNumber, $plateNumber]);
+            $vehicle = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$vehicle) {
+                Response::error('Vehicle not found', 404);
+            }
+
+            Response::success($vehicle, 'Vehicle retrieved successfully');
+            return;
+        }
+
         // Check if requesting individual vehicle
         $uri = $_SERVER['REQUEST_URI'];
         $path = parse_url($uri, PHP_URL_PATH);
@@ -81,9 +141,8 @@ try {
         $params = [];
 
         if (!empty($search['search'])) {
-            $where[] = "(v.plate_number LIKE ? OR v.vin_number LIKE ? OR c.name LIKE ? OR vm.name LIKE ? OR v.model LIKE ?)";
+            $where[] = "(v.plate_number LIKE ? OR v.vin_number LIKE ? OR c.name LIKE ? OR vm.name LIKE ?)";
             $searchTerm = '%' . $search['search'] . '%';
-            $params[] = $searchTerm;
             $params[] = $searchTerm;
             $params[] = $searchTerm;
             $params[] = $searchTerm;
@@ -96,6 +155,11 @@ try {
         }
 
         $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
+
+        // Validate sortBy to prevent SQL injection
+        $allowedSortColumns = ['id', 'plate_number', 'created_at', 'updated_at'];
+        $sortBy = in_array($search['sortBy'], $allowedSortColumns) ? $search['sortBy'] : 'id';
+        $sortOrder = strtoupper($search['sortOrder']) === 'ASC' ? 'ASC' : 'DESC';
 
         $query = "
             SELECT
@@ -114,24 +178,32 @@ try {
                 vm.fuel_type,
                 vm.transmission,
                 'Unknown' as color,
-                COUNT(DISTINCT s.id) as service_count,
+                COALESCE(COUNT(DISTINCT s.id), 0) as service_count,
                 MAX(s.service_date) as last_service_date,
-                SUM(s.total_amount) as total_service_amount,
-                SUM(CASE WHEN s.service_status = 'completed' THEN 1 ELSE 0 END) as completed_services,
-                SUM(CASE WHEN s.service_status = 'pending' THEN 1 ELSE 0 END) as pending_services
+                COALESCE(SUM(s.total_amount), 0) as total_service_amount,
+                COALESCE(SUM(CASE WHEN s.service_status = 'completed' THEN 1 ELSE 0 END), 0) as completed_services,
+                COALESCE(SUM(CASE WHEN s.service_status = 'pending' THEN 1 ELSE 0 END), 0) as pending_services
             FROM vehicles v
             LEFT JOIN customers c ON v.customer_id = c.id
             LEFT JOIN vehicle_models vm ON v.vehicle_model_id = vm.id
             LEFT JOIN services s ON v.id = s.vehicle_id
             {$whereClause}
             GROUP BY v.id
-            ORDER BY v.id DESC
+            ORDER BY v.{$sortBy} {$sortOrder}
             LIMIT {$pagination['limit']} OFFSET {$pagination['offset']}
         ";
 
-        $vehicles = $db->prepare($query);
-        $vehicles->execute($params);
-        $vehicles = $vehicles->fetchAll(PDO::FETCH_ASSOC);
+        try {
+            $vehicles = $db->prepare($query);
+            $vehicles->execute($params);
+            $vehicles = $vehicles->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Vehicles query error: " . $e->getMessage());
+            error_log("Query: " . $query);
+            error_log("Params: " . print_r($params, true));
+            Response::error('Failed to fetch vehicles: ' . $e->getMessage(), 500);
+            return;
+        }
 
         // Get total count
         $countQuery = "

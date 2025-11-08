@@ -225,6 +225,9 @@ class ApiClient {
   async getVehicle(id: number | string) {
     return this.request(`/api/vehicles/${id}`, { method: "GET" })
   }
+  async getVehicleByPlateNumber(plateNumber: string) {
+    return this.request(`/api/vehicles?plate_number=${encodeURIComponent(plateNumber)}`, { method: "GET" })
+  }
   async createVehicle(data: any) {
     console.log('=== CREATE VEHICLE DEBUG ===')
     console.log('Vehicle data being sent:', data)
@@ -777,6 +780,27 @@ class ApiClient {
   }
   async deleteInventoryCategory(id: number) {
     return this.request(`/api/inventory/categories/${id}`, { method: "DELETE" })
+  }
+
+  // ---------- Restock ----------
+  async getRestockSuggestions(params?: {
+    low_stock?: boolean
+    out_of_stock?: boolean
+    page?: number
+    limit?: number
+  }) {
+    return this.request(`/api/restock${buildQuery(params)}`, { method: "GET" })
+  }
+
+  async restockItems(data: {
+    items: Array<{
+      item_id: number
+      quantity: number
+    }>
+    supplier?: string
+    notes?: string
+  }) {
+    return this.request("/api/restock", { method: "POST", body: JSON.stringify(data) })
   }
 
   // ---------- Staff ----------

@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { ArrowLeft, Plus } from "lucide-react"
+import { ArrowLeft, Plus, Upload, X } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
 import { toast } from "sonner"
 
@@ -20,14 +20,26 @@ interface Category {
   description?: string
 }
 
+interface VehicleModel {
+  id: number
+  name: string
+  category?: string
+}
+
 export default function AddInventoryItem() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
+  const [vehicleModels, setVehicleModels] = useState<VehicleModel[]>([])
   const [showNewCategory, setShowNewCategory] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState("")
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [formData, setFormData] = useState({
+    partPlate: "",
     name: "",
+    nameKhmer: "",
+    vehicle_model_id: "",
     category_id: "",
     sku: "",
     currentStock: "",
@@ -38,9 +50,10 @@ export default function AddInventoryItem() {
     description: "",
   })
 
-  // Load categories on component mount
+  // Load categories and vehicle models on component mount
   useEffect(() => {
     loadCategories()
+    loadVehicleModels()
   }, [])
 
   const loadCategories = async () => {
@@ -50,6 +63,18 @@ export default function AddInventoryItem() {
     } catch (error) {
       console.error("Failed to load categories:", error)
       toast.error("Failed to load categories")
+    }
+  }
+
+  const loadVehicleModels = async () => {
+    try {
+      const response = await apiClient.getVehicleModels()
+      if (response.success && response.data) {
+        setVehicleModels(response.data)
+      }
+    } catch (error) {
+      console.error("Failed to load vehicle models:", error)
+      toast.error("Failed to load vehicle models")
     }
   }
 
@@ -81,16 +106,47 @@ export default function AddInventoryItem() {
     }
   }
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif']
+      if (!allowedTypes.includes(file.type)) {
+        toast.error("Invalid file type. Only JPEG, PNG, and GIF images are allowed.")
+        return
+      }
+      
+      // Validate file size (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("File size exceeds maximum allowed size of 5MB")
+        return
+      }
+      
+      setSelectedImage(file)
+      
+      // Create preview
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleRemoveImage = () => {
+    setSelectedImage(null)
+    setImagePreview(null)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!formData.name || !formData.category_id || !formData.currentStock || 
-        !formData.minStock || !formData.maxStock || !formData.unitPrice) {
+    if (!formData.name || !formData.unitPrice) {
       toast.error("Please fill in all required fields")
       return
     }
 
-    if (Number(formData.minStock) > Number(formData.maxStock)) {
+    if (formData.minStock && formData.maxStock && Number(formData.minStock) > Number(formData.maxStock)) {
       toast.error("Minimum stock cannot be greater than maximum stock")
       return
     }
@@ -98,22 +154,59 @@ export default function AddInventoryItem() {
     try {
       setLoading(true)
       
-      await apiClient.createInventoryItem({
-        name: formData.name,
-        sku: formData.sku || undefined,
-        category_id: Number(formData.category_id),
-        current_stock: Number(formData.currentStock),
-        min_stock: Number(formData.minStock),
-        max_stock: Number(formData.maxStock),
-        unit_price: Number(formData.unitPrice),
-        supplier: formData.supplier || undefined
+      // Create FormData for file upload
+      const formDataToSend = new FormData()
+      formDataToSend.append('part_plate', formData.partPlate)
+      formDataToSend.append('name', formData.name)
+      formDataToSend.append('name_khmer', formData.nameKhmer)
+      formDataToSend.append('unit_price', formData.unitPrice)
+      
+      if (formData.vehicle_model_id) {
+        formDataToSend.append('vehicle_model_id', formData.vehicle_model_id)
+      }
+      if (formData.category_id) {
+        formDataToSend.append('category_id', formData.category_id)
+      }
+      if (formData.sku && formData.sku.trim() !== '') {
+        formDataToSend.append('sku', formData.sku.trim())
+      }
+      if (formData.currentStock) {
+        formDataToSend.append('current_stock', formData.currentStock)
+      }
+      if (formData.minStock) {
+        formDataToSend.append('min_stock', formData.minStock)
+      }
+      if (formData.maxStock) {
+        formDataToSend.append('max_stock', formData.maxStock)
+      }
+      if (formData.supplier) {
+        formDataToSend.append('supplier', formData.supplier)
+      }
+      
+      // Add image if selected
+      if (selectedImage) {
+        formDataToSend.append('image', selectedImage)
+      }
+      
+      // Use fetch directly since apiClient might not handle FormData well
+      const response = await fetch('/api/inventory', {
+        method: 'POST',
+        body: formDataToSend,
       })
+      
+      const result = await response.json()
+      
+      if (!response.ok) {
+        // Provide more specific error message
+        const errorMessage = result.message || result.error || `Failed to create part (${response.status})`
+        throw new Error(errorMessage)
+      }
 
-      toast.success("Inventory item created successfully!")
+      toast.success("Part added successfully!")
       router.push("/inventory")
-    } catch (error) {
-      console.error("Failed to create inventory item:", error)
-      toast.error("Failed to create inventory item")
+    } catch (error: any) {
+      console.error("Failed to create part:", error)
+      toast.error(error.message || "Failed to create part")
     } finally {
       setLoading(false)
     }
@@ -126,7 +219,7 @@ export default function AddInventoryItem() {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
-        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Add Inventory Item</h1>
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Add Part</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -138,24 +231,60 @@ export default function AddInventoryItem() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="name">Item Name *</Label>
+                <Label htmlFor="partPlate">Part Plate</Label>
+                <Input
+                  id="partPlate"
+                  value={formData.partPlate}
+                  onChange={(e) => setFormData({ ...formData, partPlate: e.target.value })}
+                  placeholder="Enter part plate number"
+                />
+              </div>
+              <div>
+                <Label htmlFor="name">Part Name (English) *</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Enter item name"
+                  placeholder="Enter part name in English"
                   required
                 />
               </div>
               <div>
-                <Label htmlFor="category">Category *</Label>
+                <Label htmlFor="nameKhmer">Part Name (Khmer)</Label>
+                <Input
+                  id="nameKhmer"
+                  value={formData.nameKhmer}
+                  onChange={(e) => setFormData({ ...formData, nameKhmer: e.target.value })}
+                  placeholder="Enter part name in Khmer"
+                />
+              </div>
+              <div>
+                <Label htmlFor="vehicleModel">Model Car</Label>
+                <Select
+                  value={formData.vehicle_model_id || undefined}
+                  onValueChange={(value) => setFormData({ ...formData, vehicle_model_id: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select car model (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {vehicleModels.map((model) => (
+                      <SelectItem key={model.id} value={model.id.toString()}>
+                        {model.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="category">Category</Label>
                 <div className="space-y-2">
                   <Select
-                    value={formData.category_id}
+                    value={formData.category_id || undefined}
                     onValueChange={(value) => setFormData({ ...formData, category_id: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
+                      <SelectValue placeholder="Select category (optional)" />
                     </SelectTrigger>
                     <SelectContent>
                       {categories.map((category) => (
@@ -222,6 +351,53 @@ export default function AddInventoryItem() {
               </div>
             </div>
             <div>
+              <Label htmlFor="image">Image</Label>
+              <div className="space-y-2">
+                {!imagePreview ? (
+                  <div className="flex items-center justify-center w-full">
+                    <label
+                      htmlFor="image-upload"
+                      className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:hover:bg-gray-600"
+                    >
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <Upload className="w-8 h-8 mb-2 text-gray-500" />
+                        <p className="mb-2 text-sm text-gray-500">
+                          <span className="font-semibold">Click to upload</span> or drag and drop
+                        </p>
+                        <p className="text-xs text-gray-500">PNG, JPG, GIF (MAX. 5MB)</p>
+                      </div>
+                      <input
+                        id="image-upload"
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                      />
+                    </label>
+                  </div>
+                ) : (
+                  <div className="relative w-full">
+                    <div className="relative w-full h-48 rounded-lg overflow-hidden border-2 border-gray-300">
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="w-full h-full object-contain"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={handleRemoveImage}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div>
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
@@ -236,49 +412,13 @@ export default function AddInventoryItem() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Stock & Pricing</CardTitle>
-            <CardDescription>Set stock levels and pricing information</CardDescription>
+            <CardTitle>Pricing</CardTitle>
+            <CardDescription>Set the price for this part</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
-                <Label htmlFor="currentStock">Current Stock *</Label>
-                <Input
-                  id="currentStock"
-                  type="number"
-                  value={formData.currentStock}
-                  onChange={(e) => setFormData({ ...formData, currentStock: e.target.value })}
-                  placeholder="0"
-                  min="0"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="minStock">Minimum Stock *</Label>
-                <Input
-                  id="minStock"
-                  type="number"
-                  value={formData.minStock}
-                  onChange={(e) => setFormData({ ...formData, minStock: e.target.value })}
-                  placeholder="0"
-                  min="0"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="maxStock">Maximum Stock *</Label>
-                <Input
-                  id="maxStock"
-                  type="number"
-                  value={formData.maxStock}
-                  onChange={(e) => setFormData({ ...formData, maxStock: e.target.value })}
-                  placeholder="0"
-                  min="0"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="unitPrice">Unit Price *</Label>
+                <Label htmlFor="unitPrice">Price *</Label>
                 <Input
                   id="unitPrice"
                   type="number"
@@ -299,7 +439,7 @@ export default function AddInventoryItem() {
             Cancel
           </Button>
           <Button type="submit" disabled={loading}>
-            {loading ? "Creating..." : "Add Item"}
+            {loading ? "Creating..." : "Add Part"}
           </Button>
         </div>
       </form>

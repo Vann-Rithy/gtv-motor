@@ -41,6 +41,10 @@ interface InventoryItem {
   supplier: string
   last_restocked: string
   stock_status: 'low' | 'normal' | 'high' | 'out_of_stock'
+  image?: string
+  part_plate?: string
+  name_khmer?: string
+  vehicle_model_id?: number
 }
 
 interface StockMovement {
@@ -124,7 +128,19 @@ export default function Inventory() {
       }
 
       const response = await apiClient.getInventory(params)
-      setInventory(response.data || [])
+      const items = response.data || []
+      
+      // Debug: Log first item to check image field
+      if (items.length > 0 && process.env.NODE_ENV === 'development') {
+        console.log('Sample inventory item:', {
+          id: items[0].id,
+          name: items[0].name,
+          image: items[0].image,
+          hasImage: !!items[0].image
+        })
+      }
+      
+      setInventory(items)
 
       // Update pagination info if available
       if (response.pagination) {
@@ -185,6 +201,56 @@ export default function Inventory() {
         In Stock
       </Badge>
     }
+  }
+
+  const getImageUrl = (imagePath: string | null | undefined) => {
+    if (!imagePath) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('No image path provided')
+      }
+      return null
+    }
+    
+    // If it's already a full URL, return it
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return imagePath
+    }
+    
+    // Otherwise, construct the URL from the API base URL
+    const baseUrl = 'https://api.gtvmotor.dev'
+    
+    // Remove leading slash if present
+    let cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath
+    
+    // Convert database paths to match server structure
+    // Database stores: images/uploads/parts/file.jpg or uploads/parts/file.jpg
+    // Server expects: images/uploads/parts/file.jpg (accessible at /images/uploads/parts/)
+    
+    if (cleanPath.startsWith('images/uploads/parts/')) {
+      // Use as-is (already correct)
+      cleanPath = cleanPath
+    } else if (cleanPath.startsWith('uploads/parts/')) {
+      // Add 'images/' prefix
+      cleanPath = 'images/' + cleanPath
+    } else if (cleanPath.startsWith('images/uploads/')) {
+      // Use as-is
+      cleanPath = cleanPath
+    } else if (cleanPath.startsWith('uploads/')) {
+      // Add 'images/' prefix
+      cleanPath = 'images/' + cleanPath
+    } else {
+      // Assume it's a filename, prepend images/uploads/parts/
+      cleanPath = 'images/uploads/parts/' + cleanPath
+    }
+    
+    // Construct URL without /api/ prefix - images are served directly
+    const url = `${baseUrl}/${cleanPath}`
+    
+    // Debug logging (remove in production)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Image URL:', url, 'from path:', imagePath)
+    }
+    return url
   }
 
   const getStockIcon = (item: InventoryItem) => {
@@ -537,6 +603,7 @@ export default function Inventory() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
+                    <th className="text-left p-2">Image</th>
                     <th className="text-left p-2">Item</th>
                     <th className="text-left p-2">SKU</th>
                     <th className="text-left p-2">Category</th>
@@ -556,8 +623,53 @@ export default function Inventory() {
                       onClick={() => handleViewDetails(item)}
                     >
                       <td className="p-2">
+                        {item.image && item.image.trim() !== '' ? (
+                          <div className="relative w-12 h-12 rounded-md overflow-hidden border border-gray-200 bg-gray-100">
+                            <img
+                              src={getImageUrl(item.image) || ''}
+                              alt={item.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                // Log error for debugging
+                                if (process.env.NODE_ENV === 'development') {
+                                  console.error('Image failed to load:', {
+                                    itemId: item.id,
+                                    itemName: item.name,
+                                    imagePath: item.image,
+                                    imageUrl: getImageUrl(item.image)
+                                  })
+                                }
+                                // Replace with placeholder icon on error
+                                const parent = e.currentTarget.parentElement
+                                if (parent) {
+                                  parent.innerHTML = `
+                                    <div class="w-full h-full flex items-center justify-center">
+                                      <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                      </svg>
+                                    </div>
+                                  `
+                                }
+                              }}
+                              onLoad={() => {
+                                if (process.env.NODE_ENV === 'development') {
+                                  console.log('Image loaded successfully:', item.image)
+                                }
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-12 h-12 rounded-md bg-gray-100 flex items-center justify-center">
+                            <Package className="h-6 w-6 text-gray-400" />
+                          </div>
+                        )}
+                      </td>
+                      <td className="p-2">
                         <div>
                           <div className="font-medium">{item.name}</div>
+                          {item.name_khmer && (
+                            <div className="text-xs text-muted-foreground">{item.name_khmer}</div>
+                          )}
                           <div className="text-sm text-muted-foreground">{item.supplier}</div>
                         </div>
                       </td>
@@ -706,7 +818,7 @@ export default function Inventory() {
       {/* Item Details Modal */}
       {showDetailsModal && selectedItem && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">Item Details</h3>
               <Button
@@ -717,11 +829,51 @@ export default function Inventory() {
                 <X className="h-4 w-4" />
               </Button>
             </div>
+            
+            {/* Image Display */}
+            {selectedItem.image && (
+              <div className="mb-4">
+                <div className="relative w-full h-64 rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                  <img
+                    src={getImageUrl(selectedItem.image) || ''}
+                    alt={selectedItem.name}
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      // Hide image and show placeholder on error
+                      const img = e.currentTarget
+                      img.style.display = 'none'
+                      const parent = img.parentElement
+                      if (parent && !parent.querySelector('.image-placeholder')) {
+                        const placeholder = document.createElement('div')
+                        placeholder.className = 'image-placeholder w-full h-full flex flex-col items-center justify-center text-gray-400'
+                        placeholder.innerHTML = `
+                          <svg class="w-16 h-16 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                          </svg>
+                          <span class="text-sm">Image not available</span>
+                        `
+                        parent.appendChild(placeholder)
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+            
             <div className="space-y-3">
               <div>
                 <label className="text-sm font-medium text-gray-500">Name</label>
                 <p className="font-medium">{selectedItem.name}</p>
+                {selectedItem.name_khmer && (
+                  <p className="text-sm text-muted-foreground mt-1">{selectedItem.name_khmer}</p>
+                )}
               </div>
+              {selectedItem.part_plate && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Part Plate</label>
+                  <p>{selectedItem.part_plate}</p>
+                </div>
+              )}
               <div>
                 <label className="text-sm font-medium text-gray-500">SKU</label>
                 <p>{selectedItem.sku || 'N/A'}</p>
