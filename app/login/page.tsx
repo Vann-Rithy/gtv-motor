@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-import Link from "next/link"
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
@@ -75,7 +74,7 @@ export default function LoginPage() {
           <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200/20 dark:bg-blue-800/20 rounded-full blur-3xl animate-pulse-slow"></div>
           <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-200/20 dark:bg-purple-800/20 rounded-full blur-3xl animate-pulse-slow" style={{animationDelay: '1s'}}></div>
         </div>
-        
+
         <div className="text-center relative z-10 animate-fade-in-up">
           <div className="relative mb-6">
             <Loader2 className="h-16 w-16 animate-spin mx-auto text-blue-600 dark:text-blue-400" />
@@ -96,7 +95,7 @@ export default function LoginPage() {
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-200/20 dark:bg-purple-800/20 rounded-full blur-3xl animate-pulse-slow" style={{animationDelay: '1s'}}></div>
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-200/10 dark:bg-indigo-800/10 rounded-full blur-3xl animate-pulse-slow" style={{animationDelay: '2s'}}></div>
       </div>
-      
+
       <Card className="w-full max-w-md shadow-2xl border-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm card-entrance">
         <CardHeader className="text-center border-0 bg-transparent pb-6">
           <div className="flex justify-center mb-4 animate-count-up">
@@ -165,7 +164,7 @@ export default function LoginPage() {
                     tabIndex={-1}
                     disabled={isLoading}
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4 text-gray-500" /> : <Eye className="h-4 w-4 text-gray-500" />}
+                    {showPassword ? <EyeOff className="h-4 w-4 text-gray-500 dark:text-gray-400" /> : <Eye className="h-4 w-4 text-gray-500 dark:text-gray-400" />}
                   </Button>
                 </div>
               </div>
@@ -192,25 +191,6 @@ export default function LoginPage() {
                 )}
               </Button>
             </form>
-          )}
-
-          {!success && (
-            <div className="mt-8 text-center animate-fade-in-up">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">New to GTV Motor?</span>
-                </div>
-              </div>
-              <Link 
-                href="/register" 
-                className="mt-4 inline-flex items-center justify-center px-6 py-3 border border-transparent text-sm font-semibold rounded-lg text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-all duration-200 hover:scale-105"
-              >
-                Create New Account
-              </Link>
-            </div>
           )}
         </CardContent>
       </Card>

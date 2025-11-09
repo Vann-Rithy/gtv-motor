@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils"
 import {
   LayoutDashboard,
   Users,
+  User,
   Wrench,
   Package,
   FileText,
@@ -33,8 +34,9 @@ import {
   MessageSquare,
   HelpCircle,
   Car,
+  Activity,
+  Key,
 } from "lucide-react"
-import SidebarNotificationBadge from "@/components/sidebar-notification-badge"
 import { API_ENDPOINTS } from "@/lib/api-config"
 
 type SidebarProps =
@@ -67,7 +69,9 @@ const navigation = [
   { name: "Follow-ups", href: "/notifications", icon: MessageSquare, key: "nav.followups" },
   { name: "Reports", href: "/reports", icon: FileText, key: "nav.reports" },
   { name: "Analytics", href: "/analytics", icon: BarChart3, key: "nav.analytics" },
-  { name: "Settings", href: "/settings", icon: Settings, key: "nav.settings" },
+  { name: "API Analytics", href: "/api-analytics", icon: Activity, key: "nav.api_analytics" },
+  { name: "API Keys", href: "/api-keys", icon: Key, key: "nav.api_keys" },
+  { name: "Staff Control", href: "/settings", icon: User, key: "nav.staff_control" },
 ]
 
 export default function Sidebar(props: SidebarProps) {
@@ -147,13 +151,7 @@ export default function Sidebar(props: SidebarProps) {
                     )}
                     onClick={close}
                   >
-                                         <div className="relative mr-3 flex items-center justify-center">
-                       {item.name === "Alerts" ? (
-                         <SidebarNotificationBadge />
-                       ) : (
-                         <item.icon className="h-5 w-5" />
-                       )}
-                     </div>
+                    <item.icon className="mr-3 h-5 w-5" />
                     {t(item.key, item.name)}
                   </Button>
                 </Link>

@@ -25,7 +25,7 @@ export default function FollowUpModal({ alert, onFollowUpComplete }: FollowUpMod
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!followUpNotes.trim() || !followUpDate) {
       toast.error("Please fill in all required fields")
       return
@@ -37,7 +37,7 @@ export default function FollowUpModal({ alert, onFollowUpComplete }: FollowUpMod
       const response = await fetch(`/api/alerts/${alert.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           status: "completed",
           message: `${alert.message}\n\nFollow-up completed on ${followUpDate} via ${followUpType}:\n${followUpNotes}`
         })
@@ -47,7 +47,7 @@ export default function FollowUpModal({ alert, onFollowUpComplete }: FollowUpMod
         toast.success("Follow-up completed successfully")
         setOpen(false)
         onFollowUpComplete()
-        
+
         // Reset form
         setFollowUpType("phone")
         setFollowUpNotes("")
@@ -79,7 +79,14 @@ export default function FollowUpModal({ alert, onFollowUpComplete }: FollowUpMod
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full px-4 py-2.5 h-auto text-sm font-semibold border-2 border-blue-200 dark:border-blue-800
+            bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400
+            hover:bg-blue-50 hover:border-blue-400 dark:hover:bg-blue-900/30 dark:hover:border-blue-600
+            transition-all duration-200 shadow-sm hover:shadow-md"
+        >
           <MessageSquare className="h-4 w-4 mr-2" />
           Follow Up
         </Button>

@@ -79,9 +79,9 @@ export default function Bookings() {
       case "confirmed":
         return <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">Confirmed</Badge>
       case "completed":
-        return <Badge className="bg-green-100 text-green-800">Completed</Badge>
+        return <Badge className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">Completed</Badge>
       case "in_progress":
-        return <Badge className="bg-orange-100 text-orange-800">In Progress</Badge>
+        return <Badge className="bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200">In Progress</Badge>
       case "cancelled":
         return <Badge variant="destructive">Cancelled</Badge>
       case "no_show":

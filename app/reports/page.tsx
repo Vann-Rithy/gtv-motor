@@ -26,6 +26,12 @@ import {
 import Link from "next/link"
 import { useLanguage } from "@/lib/language-context"
 import { API_ENDPOINTS } from "@/lib/api-config"
+import {
+  exportReportToCSV,
+  exportReportToExcel,
+  exportReportToPDF,
+  transformReportData,
+} from "@/lib/report-export-utils"
 
 interface SummaryData {
   totalRevenue: number
@@ -171,6 +177,7 @@ export default function Reports() {
     to: new Date().toISOString().split("T")[0],
   })
   const [activeTab, setActiveTab] = useState("summary")
+  const [lastReportTab, setLastReportTab] = useState("summary") // Track last report tab for export tab
   const [loading, setLoading] = useState(false)
   const [summaryData, setSummaryData] = useState<SummaryData | null>(null)
   const [warrantyData, setWarrantyData] = useState<WarrantyData | null>(null)
@@ -276,12 +283,14 @@ export default function Reports() {
     fetchReportData()
   }, [dateRange.from, dateRange.to])
 
-  const handleExportReport = async (format: string) => {
+  const handleExportReport = async (format: string, reportType?: string) => {
     try {
+      // Use provided reportType or fall back to activeTab, or lastReportTab if on export tab
+      const tabToUse = reportType || (activeTab === "export" ? lastReportTab : activeTab)
       let data: any
 
-      // Get the appropriate data based on active tab
-      switch (activeTab) {
+      // Get the appropriate data based on tab
+      switch (tabToUse) {
         case 'summary':
           data = summaryData
           break
@@ -304,26 +313,71 @@ export default function Reports() {
         return
       }
 
-      // Format data for export
-      const exportData = formatDataForExport(activeTab, data, dateRange)
+      // Transform data to GenerateReport format
+      console.log('Transforming data for export:', { tabToUse, dataKeys: Object.keys(data || {}) })
+      const { reportData, reportMeta } = transformReportData(tabToUse, data, dateRange)
+      console.log('Transformed report data:', {
+        rowCount: reportData.length,
+        sampleRow: reportData[0],
+        meta: reportMeta
+      })
+
+      // Get columns from report data - handle multiple possible column sets
+      let columns: string[] = []
+      if (reportData.length > 0) {
+        // Get all unique keys from all rows
+        const allKeys = new Set<string>()
+        reportData.forEach((row) => {
+          Object.keys(row).forEach((key) => allKeys.add(key))
+        })
+        columns = Array.from(allKeys)
+        console.log('Detected columns:', columns)
+      }
+
+      if (columns.length === 0) {
+        console.error('No columns detected in report data:', reportData)
+        alert('No data available to export. Please ensure the report has been generated with data.')
+        return
+      }
+
+      if (reportData.length === 0) {
+        console.error('Report data is empty after transformation')
+        alert('No data available to export. Please ensure the report has been generated with data.')
+        return
+      }
 
       // Export based on format
-      switch (format) {
-        case 'CSV':
-          exportToCSV(exportData)
-          break
+      try {
+        console.log(`Starting ${format} export...`)
+        switch (format) {
+          case 'CSV':
+            exportReportToCSV(reportData, reportMeta, columns)
+            console.log('CSV export completed successfully')
+            break
         case 'Excel':
-          exportToExcel(exportData)
+          await exportReportToExcel(reportData, reportMeta, columns)
+          console.log('Excel export completed successfully')
           break
-        case 'PDF':
-          await exportToPDF(exportData)
-          break
-        default:
-          alert('Unsupported export format')
+          case 'PDF':
+            await exportReportToPDF(reportData, reportMeta, columns)
+            console.log('PDF export completed successfully')
+            break
+          default:
+            alert('Unsupported export format')
+            return
+        }
+      } catch (exportError) {
+        console.error('Export format error:', exportError)
+        throw exportError
       }
     } catch (error) {
-      console.error('Export error:', error)
-      alert('Export failed. Please try again.')
+      console.error('Export error details:', {
+        error,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      })
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      alert(`Export failed: ${errorMessage}. Please check the browser console for more details.`)
     }
   }
 
@@ -413,7 +467,17 @@ export default function Reports() {
         </Card>
 
         {/* Report Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs
+          value={activeTab}
+          onValueChange={(value) => {
+            setActiveTab(value)
+            // Track last report tab (not the export tab)
+            if (value !== "export") {
+              setLastReportTab(value)
+            }
+          }}
+          className="space-y-6"
+        >
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="summary" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
@@ -544,11 +608,11 @@ export default function Reports() {
                           </div>
                           <div className="text-right">
                             <p className="font-bold text-lg">{formatCurrency(service.revenue)}</p>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
                               {formatCurrency((service.revenue || 0) / (service.count || 1))} avg
                             </p>
                           </div>
-                          <div className="ml-4 w-24 bg-gray-200 rounded-full h-2">
+                          <div className="ml-4 w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                             <div
                               className="bg-blue-600 h-2 rounded-full"
                               style={{ width: `${((service.count || 0) / (summaryData.totalServices || 1)) * 100}%` }}
@@ -576,7 +640,7 @@ export default function Reports() {
                               <span>Revenue: {formatCurrency(month.revenue)}</span>
                               <span>Services: {month.services}</span>
                             </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                               <div
                                 className="bg-green-600 h-2 rounded-full"
                                 style={{ width: `${((month.revenue || 0) / Math.max(...(summaryData.monthlyTrend || []).map(m => m.revenue || 0), 1)) * 100}%` }}
@@ -709,15 +773,15 @@ export default function Reports() {
                         <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
                           <div className="flex-1">
                             <h3 className="font-medium">{claim.customerName}</h3>
-                            <p className="text-sm text-gray-500">{claim.vehiclePlate}</p>
-                            <p className="text-sm text-gray-600">{claim.description}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{claim.vehiclePlate}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">{claim.description}</p>
                           </div>
                           <div className="text-right">
                             <p className="font-bold text-lg">{formatCurrency(claim.amount)}</p>
                             <Badge variant={claim.status === 'approved' ? 'default' : 'secondary'}>
                               {claim.status}
                             </Badge>
-                            <p className="text-sm text-gray-500">{formatDate(claim.claimDate)}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{formatDate(claim.claimDate)}</p>
                           </div>
                         </div>
                       ))}
@@ -727,8 +791,8 @@ export default function Reports() {
               </>
             ) : (
               <div className="text-center py-8">
-                <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">No warranty data available</p>
+                <Shield className="h-12 w-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+                <p className="text-gray-500 dark:text-gray-400">No warranty data available</p>
               </div>
             )}
           </TabsContent>
@@ -834,13 +898,13 @@ export default function Reports() {
                         <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
                           <div className="flex-1">
                             <h3 className="font-medium">{customer.name}</h3>
-                            <p className="text-sm text-gray-500">{customer.phone}</p>
-                            <p className="text-sm text-gray-600">{customer.email}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{customer.phone}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">{customer.email}</p>
                           </div>
                           <div className="text-right">
                             <p className="font-bold text-lg">{formatCurrency(customer.totalSpent)}</p>
-                            <p className="text-sm text-gray-500">{customer.totalServices} services</p>
-                            <p className="text-sm text-gray-500">Last: {formatDate(customer.lastServiceDate)}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{customer.totalServices} services</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Last: {formatDate(customer.lastServiceDate)}</p>
                           </div>
                         </div>
                       ))}
@@ -850,8 +914,8 @@ export default function Reports() {
               </>
             ) : (
               <div className="text-center py-8">
-                <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">No customer data available</p>
+                <Users className="h-12 w-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+                <p className="text-gray-500 dark:text-gray-400">No customer data available</p>
               </div>
             )}
           </TabsContent>
@@ -957,13 +1021,13 @@ export default function Reports() {
                         <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
                           <div className="flex-1">
                             <h3 className="font-medium">{item.itemName}</h3>
-                            <p className="text-sm text-gray-500">{item.category}</p>
-                            <p className="text-sm text-gray-600">Reorder Level: {item.reorderLevel}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{item.category}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">Reorder Level: {item.reorderLevel}</p>
                           </div>
                           <div className="text-right">
                             <p className="font-bold text-lg">{item.quantity}</p>
-                            <p className="text-sm text-gray-500">in stock</p>
-                            <p className="text-sm text-gray-500">{formatCurrency(item.unitPrice)} each</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">in stock</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{formatCurrency(item.unitPrice)} each</p>
                           </div>
                         </div>
                       ))}
@@ -973,8 +1037,8 @@ export default function Reports() {
               </>
             ) : (
               <div className="text-center py-8">
-                <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">No inventory data available</p>
+                <Package className="h-12 w-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+                <p className="text-gray-500 dark:text-gray-400">No inventory data available</p>
               </div>
             )}
           </TabsContent>
@@ -1017,25 +1081,23 @@ export default function Reports() {
                   </Button>
                 </div>
 
-                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                   <h3 className="font-medium mb-2">Export Options:</h3>
-                  <ul className="text-sm text-gray-600 space-y-1">
+                  <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
                     <li>• <strong>PDF:</strong> Professional formatted reports for printing and sharing</li>
                     <li>• <strong>Excel:</strong> Spreadsheet format for data analysis and manipulation</li>
                     <li>• <strong>CSV:</strong> Simple text format for importing into other systems</li>
                   </ul>
 
                   <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <h4 className="font-medium text-blue-800 mb-2">Export Current Report:</h4>
+                    <h4 className="font-medium text-blue-800 mb-2">Export Report:</h4>
                     <p className="text-sm text-blue-700">
-                      The export will include data from the currently active report tab.
+                      The export will include data from the last viewed report tab.
                       Make sure to generate the report first and select the desired tab.
                     </p>
-                    {activeTab !== 'export' && (
-                      <p className="text-sm text-blue-600 mt-2">
-                        <strong>Current Tab:</strong> {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
-                      </p>
-                    )}
+                    <p className="text-sm text-blue-600 mt-2">
+                      <strong>Report Type:</strong> {lastReportTab.charAt(0).toUpperCase() + lastReportTab.slice(1)}
+                    </p>
                   </div>
                 </div>
               </CardContent>

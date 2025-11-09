@@ -407,97 +407,108 @@ export default function AlertsPage() {
   }
 
   return (
-    <div className="p-6 lg:p-8 space-y-8">
+    <div className="p-4 lg:p-6 xl:p-8 space-y-6 max-w-7xl mx-auto">
       {/* Header Section */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2">
         <div className="flex items-center space-x-4">
-          <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
-            <Bell className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+          <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 rounded-xl shadow-lg">
+            <Bell className="h-7 w-7 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Alert Management</h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Manage system alerts and notifications</p>
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">
+              Alert Management
+            </h1>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              Monitor and manage system alerts and notifications
+            </p>
           </div>
-              {notificationCounts && notificationCounts.notificationCount > 0 && (
-            <Badge className="bg-red-500 text-white dark:bg-red-600 px-3 py-1 text-sm font-medium">
-              {notificationCounts.notificationCount} New
-                </Badge>
-              )}
         </div>
-        <div className="flex space-x-3">
-           <Button
-             variant="outline"
-             size="sm"
-             onClick={handleRefresh}
-             disabled={refreshing}
-            className="px-4 py-2 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
-           >
-             <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-             Refresh
-           </Button>
-         </div>
+        <div className="flex space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="px-4 py-2 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Summary Cards */}
       {notificationCounts && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-200 bg-white dark:bg-gray-800">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
+          <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-800/10 overflow-hidden group">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-semibold text-gray-600 dark:text-gray-400">Pending Alerts</CardTitle>
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+              <CardTitle className="text-sm font-semibold text-gray-700 dark:text-gray-300">Pending Alerts</CardTitle>
+              <div className="p-2.5 bg-blue-500/20 dark:bg-blue-400/20 rounded-xl group-hover:scale-110 transition-transform duration-300">
                 <Bell className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-1">{notificationCounts.pending_alerts}</div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Require attention</p>
+              <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">
+                {notificationCounts.pending_alerts}
+              </div>
+              <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Require immediate attention</p>
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-200 bg-white dark:bg-gray-800">
+          <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-900/20 dark:to-red-800/10 overflow-hidden group">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-semibold text-gray-600 dark:text-gray-400">High Priority</CardTitle>
-              <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+              <CardTitle className="text-sm font-semibold text-gray-700 dark:text-gray-300">High Priority</CardTitle>
+              <div className="p-2.5 bg-red-500/20 dark:bg-red-400/20 rounded-xl group-hover:scale-110 transition-transform duration-300">
                 <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-red-600 dark:text-red-400 mb-1">{notificationCounts.overdue_alerts}</div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Urgent alerts</p>
+              <div className="text-4xl font-bold text-red-600 dark:text-red-400 mb-2">
+                {notificationCounts.overdue_alerts}
+              </div>
+              <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Urgent alerts requiring action</p>
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-200 bg-white dark:bg-gray-800">
+          <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/10 overflow-hidden group">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-semibold text-gray-600 dark:text-gray-400">Completed</CardTitle>
-              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+              <CardTitle className="text-sm font-semibold text-gray-700 dark:text-gray-300">Completed</CardTitle>
+              <div className="p-2.5 bg-green-500/20 dark:bg-green-400/20 rounded-xl group-hover:scale-110 transition-transform duration-300">
                 <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-1">{notificationCounts.completed_alerts || 1}</div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Resolved alerts</p>
+              <div className="text-4xl font-bold text-green-600 dark:text-green-400 mb-2">
+                {notificationCounts.completed_alerts || 1}
+              </div>
+              <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Successfully resolved alerts</p>
             </CardContent>
           </Card>
         </div>
       )}
 
       {/* Search and Filter */}
-      <Card className="border-0 shadow-lg bg-white dark:bg-gray-800">
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
+      <Card className="border border-gray-200 dark:border-gray-700 shadow-md bg-white dark:bg-gray-800">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">Search & Filter</CardTitle>
+          <CardDescription className="text-gray-600 dark:text-gray-400">
+            Find specific alerts using search or filter options
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-5 w-5" />
               <Input
-                placeholder="Search alerts by customer, phone, or vehicle..."
+                placeholder="Search by customer name, phone, vehicle plate, or message..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-12 h-12 text-base border-gray-200 dark:border-gray-700 focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className="pl-12 h-11 text-base border-gray-200 dark:border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-all"
               />
             </div>
-            <div className="flex space-x-3">
+            <div className="flex gap-3">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-36 h-12 border-gray-200 dark:border-gray-700 focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-700">
+                <SelectTrigger className="w-[140px] h-11 border-gray-200 dark:border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-gray-700 transition-all">
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
@@ -508,7 +519,7 @@ export default function AlertsPage() {
                 </SelectContent>
               </Select>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-36 h-12 border-gray-200 dark:border-gray-700 focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-700">
+                <SelectTrigger className="w-[140px] h-11 border-gray-200 dark:border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-gray-700 transition-all">
                   <SelectValue placeholder="All Types" />
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
@@ -525,156 +536,197 @@ export default function AlertsPage() {
       </Card>
 
       {/* Alerts List */}
-      <Card className="border-0 shadow-lg bg-white dark:bg-gray-800">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-xl font-semibold text-gray-900 dark:text-gray-100">All Alerts</CardTitle>
-          <CardDescription className="text-gray-600 dark:text-gray-400">Manage system alerts and notifications</CardDescription>
-         </CardHeader>
-        <CardContent className="p-6">
-          <div className="space-y-6">
+      <Card className="border border-gray-200 dark:border-gray-700 shadow-md bg-white dark:bg-gray-800">
+        <CardHeader className="pb-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-xl font-semibold text-gray-900 dark:text-gray-100">All Alerts</CardTitle>
+              <CardDescription className="text-gray-600 dark:text-gray-400 mt-1">
+                5 alerts found
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4 lg:p-6">
+          <div className="space-y-3">
             {alerts.map((alert) => (
               <div
                 key={alert.id}
-                className={`flex flex-col lg:flex-row lg:items-center justify-between p-6 border-l-4 rounded-xl transition-all duration-200
-                  hover:shadow-md hover:scale-[1.02]
-                  bg-white dark:bg-gray-900
-                  border-gray-200 dark:border-gray-700
-                  space-y-4 lg:space-y-0
-                  ${alert.urgency_level === 'overdue' ? 'border-l-red-500 shadow-red-100 dark:shadow-red-900/20' :
-                    alert.urgency_level === 'due_today' ? 'border-l-orange-500 shadow-orange-100 dark:shadow-orange-900/20' :
-                    alert.urgency_level === 'due_soon' ? 'border-l-yellow-500 shadow-yellow-100 dark:shadow-yellow-900/20' :
-                    'border-l-green-500 shadow-green-100 dark:shadow-green-900/20'}`}
+                className={`group relative flex flex-col lg:flex-row gap-6 p-6 border-l-4 rounded-xl transition-all duration-300 ease-in-out
+                  hover:shadow-xl hover:shadow-gray-200/60 dark:hover:shadow-gray-900/40
+                  hover:-translate-y-0.5
+                  bg-white dark:bg-gray-800
+                  border border-gray-200/80 dark:border-gray-700/80
+                  ${alert.urgency_level === 'overdue' ? 'border-l-red-500 bg-gradient-to-r from-red-50/30 to-white dark:from-red-950/20 dark:to-gray-800' :
+                    alert.urgency_level === 'due_today' ? 'border-l-orange-500 bg-gradient-to-r from-orange-50/30 to-white dark:from-orange-950/20 dark:to-gray-800' :
+                    alert.urgency_level === 'due_soon' ? 'border-l-yellow-500 bg-gradient-to-r from-yellow-50/30 to-white dark:from-yellow-950/20 dark:to-gray-800' :
+                    'border-l-green-500 bg-gradient-to-r from-green-50/30 to-white dark:from-green-950/20 dark:to-gray-800'}`}
               >
-                <div className="flex-1">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{alert.message}</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{alert.customer_name}</p>
-                      <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 text-sm text-gray-500 dark:text-gray-400">
-                        <div className="flex items-center">
-                          <Phone className="h-4 w-4 mr-1" />
-                          {alert.customer_phone}
-                        </div>
-                        {alert.alert_type === 'low_stock' ? (
-                          <div className="flex items-center">
-                            <Car className="h-4 w-4 mr-1" />
-                            {alert.message.includes('Engine Oil') ? 'Engine Oil 0W-20 (KAIN)' : 'Inventory Item'}
-                          </div>
-                        ) : (
-                        <div className="flex items-center">
-                          <Car className="h-4 w-4 mr-1" />
-                          {alert.vehicle_plate} - {alert.vehicle_model}
-                        </div>
-                        )}
-                        {alert.customer_email && (
-                          <div className="flex items-center">
-                            <span className="text-xs">{alert.customer_email}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <Badge className={`${getTypeColor(alert.alert_type)} px-3 py-1 font-medium`}>
-                        {alert.alert_type.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase())}
-                      </Badge>
-                      <Badge className={`${getStatusColor(alert.status)} px-3 py-1 font-medium`}>
-                        {alert.status.charAt(0).toUpperCase() + alert.status.slice(1)}
-                      </Badge>
-                    </div>
+                {/* Left Section - Icon and Main Info */}
+                <div className="flex items-start gap-5 flex-1 min-w-0">
+                  {/* Icon with modern design */}
+                  <div className={`flex-shrink-0 p-3 rounded-xl shadow-sm transition-transform duration-300 group-hover:scale-110 ${
+                    alert.urgency_level === 'overdue' ? 'bg-gradient-to-br from-red-100 to-red-50 dark:from-red-900/40 dark:to-red-900/20' :
+                    alert.urgency_level === 'due_today' ? 'bg-gradient-to-br from-orange-100 to-orange-50 dark:from-orange-900/40 dark:to-orange-900/20' :
+                    alert.urgency_level === 'due_soon' ? 'bg-gradient-to-br from-yellow-100 to-yellow-50 dark:from-yellow-900/40 dark:to-yellow-900/20' :
+                    'bg-gradient-to-br from-green-100 to-green-50 dark:from-green-900/40 dark:to-green-900/20'
+                  }`}>
+                    {alert.status === 'completed' ? (
+                      <Check className="h-6 w-6 text-green-600 dark:text-green-400" />
+                    ) : (
+                      <AlertTriangle className={`h-6 w-6 ${
+                        alert.urgency_level === 'overdue' ? 'text-red-600 dark:text-red-400' :
+                        alert.urgency_level === 'due_today' ? 'text-orange-600 dark:text-orange-400' :
+                        alert.urgency_level === 'due_soon' ? 'text-yellow-600 dark:text-yellow-400' :
+                        'text-green-600 dark:text-green-400'
+                      }`} />
+                    )}
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <Calendar className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Date</p>
-                      </div>
-                      <p className="font-semibold text-gray-900 dark:text-gray-100">
-                        {new Date(alert.alert_date).toLocaleDateString()}
+                  {/* Main Content */}
+                  <div className="flex-1 min-w-0">
+                    {/* Title and Customer */}
+                    <div className="mb-5">
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2.5 leading-snug">
+                        {alert.message}
+                      </h3>
+                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">
+                        {alert.customer_name}
                       </p>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <AlertTriangle className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Status</p>
+
+                      {/* Contact Info with modern styling */}
+                      <div className="flex flex-wrap items-center gap-4 text-sm">
+                        <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200/50 dark:border-gray-600/50">
+                          <Phone className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                          <span className="font-medium text-gray-700 dark:text-gray-300">{alert.customer_phone}</span>
+                        </div>
+                        {alert.alert_type === 'low_stock' ? (
+                          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200/50 dark:border-gray-600/50">
+                            <Car className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                            <span className="text-gray-700 dark:text-gray-300">{alert.message.includes('Engine Oil') ? 'Engine Oil 0W-20 (KAIN)' : 'Inventory Item'}</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200/50 dark:border-gray-600/50">
+                            <Car className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                            <span className="font-medium text-gray-700 dark:text-gray-300">{alert.vehicle_plate}</span>
+                          </div>
+                        )}
                       </div>
-                      <p className="font-semibold text-gray-900 dark:text-gray-100">
-                        {alert.days_until_due !== undefined ? (
-                          alert.days_until_due < 0 ?
-                            `${Math.abs(alert.days_until_due)} days overdue` :
-                            alert.days_until_due === 0 ?
-                              "Due today" :
-                              `${alert.days_until_due} days`
-                        ) : "N/A"}
-                      </p>
                     </div>
-                    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <Car className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                          {alert.alert_type === 'low_stock' ? 'Item' : 'Vehicle'}
+
+                    {/* Information Grid - Modern Card Style */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                      <div className="bg-white dark:bg-gray-700/80 p-3.5 rounded-lg border border-gray-200/80 dark:border-gray-600/80 shadow-sm hover:shadow-md transition-shadow duration-200">
+                        <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">DATE</p>
+                        <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                          {new Date(alert.alert_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </p>
                       </div>
-                      <p className="font-semibold text-gray-900 dark:text-gray-100">
-                        {alert.alert_type === 'low_stock'
-                          ? (alert.message.includes('Engine Oil') ? 'Engine Oil 0W-20 (KAIN)' : 'Inventory Item')
-                          : `${alert.year} ${alert.vehicle_model}`
-                        }
-                      </p>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <Phone className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Contact</p>
+                      <div className="bg-white dark:bg-gray-700/80 p-3.5 rounded-lg border border-gray-200/80 dark:border-gray-600/80 shadow-sm hover:shadow-md transition-shadow duration-200">
+                        <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">TIMELINE</p>
+                        <p className={`text-sm font-bold ${
+                          alert.days_until_due !== undefined && alert.days_until_due < 0
+                            ? 'text-red-600 dark:text-red-400'
+                            : alert.days_until_due === 0
+                            ? 'text-orange-600 dark:text-orange-400'
+                            : 'text-gray-900 dark:text-gray-100'
+                        }`}>
+                          {alert.days_until_due !== undefined ? (
+                            alert.days_until_due < 0 ?
+                              `${Math.abs(alert.days_until_due)} days overdue` :
+                              alert.days_until_due === 0 ?
+                                "Due today" :
+                                `In ${alert.days_until_due} days`
+                          ) : "N/A"}
+                        </p>
                       </div>
-                      <p className="font-semibold text-gray-900 dark:text-gray-100">
-                        {alert.customer_phone}
-                      </p>
+                      <div className="bg-white dark:bg-gray-700/80 p-3.5 rounded-lg border border-gray-200/80 dark:border-gray-600/80 shadow-sm hover:shadow-md transition-shadow duration-200">
+                        <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">
+                          {alert.alert_type === 'low_stock' ? 'ITEM' : 'VEHICLE'}
+                        </p>
+                        <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">
+                          {alert.alert_type === 'low_stock'
+                            ? (alert.message.includes('Engine Oil') ? 'Engine Oil 0W-20' : 'Inventory Item')
+                            : `${alert.year || ''} ${alert.vehicle_model || 'N/A'}`
+                          }
+                        </p>
+                      </div>
+                      <div className="bg-white dark:bg-gray-700/80 p-3.5 rounded-lg border border-gray-200/80 dark:border-gray-600/80 shadow-sm hover:shadow-md transition-shadow duration-200">
+                        <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">CONTACT</p>
+                        <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                          {alert.customer_phone === 'N/A' ? 'N/A' : alert.customer_phone}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex flex-row lg:flex-col space-x-3 lg:space-x-0 lg:space-y-3">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => updateAlertStatus(alert.id, "sent")}
-                    disabled={alert.status === "sent" || alert.status === "completed"}
-                    className="px-4 py-2 font-medium border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
-                  >
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    Complete
-                  </Button>
-                  <FollowUpModal
-                    alert={alert}
-                    onFollowUpComplete={() => {
-                      fetchAlerts()
-                      fetchNotificationCounts()
-                    }}
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => deleteAlert(alert.id)}
-                    className="px-4 py-2 font-medium text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20"
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Dismiss
-                  </Button>
+                {/* Right Section - Status Badges and Actions */}
+                <div className="flex flex-col gap-3 lg:min-w-[170px] lg:items-end lg:justify-start">
+                  {/* Status Badges */}
+                  <div className="flex flex-col gap-2 lg:items-end">
+                    <Badge className={`${getTypeColor(alert.alert_type)} px-3 py-1.5 font-bold text-xs shadow-md hover:shadow-lg transition-shadow duration-200`}>
+                      {alert.alert_type === 'service_due' ? 'Service Due' :
+                       alert.alert_type === 'warranty_expiring' ? 'Warranty Expiring' :
+                       alert.alert_type === 'low_stock' ? 'Low Stock' :
+                       alert.alert_type === 'follow_up' ? 'Follow Up' :
+                       alert.alert_type.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase())}
+                    </Badge>
+                    <Badge className={`${getStatusColor(alert.status)} px-3 py-1.5 font-bold text-xs shadow-md hover:shadow-lg transition-shadow duration-200`}>
+                      {alert.status.charAt(0).toUpperCase() + alert.status.slice(1)}
+                    </Badge>
+                  </div>
+
+                  {/* Action Buttons - Modern Style */}
+                  <div className="flex flex-col gap-2.5 mt-1 lg:w-full">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => updateAlertStatus(Number(alert.id), "completed")}
+                      disabled={alert.status === "completed"}
+                      className="w-full px-4 py-2.5 h-auto text-sm font-semibold border-2 border-gray-200 dark:border-gray-700
+                        bg-white dark:bg-gray-800
+                        hover:bg-green-50 hover:border-green-400 dark:hover:bg-green-900/30 dark:hover:border-green-600
+                        disabled:opacity-50 disabled:cursor-not-allowed
+                        transition-all duration-200 shadow-sm hover:shadow-md"
+                    >
+                      <Check className="h-4 w-4 mr-2" />
+                      Complete
+                    </Button>
+                    <FollowUpModal
+                      alert={alert}
+                      onFollowUpComplete={() => {
+                        fetchAlerts()
+                        fetchNotificationCounts()
+                      }}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => deleteAlert(Number(alert.id))}
+                      className="w-full px-4 py-2.5 h-auto text-sm font-semibold border-2 border-red-200 dark:border-red-800
+                        bg-white dark:bg-gray-800 text-red-600 dark:text-red-400
+                        hover:bg-red-50 hover:border-red-400 dark:hover:bg-red-900/30 dark:hover:border-red-600
+                        transition-all duration-200 shadow-sm hover:shadow-md"
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Dismiss
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
 
           {alerts.length === 0 && (
-            <div className="text-center py-16">
-              <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
-                <Bell className="h-10 w-10 text-gray-400 dark:text-gray-500" />
+            <div className="text-center py-16 px-4">
+              <div className="p-5 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-2xl w-24 h-24 mx-auto mb-6 flex items-center justify-center shadow-inner">
+                <Bell className="h-12 w-12 text-gray-400 dark:text-gray-500" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">No Alerts Found</h3>
-              <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">No Alerts Found</h3>
+              <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto text-sm">
                 {searchTerm || statusFilter !== "all" || typeFilter !== "all"
-                  ? "No alerts match your current search criteria. Try adjusting your filters."
+                  ? "No alerts match your current search criteria. Try adjusting your filters to see more results."
                   : "All alerts have been resolved! Great job keeping up with your alerts."}
               </p>
             </div>

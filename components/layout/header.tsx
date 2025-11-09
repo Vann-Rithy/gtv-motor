@@ -16,6 +16,7 @@ import { Menu, User, LogOut, Settings } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
 import { useLanguage } from "@/lib/language-context"
 import SidebarNotificationBadge from "@/components/sidebar-notification-badge"
+import Link from "next/link"
 
 interface HeaderProps {
   onToggleSidebar?: () => void
@@ -64,10 +65,10 @@ export default function Header({ onToggleSidebar, onMenuClick, user: propUser }:
           <Button
             variant="ghost"
             size="sm"
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 rounded-lg"
             asChild
           >
-            <a href="/alerts">
+            <a href="/alerts" className="flex items-center justify-center">
               <SidebarNotificationBadge />
             </a>
           </Button>
@@ -98,13 +99,17 @@ export default function Header({ onToggleSidebar, onMenuClick, user: propUser }:
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <User className="mr-2 h-4 w-4" />
-                  <span>{t('common.profile', 'Profile')}</span>
+                <DropdownMenuItem asChild>
+                  <Link href="/profile" className="flex items-center w-full">
+                    <User className="mr-2 h-4 w-4" />
+                    <span>{t('common.profile', 'Profile')}</span>
+                  </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>{t('nav.settings', 'Settings')}</span>
+                <DropdownMenuItem asChild>
+                  <Link href="/settings" className="flex items-center w-full">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>{t('nav.settings', 'Settings')}</span>
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>

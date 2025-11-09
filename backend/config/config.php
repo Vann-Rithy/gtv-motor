@@ -53,16 +53,18 @@ if (in_array($origin, $allowed_origins)) {
     }
 
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, PATCH');
-header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, Pragma');
+// Include both X-API-Key and x-api-key to handle case variations
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-API-Key, x-api-key, X-Requested-With, Accept, Origin, Cache-Control, Pragma');
 header('Access-Control-Allow-Credentials: true');
 header('Access-Control-Max-Age: 86400'); // 24 hours
-header('Content-Type: application/json; charset=utf-8');
 
-// Handle preflight requests
+// Handle preflight OPTIONS requests
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
-    exit();
+    exit;
 }
+
+header('Content-Type: application/json; charset=utf-8');
 
 // Error reporting
 if ($_ENV['APP_ENV'] === 'development') {

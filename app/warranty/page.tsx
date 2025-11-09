@@ -37,13 +37,13 @@ export default function WarrantyPage() {
   // Fetch warranty parts for vehicles
   const fetchWarrantyParts = async (warrantiesList: WarrantyWithDetails[]) => {
     const partsMap: Record<number, WarrantyPart[]> = {}
-    
+
     // Fetch warranty parts for each warranty's vehicle
     for (const warranty of warrantiesList) {
       if (!warranty.vehicle_id) {
         continue
       }
-      
+
       try {
         const response = await fetch(`${API_ENDPOINTS.WARRANTY_PARTS}?vehicle_id=${warranty.vehicle_id}`)
         if (response.ok) {
@@ -72,7 +72,7 @@ export default function WarrantyPage() {
         console.error('Failed to fetch warranty parts for vehicle:', warranty.vehicle_id, error)
       }
     }
-    
+
     setWarrantyParts(partsMap)
   }
 
@@ -99,7 +99,7 @@ export default function WarrantyPage() {
 
       if (data.success && data.data) {
         let warranties = data.data
-        
+
         // Filter by calculated status if needed (expiring_soon)
         if (statusFilter === "expiring_soon") {
           warranties = warranties.filter(w => {
@@ -107,9 +107,9 @@ export default function WarrantyPage() {
             return calculatedStatus.status === "expiring_soon"
           })
         }
-        
+
         setWarranties(warranties)
-        
+
         // Process warranty parts from response
         const partsMap: Record<number, WarrantyPart[]> = {}
         warranties.forEach((warranty: any) => {
@@ -134,7 +134,7 @@ export default function WarrantyPage() {
             }
           }
         })
-        
+
         // If no warranty parts found in response, try fetching separately
         const hasAnyParts = Object.keys(partsMap).length > 0 && Object.values(partsMap).some(parts => parts.length > 0)
         if (!hasAnyParts) {
@@ -151,7 +151,7 @@ export default function WarrantyPage() {
       }
     } catch (error) {
       console.error("Error fetching warranties:", error)
-      
+
       // Fallback to sample data when API fails
       const fallbackWarranties = [
         {
@@ -286,7 +286,7 @@ export default function WarrantyPage() {
             </div>
             <div className="ml-3">
               <p className="text-sm text-yellow-700">
-                <strong>Demo Mode:</strong> The API server is currently unavailable. 
+                <strong>Demo Mode:</strong> The API server is currently unavailable.
                 You are viewing sample warranty data for demonstration purposes.
               </p>
             </div>
@@ -470,7 +470,7 @@ export default function WarrantyPage() {
                         </p>
                       </div>
                       <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
-                        <p className="text-sm text-gray-500">Last Service</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Last Service</p>
                         <p className="font-medium text-xs">
                           {warranty.last_service_date
                             ? new Date(warranty.last_service_date).toLocaleDateString()
@@ -483,7 +483,7 @@ export default function WarrantyPage() {
                     {/* Progress Bars */}
                     <div className="space-y-2">
                       <div>
-                        <div className="flex justify-between text-xs text-gray-500 mb-1">
+                        <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
                           <span>Kilometers Used</span>
                           <span>{kmPercentage.toFixed(0)}%</span>
                         </div>
@@ -501,7 +501,7 @@ export default function WarrantyPage() {
                         </div>
                       </div>
                       <div>
-                        <div className="flex justify-between text-xs text-gray-500 mb-1">
+                        <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
                           <span>Services Used</span>
                           <span>{servicePercentage.toFixed(0)}%</span>
                         </div>
@@ -535,14 +535,14 @@ export default function WarrantyPage() {
                             const isExpired = endDate && endDate < now
                             const daysUntilExpiry = endDate ? Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null
                             const isExpiringSoon = daysUntilExpiry !== null && daysUntilExpiry <= 30 && daysUntilExpiry > 0
-                            
+
                             return (
-                              <Badge 
-                                key={part.id} 
-                                variant="outline" 
+                              <Badge
+                                key={part.id}
+                                variant="outline"
                                 className={`text-xs bg-white dark:bg-gray-800 ${
-                                  isExpired 
-                                    ? 'border-red-300 dark:border-red-700 text-red-700 dark:text-red-400' 
+                                  isExpired
+                                    ? 'border-red-300 dark:border-red-700 text-red-700 dark:text-red-400'
                                     : isExpiringSoon
                                       ? 'border-yellow-300 dark:border-yellow-700 text-yellow-700 dark:text-yellow-400'
                                       : 'border-blue-300 dark:border-blue-700'
@@ -564,8 +564,8 @@ export default function WarrantyPage() {
                   </div>
 
                   <div className="flex flex-row lg:flex-col space-x-2 lg:space-x-0 lg:space-y-2">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation()
@@ -595,8 +595,8 @@ export default function WarrantyPage() {
 
           {warranties.length === 0 && (
             <div className="text-center py-12">
-              <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">
+              <Shield className="h-12 w-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+              <p className="text-gray-500 dark:text-gray-400">
                 {searchTerm || statusFilter !== "all"
                   ? "No warranty records found matching your search."
                   : "No warranty records found. Create your first warranty to get started."

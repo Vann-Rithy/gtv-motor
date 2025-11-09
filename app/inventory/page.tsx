@@ -129,7 +129,7 @@ export default function Inventory() {
 
       const response = await apiClient.getInventory(params)
       const items = response.data || []
-      
+
       // Debug: Log first item to check image field
       if (items.length > 0 && process.env.NODE_ENV === 'development') {
         console.log('Sample inventory item:', {
@@ -139,7 +139,7 @@ export default function Inventory() {
           hasImage: !!items[0].image
         })
       }
-      
+
       setInventory(items)
 
       // Update pagination info if available
@@ -210,22 +210,22 @@ export default function Inventory() {
       }
       return null
     }
-    
+
     // If it's already a full URL, return it
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
       return imagePath
     }
-    
+
     // Otherwise, construct the URL from the API base URL
     const baseUrl = 'https://api.gtvmotor.dev'
-    
+
     // Remove leading slash if present
     let cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath
-    
+
     // Convert database paths to match server structure
     // Database stores: images/uploads/parts/file.jpg or uploads/parts/file.jpg
     // Server expects: images/uploads/parts/file.jpg (accessible at /images/uploads/parts/)
-    
+
     if (cleanPath.startsWith('images/uploads/parts/')) {
       // Use as-is (already correct)
       cleanPath = cleanPath
@@ -242,10 +242,10 @@ export default function Inventory() {
       // Assume it's a filename, prepend images/uploads/parts/
       cleanPath = 'images/uploads/parts/' + cleanPath
     }
-    
+
     // Construct URL without /api/ prefix - images are served directly
     const url = `${baseUrl}/${cleanPath}`
-    
+
     // Debug logging (remove in production)
     if (process.env.NODE_ENV === 'development') {
       console.log('Image URL:', url, 'from path:', imagePath)
@@ -829,7 +829,7 @@ export default function Inventory() {
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            
+
             {/* Image Display */}
             {selectedItem.image && (
               <div className="mb-4">
@@ -859,10 +859,10 @@ export default function Inventory() {
                 </div>
               </div>
             )}
-            
+
             <div className="space-y-3">
               <div>
-                <label className="text-sm font-medium text-gray-500">Name</label>
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Name</label>
                 <p className="font-medium">{selectedItem.name}</p>
                 {selectedItem.name_khmer && (
                   <p className="text-sm text-muted-foreground mt-1">{selectedItem.name_khmer}</p>
@@ -870,44 +870,44 @@ export default function Inventory() {
               </div>
               {selectedItem.part_plate && (
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Part Plate</label>
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Part Plate</label>
                   <p>{selectedItem.part_plate}</p>
                 </div>
               )}
               <div>
-                <label className="text-sm font-medium text-gray-500">SKU</label>
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">SKU</label>
                 <p>{selectedItem.sku || 'N/A'}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Category</label>
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Category</label>
                 <p>{selectedItem.category_name}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Current Stock</label>
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Current Stock</label>
                 <p className="font-medium">{selectedItem.current_stock}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Min/Max Stock</label>
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Min/Max Stock</label>
                 <p>{selectedItem.min_stock} / {selectedItem.max_stock}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Unit Price</label>
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Unit Price</label>
                 <p>${(Number(selectedItem.unit_price) || 0).toFixed(2)}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Total Value</label>
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Value</label>
                 <p className="font-medium">${(Number(selectedItem.current_stock) * Number(selectedItem.unit_price) || 0).toFixed(2)}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Supplier</label>
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Supplier</label>
                 <p>{selectedItem.supplier || 'N/A'}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Last Restocked</label>
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Last Restocked</label>
                 <p>{selectedItem.last_restocked ? new Date(selectedItem.last_restocked).toLocaleDateString() : 'Never'}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Status</label>
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</label>
                 <div className="mt-1">
                   {getStatusBadge(selectedItem.stock_status, selectedItem.current_stock, selectedItem.min_stock)}
                 </div>
@@ -949,7 +949,7 @@ export default function Inventory() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-500">Item</label>
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Item</label>
                 <p className="font-medium">{selectedItem.name}</p>
                 <p className="text-sm text-gray-500">Current Stock: {selectedItem.current_stock}</p>
                   </div>
@@ -1006,7 +1006,7 @@ export default function Inventory() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-500">Name</label>
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Name</label>
                 <Input
                   value={editForm.name}
                   onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
@@ -1014,7 +1014,7 @@ export default function Inventory() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">SKU</label>
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">SKU</label>
                 <Input
                   value={editForm.sku}
                   onChange={(e) => setEditForm({ ...editForm, sku: e.target.value })}
@@ -1022,7 +1022,7 @@ export default function Inventory() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Category</label>
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Category</label>
                 <select
                   value={editForm.category_id}
                   onChange={(e) => setEditForm({ ...editForm, category_id: e.target.value })}
@@ -1037,7 +1037,7 @@ export default function Inventory() {
                 </select>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Current Stock</label>
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Current Stock</label>
                 <Input
                   type="number"
                   min="0"
@@ -1067,7 +1067,7 @@ export default function Inventory() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Unit Price</label>
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Unit Price</label>
                 <Input
                   type="number"
                   min="0"
@@ -1078,7 +1078,7 @@ export default function Inventory() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Supplier</label>
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Supplier</label>
                 <Input
                   value={editForm.supplier}
                   onChange={(e) => setEditForm({ ...editForm, supplier: e.target.value })}

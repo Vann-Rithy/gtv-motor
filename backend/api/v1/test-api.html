@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API v1 Test Page</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .api-key {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3b82f6;
+        }
+        .api-key code {
+            background: #f3f4f6;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+        }
+        .endpoints {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .endpoint-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .endpoint-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .endpoint-card h3 {
+            color: #3b82f6;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        .endpoint-card .method {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        .endpoint-card .url {
+            color: #666;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+            margin-top: 8px;
+        }
+        .response {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 500px;
+            overflow-y: auto;
+            display: none;
+        }
+        .response.show {
+            display: block;
+        }
+        .response pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .loading {
+            color: #3b82f6;
+            text-align: center;
+            padding: 20px;
+        }
+        .error {
+            color: #ef4444;
+        }
+        .success {
+            color: #10b981;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔌 API v1 Test Page</h1>
+        <div class="api-key">
+            <strong>API Key:</strong><br>
+            <code>060e3af76e06c63208b07be5c9f949c935eaf00ae09153d7fd82e6e18bd0710b</code>
+        </div>
+
+        <div class="endpoints">
+            <div class="endpoint-card" onclick="testEndpoint('GET', '/')">
+                <h3><span class="method">GET</span> API Status</h3>
+                <div class="url">/</div>
+            </div>
+
+            <div class="endpoint-card" onclick="testEndpoint('GET', '/customers?page=1&limit=5')">
+                <h3><span class="method">GET</span> Customers List</h3>
+                <div class="url">/customers?page=1&limit=5</div>
+            </div>
+
+            <div class="endpoint-card" onclick="testEndpoint('GET', '/customers/1')">
+                <h3><span class="method">GET</span> Customer by ID (Full Details)</h3>
+                <div class="url">/customers/1</div>
+                <div style="font-size: 11px; color: #666; margin-top: 5px;">
+                    Includes: Services, Vehicles, Service Items, Complete Info
+                </div>
+            </div>
+
+            <div class="endpoint-card" onclick="testEndpoint('GET', '/vehicles?page=1&limit=5')">
+                <h3><span class="method">GET</span> Vehicles List</h3>
+                <div class="url">/vehicles?page=1&limit=5</div>
+            </div>
+
+            <div class="endpoint-card" onclick="testEndpoint('GET', '/vehicles/1')">
+                <h3><span class="method">GET</span> Vehicle by ID</h3>
+                <div class="url">/vehicles/1</div>
+            </div>
+
+            <div class="endpoint-card" onclick="testEndpoint('GET', '/invoices?page=1&limit=5')">
+                <h3><span class="method">GET</span> Invoices List</h3>
+                <div class="url">/invoices?page=1&limit=5</div>
+            </div>
+
+            <div class="endpoint-card" onclick="testEndpoint('GET', '/invoices/1')">
+                <h3><span class="method">GET</span> Invoice by ID</h3>
+                <div class="url">/invoices/1</div>
+            </div>
+
+            <div class="endpoint-card" onclick="testEndpoint('GET', '/analytics?type=overview&days=7&breakdown=day')">
+                <h3><span class="method">GET</span> Analytics (Daily)</h3>
+                <div class="url">/analytics?type=overview&days=7&breakdown=day</div>
+            </div>
+
+            <div class="endpoint-card" onclick="testEndpoint('GET', '/analytics?type=overview&days=365&breakdown=month')">
+                <h3><span class="method">GET</span> Analytics (Monthly)</h3>
+                <div class="url">/analytics?type=overview&days=365&breakdown=month</div>
+            </div>
+
+            <div class="endpoint-card" onclick="testEndpoint('GET', '/analytics?type=overview&days=1825&breakdown=year')">
+                <h3><span class="method">GET</span> Analytics (Yearly)</h3>
+                <div class="url">/analytics?type=overview&days=1825&breakdown=year</div>
+            </div>
+
+            <div class="endpoint-card" onclick="testEndpoint('GET', '/analytics?type=endpoints&days=7')">
+                <h3><span class="method">GET</span> Endpoint Analytics</h3>
+                <div class="url">/analytics?type=endpoints&days=7</div>
+            </div>
+
+            <div class="endpoint-card" onclick="testEndpoint('GET', '/analytics?type=keys&days=7')">
+                <h3><span class="method">GET</span> API Key Analytics</h3>
+                <div class="url">/analytics?type=keys&days=7</div>
+            </div>
+        </div>
+
+        <div class="response" id="response">
+            <pre id="responseContent"></pre>
+        </div>
+    </div>
+
+    <script>
+        const API_KEY = '060e3af76e06c63208b07be5c9f949c935eaf00ae09153d7fd82e6e18bd0710b';
+        const BASE_URL = 'https://api.gtvmotor.dev/api/v1';
+
+        async function testEndpoint(method, endpoint) {
+            const responseDiv = document.getElementById('response');
+            const responseContent = document.getElementById('responseContent');
+
+            responseDiv.classList.add('show');
+            responseContent.innerHTML = '<div class="loading">Loading...</div>';
+
+            try {
+                const url = BASE_URL + endpoint;
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'X-API-Key': API_KEY,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                const statusClass = response.ok ? 'success' : 'error';
+
+                responseContent.innerHTML = `
+                    <div class="${statusClass}">
+                        <strong>Status:</strong> ${response.status} ${response.statusText}
+                    </div>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                responseContent.innerHTML = `
+                    <div class="error">
+                        <strong>Error:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Test API status on page load
+        window.addEventListener('load', () => {
+            testEndpoint('GET', '/');
+        });
+    </script>
+</body>
+</html>
+

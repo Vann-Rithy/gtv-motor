@@ -6,6 +6,9 @@
 // API Base URL - Production server (api.gtvmotor.dev)
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.gtvmotor.dev'
 
+// API v1 Base URL - For API v1 endpoints
+export const API_V1_BASE_URL = process.env.NEXT_PUBLIC_API_V1_URL || 'https://api.gtvmotor.dev/api/v1'
+
 // API Endpoints
 export const API_ENDPOINTS = {
   // Authentication

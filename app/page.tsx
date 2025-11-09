@@ -34,12 +34,12 @@ export default function Dashboard() {
           {[...Array(6)].map((_, i) => (
             <Card key={i}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div className="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
-                <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 animate-pulse"></div>
+                <div className="h-4 w-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
               </CardHeader>
               <CardContent>
-                <div className="h-8 bg-gray-200 rounded w-16 animate-pulse mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded w-20 animate-pulse"></div>
+                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-16 animate-pulse mb-2"></div>
+                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-20 animate-pulse"></div>
               </CardContent>
             </Card>
           ))}
@@ -220,7 +220,7 @@ export default function Dashboard() {
                       <p className="text-xs text-orange-600 dark:text-orange-300 mt-1">
                         {alert.message}
                       </p>
-                      <p className="text-xs text-orange-500 mt-2">
+                      <p className="text-xs text-orange-500 dark:text-orange-400 mt-2">
                         {new Date(alert.alert_date).toLocaleDateString()}
                       </p>
                     </div>
@@ -229,10 +229,10 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                <CheckCircle className="h-12 w-12 mx-auto mb-2 text-green-300" />
+                <CheckCircle className="h-12 w-12 mx-auto mb-2 text-green-300 dark:text-green-600" />
                 <p>{t('dashboard.no_alerts', 'No active alerts')}</p>
                 {alerts && alerts.totalAlerts > 0 && (
-                  <p className="text-xs mt-2 text-gray-400">
+                  <p className="text-xs mt-2 text-gray-400 dark:text-gray-500">
                     ({alerts.totalAlerts} alerts in system - check Alerts page for details)
                   </p>
                 )}
