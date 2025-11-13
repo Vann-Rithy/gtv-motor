@@ -1,0 +1,26 @@
+# GTV Motor API - Apache Configuration
+# Prevent directory listing and protect API files
+
+# Disable directory listing
+Options -Indexes
+
+# Security headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "DENY"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Protect sensitive files
+<FilesMatch "\.(env|log|ini|conf|md|sql|zip)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Block access to test and debug files
+<FilesMatch "^(test|debug|check|fix|create|update|remove|cleanup|populate|setup|verify|manual|simple|safe|smart|final|complete|enhance|rollback|gtv|direct|dynamic|professional|quick|react|vercel|persistence|database-api|api-client|api-debug|api-endpoints|api-response|auth-fix|auth-persistence|auth-test|complete-flow|complete-fix|complete-system|vehicle-information|warranty-api|warranty-status|warranty-configuration|vehicle_model_warranties|vehicle_warranty_parts|vehicle-models|vehicles-enhanced|services-enhanced|services-simple|customers-fresh|customers-simple|customers-working|debug-customers|test-simple|service-update|service-update-simple|stock-movements|restock|inventory-categories|reports|dashboard|alerts|notifications|settings|staff|health|images|bookings|analytics|auth|update-exchange-rate)\.(php|html|js|sql)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+

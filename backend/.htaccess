@@ -1,12 +1,33 @@
+# GTV Motor Backend - Apache Configuration
+# Prevent directory listing and protect backend files
+
+# Disable directory listing
+Options -Indexes
+
 RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ index.php [QSA,L]
 
 # Security headers
-Header always set X-Content-Type-Options nosniff
-Header always set X-Frame-Options DENY
-Header always set X-XSS-Protection "1; mode=block"
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options nosniff
+    Header always set X-Frame-Options DENY
+    Header always set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Protect sensitive files
+<FilesMatch "\.(env|log|ini|conf|md|sql|zip|bat|sh)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Block access to test, debug, and development files
+<FilesMatch "^(test|debug|check|fix|create|update|remove|cleanup|populate|setup|verify|manual|simple|safe|smart|final|complete|enhance|rollback|gtv|direct|dynamic|professional|quick|react|vercel|persistence|database-api|api-client|api-debug|api-endpoints|api-response|auth-fix|auth-persistence|auth-test|complete-flow|complete-fix|complete-system|vehicle-information|warranty-api|warranty-status|warranty-configuration|alert-management|deploy)\.(php|html|js|sql|bat|sh)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
 
 # CORS headers for API - handled by config.php
 # Remove these lines as they conflict with config.php CORS settings

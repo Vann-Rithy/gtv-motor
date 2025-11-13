@@ -122,23 +122,11 @@ $segments = array_values($segments);
 // Route to appropriate endpoint
 $endpoint = $segments[0] ?? '';
 
-// API Information endpoint
+// API Information endpoint - Redirect to documentation instead of showing JSON
 if (empty($endpoint) || $endpoint === 'index.php') {
-    Response::success([
-        'api' => 'GTV Motor API',
-        'version' => API_V1_VERSION,
-        'base_url' => API_V1_BASE_URL,
-        'endpoints' => [
-            'customers' => API_V1_BASE_URL . 'customers',
-            'vehicles' => API_V1_BASE_URL . 'vehicles',
-            'invoices' => API_V1_BASE_URL . 'invoices',
-            'analytics' => API_V1_BASE_URL . 'analytics',
-            'api-keys' => API_V1_BASE_URL . 'api-keys',
-            'test-api-key' => API_V1_BASE_URL . 'test-api-key'
-        ],
-        'documentation' => 'https://api.gtvmotor.dev/v1/docs',
-        'authentication' => 'API Key required in X-API-Key header'
-    ], 'GTV Motor API v1');
+    // Redirect to documentation
+    header('Location: /api/v1/docs/');
+    http_response_code(301);
     exit;
 }
 

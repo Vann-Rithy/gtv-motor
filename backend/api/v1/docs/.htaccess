@@ -1,0 +1,21 @@
+# GTV Motor API v1 Documentation
+# Allow access to documentation files
+
+# Enable directory index
+DirectoryIndex index.html
+
+# Allow access to HTML, CSS, JS, and image files
+<FilesMatch "\.(html|htm|css|js|jpg|jpeg|png|gif|svg|ico|woff|woff2|ttf|eot)$">
+    Order allow,deny
+    Allow from all
+</FilesMatch>
+
+# Security headers for documentation
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+    # Prevent search engine indexing - Private documentation
+    Header set X-Robots-Tag "noindex, nofollow, noarchive, nosnippet, noimageindex"
+</IfModule>
+

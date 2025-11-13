@@ -4,11 +4,24 @@
 RewriteEngine On
 RewriteBase /api/v1/
 
+# Block direct access to root endpoint - redirect to documentation
+RewriteCond %{REQUEST_URI} ^/api/v1/?$
+RewriteRule ^(.*)$ /api/v1/docs/ [R=301,L]
+
+# Allow direct access to docs directory and files
+RewriteCond %{REQUEST_URI} ^/api/v1/docs
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# Serve index.html for docs directory
+RewriteCond %{REQUEST_URI} ^/api/v1/docs/?$
+RewriteRule ^docs/?$ docs/index.html [L]
+
 # Handle OPTIONS requests for CORS
 RewriteCond %{REQUEST_METHOD} OPTIONS
 RewriteRule ^(.*)$ index.php [QSA,L]
 
-# Route all requests to index.php
+# Route all other requests to index.php
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ index.php [QSA,L]
